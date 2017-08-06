@@ -13,6 +13,10 @@
 ##   releases where this information has not been changed and is in an "Other"
 ##   field in BaOI.
 ##   Also, there are many misspellings, making it more difficult to find.
+## * label code society :: until recently "Other" was used to specify
+##   the label code, but since then there is a dedicated field called
+##   "Label Code". There are still many entries that haven't been changed
+##   though.
 ## * rights society :: until a few years ago "Other" was used to specify
 ##   the rights society, but since then there is a dedicated field called
 ##   "Rights Society". There are still many entries that haven't been changed
@@ -72,6 +76,14 @@ depositores.append(re.compile(u'depósite legal'))
 depositores.append(re.compile(u'sepósito legal'))
 depositores.append(re.compile(u'deopósito legal'))
 
+## some defaults
+## TODO: make configurable
+check_deposito = True
+check_rights_society = True
+check_label_code = True
+check_mastering_sid = True
+check_mould_sid = True
+
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self):
 		self.incountry = False
@@ -84,10 +96,10 @@ class discogs_handler(xml.sax.ContentHandler):
 	def startElement(self, name, attrs):
 		self.incountry = False
 		self.inreleased = False
-		#if self.debugcount == 100000:
-		if self.debugcount == 10000:
+		if self.debugcount == 200000:
 			sys.exit()
 		if name == "release":
+			self.debugcount += 1
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
@@ -103,27 +115,47 @@ class discogs_handler(xml.sax.ContentHandler):
 					if self.prev == self.release:
 						continue
 					self.description = v.lower()
-					if self.description == "rights society":
-						self.count += 1
-						print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						continue
-					if self.country == 'Spain':
-						self.debugcount += 1
-						found = False
-						for d in depositores:
-							result = d.search(self.description)
-							if result != None:
-								self.count += 1
-								found = True
-								self.prev = self.release
-								print('%8d -- Depósito Legal: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								break
-						## debug code to print descriptions that were skipped.
-						## Useful to find misspellings of "depósito legal"
-						if not found:
-							pass
-							#print(self.description, self.release)
-						sys.stdout.flush()
+					if check_rights_society:
+						if self.description == "rights society":
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
+					if check_label_code:
+						if self.description == "label code":
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
+					if check_mastering_sid:
+						if self.description == "mastering sid code":
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
+					if check_mould_sid:
+						if self.description == "mould sid code":
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
+					if check_deposito:
+						if self.country == 'Spain':
+							found = False
+							for d in depositores:
+								result = d.search(self.description)
+								if result != None:
+									self.count += 1
+									found = True
+									self.prev = self.release
+									print('%8d -- Depósito Legal: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									break
+							## debug code to print descriptions that were skipped.
+							## Useful to find misspellings of "depósito legal"
+							if not found:
+								pass
+								#print(self.description, self.release)
+					sys.stdout.flush()
 	def characters(self, content):
 		if self.incountry:
 			self.country = content
