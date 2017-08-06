@@ -13,9 +13,13 @@
 ##   releases where this information has not been changed and is in an "Other"
 ##   field in BaOI.
 ##   Also, there are many misspellings, making it more difficult to find.
-## * label code society :: until recently "Other" was used to specify
-##   the label code, but since then there is a dedicated field called
+## * label code :: until recently "Other" was used to specify the
+##   label code, but since then there is a dedicated field called
 ##   "Label Code". There are still many entries that haven't been changed
+##   though.
+## * SPARS code :: until recently "Other" was used to specify the
+##   SPARS code, but since then there is a dedicated field called
+##   "SPARS Code". There are still many entries that haven't been changed
 ##   though.
 ## * rights society :: until a few years ago "Other" was used to specify
 ##   the rights society, but since then there is a dedicated field called
@@ -83,6 +87,8 @@ check_rights_society = True
 check_label_code = True
 check_mastering_sid = True
 check_mould_sid = True
+check_spars_code = True
+debug = True
 
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self):
@@ -96,8 +102,9 @@ class discogs_handler(xml.sax.ContentHandler):
 	def startElement(self, name, attrs):
 		self.incountry = False
 		self.inreleased = False
-		if self.debugcount == 200000:
-			sys.exit()
+		if debug:
+			if self.debugcount == 300000:
+				sys.exit()
 		if name == "release":
 			self.debugcount += 1
 			for (k,v) in attrs.items():
@@ -127,6 +134,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
+					if check_spars_code:
+						if self.description == "spars code":
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- SPARS Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
 					if check_mastering_sid:
 						if self.description == "mastering sid code":
 							self.count += 1
@@ -152,9 +165,10 @@ class discogs_handler(xml.sax.ContentHandler):
 									break
 							## debug code to print descriptions that were skipped.
 							## Useful to find misspellings of "depósito legal"
-							if not found:
-								pass
-								#print(self.description, self.release)
+							if debug:
+								if not found:
+									pass
+									#print(self.description, self.release)
 					sys.stdout.flush()
 	def characters(self, content):
 		if self.incountry:
