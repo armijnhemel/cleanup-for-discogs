@@ -39,9 +39,6 @@ import xml.sax
 import sys, os, gzip, re
 import argparse
 
-## path of the gzip compressed releases file
-discogs_path = '/home/armijn/discogs-data/discogs_20170801_releases.xml.gz'
-
 ## a list to store the regular expression to recognize
 ## "depósito legal" in the BaOI 'Other' field
 depositores = []
@@ -181,6 +178,40 @@ class discogs_handler(xml.sax.ContentHandler):
 				print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				sys.stdout.flush()
 
-parser = xml.sax.make_parser()
-parser.setContentHandler(discogs_handler())
-parser.parse(gzip.open(discogs_path,"rb"))
+def main(argv):
+	parser = argparse.ArgumentParser()
+
+	## the following options are provided on the commandline
+	#parser.add_argument("-c", "--config", action="store", dest="cfg", help="path to configuration file", metavar="FILE")
+	parser.add_argument("-d", "--datadump", action="store", dest="datadump", help="path to discogs data dump", metavar="DATA")
+	args = parser.parse_args()
+
+	if args.datadump == None:
+		parser.error("Data dump file missing")
+
+	if not os.path.exists(args.datadump):
+		parser.error("Data dump file does not exist")
+
+	if not os.path.isfile(args.datadump):
+		parser.error("Data dump file is not a file")
+
+	#if args.cfg == None:
+	#	parser.error("Configuration file missing")
+
+	#if not os.path.exists(args.cfg):
+	#	parser.error("Configuration file does not exist")
+
+	#config = ConfigParser.ConfigParser()
+	## path of the gzip compressed releases file
+
+	parser = xml.sax.make_parser()
+	parser.setContentHandler(discogs_handler())
+	try:
+		parser.parse(gzip.open(args.datadump,"rb"))
+	except:
+		print("Cannot open dump file", file=sys.stderr)
+		sys.exit(1)
+
+if __name__ == "__main__":
+	main(sys.argv)
+
