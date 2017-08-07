@@ -76,6 +76,7 @@ depositores.append(re.compile(u'depóosito legal'))
 depositores.append(re.compile(u'depósite legal'))
 depositores.append(re.compile(u'sepósito legal'))
 depositores.append(re.compile(u'deopósito legal'))
+depositores.append(re.compile(u'legal deposit'))
 
 ## some defaults
 ## TODO: make configurable
@@ -85,7 +86,7 @@ check_label_code = True
 check_mastering_sid = True
 check_mould_sid = True
 check_spars_code = True
-debug = True
+debug = False
 
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self):
@@ -207,11 +208,13 @@ def main(argv):
 	parser = xml.sax.make_parser()
 	parser.setContentHandler(discogs_handler())
 	try:
-		parser.parse(gzip.open(args.datadump,"rb"))
-	except:
+		dumpfile = gzip.open(args.datadump, "rb")
+		parser.parse(dumpfile)
+	except Exception:
 		print("Cannot open dump file", file=sys.stderr)
 		sys.exit(1)
 
+	dumpfile.close()
+
 if __name__ == "__main__":
 	main(sys.argv)
-
