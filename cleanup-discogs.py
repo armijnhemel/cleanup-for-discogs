@@ -29,6 +29,8 @@
 ##   but this is no longer allowed. When editing a file that has 00 as the
 ##   month Discogs will throw an error.
 ## 
+## The results that are printed by this script are by no means complete.
+##
 ## Licensed under the terms of the General Public License version 3
 ##
 ## SPDX-License-Identifier: GPL-3.0
@@ -92,6 +94,7 @@ class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self):
 		self.incountry = False
 		self.inreleased = False
+		self.inspars = False
 		self.release = None
 		self.country = None
 		self.debugcount = 0
@@ -100,6 +103,7 @@ class discogs_handler(xml.sax.ContentHandler):
 	def startElement(self, name, attrs):
 		self.incountry = False
 		self.inreleased = False
+		self.inspars = False
 		if debug:
 			if self.debugcount == 300000:
 				sys.exit()
@@ -116,7 +120,15 @@ class discogs_handler(xml.sax.ContentHandler):
 		elif name == 'identifier':
 			isdeposito = False
 			for (k,v) in attrs.items():
-				if k == 'description':
+				if k == 'type':
+					if v == 'SPARS Code':
+						self.inspars = True
+					pass
+				elif k == 'value':
+					if self.inspars:
+						## check SPARS code here
+						pass
+				elif k == 'description':
 					if self.prev == self.release:
 						continue
 					self.description = v.lower()
