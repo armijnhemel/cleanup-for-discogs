@@ -78,6 +78,7 @@ depositores.append(re.compile(u'depóosito legal'))
 depositores.append(re.compile(u'depósite legal'))
 depositores.append(re.compile(u'sepósito legal'))
 depositores.append(re.compile(u'deopósito legal'))
+depositores.append(re.compile(u'depásito legal'))
 depositores.append(re.compile(u'legal deposit'))
 
 ## some defaults
