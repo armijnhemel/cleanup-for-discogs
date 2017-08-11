@@ -101,6 +101,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
+		self.isrejected = False
 	def startElement(self, name, attrs):
 		self.incountry = False
 		self.inreleased = False
@@ -109,12 +110,19 @@ class discogs_handler(xml.sax.ContentHandler):
 			if self.debugcount == 300000:
 				sys.exit()
 		if name == "release":
+			## new release entry, so reset the isrejected field
+			self.isrejected = False
 			self.debugcount += 1
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
-					break
-		elif name == 'country':
+				elif k == 'status':
+					if v == 'Rejected':
+						self.isrejected = True
+			return
+		if self.isrejected:
+			return
+		if name == 'country':
 			self.incountry = True
 		elif name == 'released':
 			self.inreleased = True
