@@ -26,7 +26,7 @@
 ##   "Rights Society". There are still many entries that haven't been changed
 ##   though.
 ## * month as 00 :: in older releases it was allowed to have the month as 00
-##   but this is no longer allowed. When editing a file that has 00 as the
+##   but this is no longer allowed. When editing an entry that has 00 as the
 ##   month Discogs will throw an error.
 ## 
 ## The results that are printed by this script are by no means complete.
@@ -188,12 +188,11 @@ class discogs_handler(xml.sax.ContentHandler):
 		if self.incountry:
 			self.country = content
 		elif self.inreleased:
-			## don't do anything right now because of the very large amount of results
-			return
-			if '-00-' in content:
-				self.count += 1
-				print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-				sys.stdout.flush()
+			if self.config['check_month']:
+				if '-00-' in content:
+					self.count += 1
+					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					sys.stdout.flush()
 		elif self.innotes:
 			if self.country == 'Spain':
 				## sometimes "deposito legal" can be found in the "notes" section
@@ -298,6 +297,16 @@ def main(argv):
 			except Exception:
 				check_spars = True
 			config_settings['check_spars_code'] = check_spars
+
+			## month is 00 check: default is False
+			try:
+				if config.get(section, 'month') == 'yes':
+					check_month = True
+				else:
+					check_month = False
+			except Exception:
+				check_month = True
+			config_settings['check_month'] = check_month
 
 			## debug: default is False
 			try:
