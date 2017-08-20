@@ -39,7 +39,7 @@
 
 import xml.sax
 import sys, os, gzip, re
-import argparse
+import argparse, configparser
 
 ## a list to store the regular expression to recognize
 ## "depósito legal" in the BaOI 'Other' field
@@ -81,18 +81,8 @@ depositores.append(re.compile(u'deopósito legal'))
 depositores.append(re.compile(u'depásito legal'))
 depositores.append(re.compile(u'legal deposit'))
 
-## some defaults
-## TODO: make configurable
-check_deposito = True
-check_rights_society = True
-check_label_code = True
-check_mastering_sid = True
-check_mould_sid = True
-check_spars_code = True
-debug = False
-
 class discogs_handler(xml.sax.ContentHandler):
-	def __init__(self):
+	def __init__(self, config_settings):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
@@ -102,11 +92,12 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.count = 0
 		self.prev = None
 		self.isrejected = False
+		self.config = config_settings
 	def startElement(self, name, attrs):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
-		if debug:
+		if self.config['debug']:
 			if self.debugcount == 300000:
 				sys.exit()
 		if name == "release":
@@ -141,37 +132,37 @@ class discogs_handler(xml.sax.ContentHandler):
 					if self.prev == self.release:
 						continue
 					self.description = v.lower()
-					if check_rights_society:
+					if self.config['check_rights_society']:
 						if self.description == "rights society":
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
-					if check_label_code:
+					if self.config['check_label_code']:
 						if self.description == "label code":
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
-					if check_spars_code:
+					if self.config['check_spars_code']:
 						if self.description == "spars code":
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- SPARS Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
-					if check_mastering_sid:
+					if self.config['check_mastering_sid']:
 						if self.description == "mastering sid code":
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
-					if check_mould_sid:
+					if self.config['check_mould_sid']:
 						if self.description == "mould sid code":
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
-					if check_deposito:
+					if self.config['check_deposito']:
 						if self.country == 'Spain':
 							found = False
 							for d in depositores:
@@ -184,7 +175,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									break
 							## debug code to print descriptions that were skipped.
 							## Useful to find misspellings of "depósito legal"
-							if debug:
+							if self.config['debug']:
 								if not found:
 									pass
 									#print(self.description, self.release)
@@ -204,10 +195,11 @@ def main(argv):
 	parser = argparse.ArgumentParser()
 
 	## the following options are provided on the commandline
-	#parser.add_argument("-c", "--config", action="store", dest="cfg", help="path to configuration file", metavar="FILE")
+	parser.add_argument("-c", "--config", action="store", dest="cfg", help="path to configuration file", metavar="FILE")
 	parser.add_argument("-d", "--datadump", action="store", dest="datadump", help="path to discogs data dump", metavar="DATA")
 	args = parser.parse_args()
 
+	## path of the gzip compressed releases file
 	if args.datadump == None:
 		parser.error("Data dump file missing")
 
@@ -217,23 +209,100 @@ def main(argv):
 	if not os.path.isfile(args.datadump):
 		parser.error("Data dump file is not a file")
 
-	#if args.cfg == None:
-	#	parser.error("Configuration file missing")
+	if args.cfg == None:
+		parser.error("Configuration file missing")
 
-	#if not os.path.exists(args.cfg):
-	#	parser.error("Configuration file does not exist")
+	if not os.path.exists(args.cfg):
+		parser.error("Configuration file does not exist")
 
-	#config = ConfigParser.ConfigParser()
-	## path of the gzip compressed releases file
+	config = configparser.ConfigParser()
+
+	configfile = open(args.cfg, 'r')
+
+	try:
+		config.readfp(configfile)
+	except Exception:
+		print("Cannot read configuration file", file=sys.stderr)
+		sys.exit(1)
+
+	config_settings = {}
+
+	for section in config.sections():
+		if section == 'cleanup':
+			try:
+				if config.get(section, 'deposito') == 'yes':
+					check_deposito = True
+				else:
+					check_deposito = False
+			except Exception:
+				check_deposito = True
+			config_settings['check_deposito'] = check_deposito
+
+			try:
+				if config.get(section, 'rights_society') == 'yes':
+					check_rights_society = True
+				else:
+					check_rights_society = False
+			except Exception:
+				check_rights_society = True
+			config_settings['check_rights_society'] = check_rights_society
+
+			try:
+				if config.get(section, 'label_code') == 'yes':
+					check_label_code = True
+				else:
+					check_label_code = False
+			except Exception:
+				check_label_code = True
+			config_settings['check_label_code'] = check_label_code
+
+			try:
+				if config.get(section, 'mastering_sid') == 'yes':
+					check_mastering_sid = True
+				else:
+					check_mastering_sid = False
+			except Exception:
+				check_mastering_sid = True
+			config_settings['check_mastering_sid'] = check_mastering_sid
+
+			try:
+				if config.get(section, 'mould_sid') == 'yes':
+					check_mould_sid = True
+				else:
+					check_mould_sid = False
+			except Exception:
+				check_mould_sid = True
+			config_settings['check_mould_sid'] = check_mould_sid
+
+			try:
+				if config.get(section, 'spars') == 'yes':
+					check_spars = True
+				else:
+					check_spars = False
+			except Exception:
+				check_spars = True
+			config_settings['check_spars_code'] = check_spars
+
+			## debug: default is False
+			try:
+				if config.get(section, 'debug') == 'yes':
+					debug = True
+				else:
+					debug = False
+			except Exception:
+				debug = False
+			config_settings['debug'] = debug
+
+	configfile.close()
 
 	parser = xml.sax.make_parser()
-	parser.setContentHandler(discogs_handler())
+	parser.setContentHandler(discogs_handler(config_settings))
 	try:
 		dumpfile = gzip.open(args.datadump, "rb")
-		parser.parse(dumpfile)
 	except Exception:
 		print("Cannot open dump file", file=sys.stderr)
 		sys.exit(1)
+	parser.parse(dumpfile)
 
 	dumpfile.close()
 
