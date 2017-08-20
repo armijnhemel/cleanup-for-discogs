@@ -83,6 +83,8 @@ depositores.append(re.compile(u'legal deposit'))
 
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
+## Some people use "Sony distribution codes" in the SPARS field:
+## https://www.discogs.com/forum/thread/339244
 validsparscodes = set(['AAD', 'ADD', 'DDD', 'DAD', 'DDDD', 'DDAD'])
 
 class discogs_handler(xml.sax.ContentHandler):
@@ -103,9 +105,6 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inreleased = False
 		self.inspars = False
 		self.innotes = False
-		if self.config['debug']:
-			if self.debugcount == 300000:
-				sys.exit()
 		if name == "release":
 			## new release entry, so reset the isrejected field
 			self.isrejected = False
@@ -136,7 +135,6 @@ class discogs_handler(xml.sax.ContentHandler):
 						## TODO: check if the format is actually a CD
 						if not v in validsparscodes:
 							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							print(v)
 				elif k == 'description':
 					if self.prev == self.release:
 						continue
