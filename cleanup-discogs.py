@@ -195,16 +195,22 @@ class discogs_handler(xml.sax.ContentHandler):
 					sys.stdout.flush()
 		elif self.innotes:
 			if self.country == 'Spain':
-				## sometimes "deposito legal" can be found in the "notes" section
-				content_lower = content.lower()
-				for d in depositores:
-					result = d.search(content_lower)
-					if result != None:
-						self.count += 1
-						found = True
-						self.prev = self.release
-						print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						break
+				if self.config['check_deposito']:
+					## sometimes "deposito legal" can be found in the "notes" section
+					content_lower = content.lower()
+					for d in depositores:
+						result = d.search(content_lower)
+						if result != None:
+							self.count += 1
+							found = True
+							self.prev = self.release
+							print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							break
+			if self.config['check_html']:
+				if '[url=http://www.discogs.com/release/' in content.lower():
+					self.count += 1
+					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+		sys.stdout.flush()
 
 def main(argv):
 	parser = argparse.ArgumentParser()
@@ -297,6 +303,15 @@ def main(argv):
 			except Exception:
 				check_spars = True
 			config_settings['check_spars_code'] = check_spars
+
+			try:
+				if config.get(section, 'html') == 'yes':
+					check_html = True
+				else:
+					check_html = False
+			except Exception:
+				check_html = True
+			config_settings['check_html'] = check_html
 
 			## month is 00 check: default is False
 			try:
