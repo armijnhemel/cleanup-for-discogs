@@ -81,6 +81,10 @@ depositores.append(re.compile(u'deopósito legal'))
 depositores.append(re.compile(u'depásito legal'))
 depositores.append(re.compile(u'legal deposit'))
 
+## https://en.wikipedia.org/wiki/SPARS_code
+## also include 4 letter code, even though not officially a SPARS code
+validsparscodes = set(['AAD', 'ADD', 'DDD', 'DAD', 'DDDD', 'DDAD'])
+
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
 		self.incountry = False
@@ -127,11 +131,12 @@ class discogs_handler(xml.sax.ContentHandler):
 				if k == 'type':
 					if v == 'SPARS Code':
 						self.inspars = True
-					pass
 				elif k == 'value':
 					if self.inspars:
-						## check SPARS code here
-						pass
+						## TODO: check if the format is actually a CD
+						if not v in validsparscodes:
+							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							print(v)
 				elif k == 'description':
 					if self.prev == self.release:
 						continue
@@ -152,7 +157,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						if self.description == "spars code":
 							self.count += 1
 							self.prev = self.release
-							print('%8d -- SPARS Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
 					if self.config['check_mastering_sid']:
 						if self.description == "mastering sid code":
