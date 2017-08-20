@@ -209,7 +209,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			if self.config['check_html']:
 				if '[url=http://www.discogs.com/release/' in content.lower():
 					self.count += 1
-					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					print('%8d -- Link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		sys.stdout.flush()
 
 def main(argv):
