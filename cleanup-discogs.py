@@ -86,6 +86,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
+		self.innotes = False
 		self.release = None
 		self.country = None
 		self.debugcount = 0
@@ -97,6 +98,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
+		self.innotes = False
 		if self.config['debug']:
 			if self.debugcount == 300000:
 				sys.exit()
@@ -117,6 +119,8 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.incountry = True
 		elif name == 'released':
 			self.inreleased = True
+		elif name == 'notes':
+			self.innotes = True
 		elif name == 'identifier':
 			isdeposito = False
 			for (k,v) in attrs.items():
@@ -171,7 +175,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.count += 1
 									found = True
 									self.prev = self.release
-									print('%8d -- Depósito Legal: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									break
 							## debug code to print descriptions that were skipped.
 							## Useful to find misspellings of "depósito legal"
@@ -190,6 +194,18 @@ class discogs_handler(xml.sax.ContentHandler):
 				self.count += 1
 				print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				sys.stdout.flush()
+		elif self.innotes:
+			if self.country == 'Spain':
+				## sometimes "deposito legal" can be found in the "notes" section
+				content_lower = content.lower()
+				for d in depositores:
+					result = d.search(content_lower)
+					if result != None:
+						self.count += 1
+						found = True
+						self.prev = self.release
+						print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						break
 
 def main(argv):
 	parser = argparse.ArgumentParser()
