@@ -15,3 +15,11 @@ It checks the 'notes' field for:
 
 * depósito legal
 * direct links to releases in discogs using url formatting which can possibly be replaced with release formatting
+
+Usage:
+
+    $ python3 cleanup-discogs.py -c /path/to/config -d /path/to/discogs/dump
+
+for example:
+
+    $ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz
