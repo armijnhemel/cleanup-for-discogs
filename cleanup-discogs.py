@@ -32,6 +32,10 @@
 ## * month as 00 :: in older releases it was allowed to have the month as 00
 ##   but this is no longer allowed. When editing an entry that has 00 as the
 ##   month Discogs will throw an error.
+## * hyperlinks :: in older releases it was OK to have normal HTML hyperlinks
+###  but these have been replaced by markup:
+##   https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
+##   There are still many releases where old hyperlinks are used.
 ## 
 ## The results that are printed by this script are by no means complete.
 ##
@@ -51,9 +55,20 @@ depositores = []
 
 ## a few variants of "depósito legal" found in the discogs datadump
 ## All regular expressions are lower case.
-## These regular expressions can probably be made a bit simpler
-depositores.append(re.compile(u'des?p?ós*itl?o?\s*le?gal?\.?'))
-depositores.append(re.compile(u'des?posito legt?al\.?'))
+## First the most common ones
+depositores.append(re.compile(u'de?s?p*ós*i?r?tl?o?i?\s*l+e?g?al?\.?'))
+depositores.append(re.compile(u'des?p?os+ito?\s+legt?al?\.?'))
+depositores.append(re.compile(u'legal? des?posit'))
+depositores.append(re.compile(u'dip. legal'))
+depositores.append(re.compile(u'dip. leg.'))
+depositores.append(re.compile(u'dipòsit legal'))
+depositores.append(re.compile(u'dipósit legal'))
+
+## then a slew of misspellings and variants
+depositores.append(re.compile(u'deposito légal'))
+depositores.append(re.compile(u'deposito legál'))
+depositores.append(re.compile(u'depósito legl'))
+depositores.append(re.compile(u'depósito lgeal'))
 depositores.append(re.compile(u'depodito legal\.?'))
 depositores.append(re.compile(u'depòsito? legal\.?'))
 depositores.append(re.compile(u'déposito legal\.?'))
@@ -68,6 +83,7 @@ depositores.append(re.compile(u'deposrito legal'))
 depositores.append(re.compile(u'deoósito legal'))
 depositores.append(re.compile(u'depóaito legal'))
 depositores.append(re.compile(u'depõsito legal'))
+depositores.append(re.compile(u'depñosito legal'))
 depositores.append(re.compile(u'deposiro legal\.?'))
 depositores.append(re.compile(u'depósito légal'))
 depositores.append(re.compile(u'déposito légal'))
@@ -83,7 +99,14 @@ depositores.append(re.compile(u'depósite legal'))
 depositores.append(re.compile(u'sepósito legal'))
 depositores.append(re.compile(u'deopósito legal'))
 depositores.append(re.compile(u'depásito legal'))
-depositores.append(re.compile(u'legal deposit'))
+depositores.append(re.compile(u'depôsito legal'))
+depositores.append(re.compile(u'depỏsito legal'))
+depositores.append(re.compile(u'dep\'osito legal'))
+depositores.append(re.compile(u'legal? des?posit'))
+depositores.append(re.compile(u'legak des?posit'))
+depositores.append(re.compile(u'legai des?posit'))
+depositores.append(re.compile(u'legal depos?t'))
+depositores.append(re.compile(u'legal dep\.'))
 
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
@@ -161,6 +184,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
+					if self.config['check_isrc']:
+						if self.description.startswith('isrc'):
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
 					if self.config['check_mastering_sid']:
 						if self.description == "mastering sid code":
 							self.count += 1
@@ -188,8 +217,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							## Useful to find misspellings of "depósito legal"
 							if self.config['debug']:
 								if not found:
-									pass
-									#print(self.description, self.release)
+									print(self.description, self.release)
 					sys.stdout.flush()
 	def characters(self, content):
 		if self.incountry:
@@ -214,6 +242,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							break
 			if self.config['check_html']:
+				## see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
 				if '&lt;a href="http://www.discogs.com/release/' in content.lower():
 					self.count += 1
 					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -286,6 +315,15 @@ def main(argv):
 			except Exception:
 				check_label_code = True
 			config_settings['check_label_code'] = check_label_code
+
+			try:
+				if config.get(section, 'isrc') == 'yes':
+					check_isrc = True
+				else:
+					check_isrc = False
+			except Exception:
+				check_isrc = True
+			config_settings['check_isrc'] = check_isrc
 
 			try:
 				if config.get(section, 'mastering_sid') == 'yes':
