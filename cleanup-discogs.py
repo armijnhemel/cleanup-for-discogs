@@ -108,6 +108,9 @@ depositores.append(re.compile(u'legai des?posit'))
 depositores.append(re.compile(u'legal depos?t'))
 depositores.append(re.compile(u'legal dep\.'))
 
+## deposito values, does not capture everything
+depositovalre = re.compile(u'[bmv][\s\.\-]\s*\d{2}\.?\d{3}\s*[\-\./]\s*(?:19|20)?\d{2}')
+
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
 ## Some people use "Sony distribution codes" in the SPARS field:
@@ -213,6 +216,15 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									break
+							## sometimes the depósito value itself can be found in the free text field
+							if not found:
+								deposres = depositovalre.match(self.description)
+								if deposres != None:
+									self.count += 1
+									found = True
+									self.prev = self.release
+									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+
 							## debug code to print descriptions that were skipped.
 							## Useful to find misspellings of "depósito legal"
 							if self.config['debug']:
