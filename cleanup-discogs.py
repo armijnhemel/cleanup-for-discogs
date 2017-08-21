@@ -3,6 +3,10 @@
 ## Tool to discover 'smells' in the Discogs data dump. It prints a list of URLs
 ## of releases that need to be fixed.
 ## 
+## Why this happens:
+##
+## https://www.well.com/~doctorow/metacrap.htm
+##
 ## Currently the following smells can be discovered:
 ##
 ## * depósito legal :: until recently the "depósito legal" data (for Spanish
@@ -210,9 +214,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							break
 			if self.config['check_html']:
+				if '&lt;a href="http://www.discogs.com/release/' in content.lower():
+					self.count += 1
+					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				if '[url=http://www.discogs.com/release/' in content.lower():
 					self.count += 1
-					print('%8d -- Link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		sys.stdout.flush()
 
 def main(argv):

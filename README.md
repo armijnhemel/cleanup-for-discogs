@@ -8,3 +8,10 @@ Currently checks the BaOI fields from Discogs and reports errors for (amongst ot
 * SPARS code
 * label code
 * rights society
+* mastering SID code
+* mould SID code
+
+It checks the 'notes' field for:
+
+* depósito legal
+* direct links to releases in discogs using url formatting which can possibly be replaced with release formatting
