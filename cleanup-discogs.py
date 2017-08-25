@@ -109,7 +109,7 @@ depositores.append(re.compile(u'legal depos?t'))
 depositores.append(re.compile(u'legal dep\.'))
 
 ## deposito values, does not capture everything
-depositovalre = re.compile(u'[bmv][\s\.\-]\s*\d{2}\.?\d{3}\s*[\-\./]\s*(?:19|20)?\d{2}')
+depositovalre = re.compile(u'[bcmv][\s\.\-]\s*\d{2}\.?\d{3}\s*[\-\./]\s*(?:19|20)?\d{2}')
 
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
