@@ -111,6 +111,9 @@ depositores.append(re.compile(u'legal dep\.'))
 ## deposito values, does not capture everything
 depositovalre = re.compile(u'[bcmvz][\s\.\-]\s*\d{2}\.?\d{3}\s*[\-\./]\s*(?:19|20)?\d{2}')
 
+## label code
+labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
+
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
 ## Some people use "Sony distribution codes" in the SPARS field:
@@ -122,6 +125,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
+		self.indeposito = False
+		self.inlabelcode = False
 		self.innotes = False
 		self.release = None
 		self.country = None
@@ -134,6 +139,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
+		self.inlabelcode = False
+		self.indeposito = False
 		self.innotes = False
 		if name == "release":
 			## new release entry, so reset the isrejected field
@@ -160,11 +167,24 @@ class discogs_handler(xml.sax.ContentHandler):
 				if k == 'type':
 					if v == 'SPARS Code':
 						self.inspars = True
+					elif v == 'Depósito Legal':
+						self.indeposito = True
+					elif v == 'Label Code':
+						self.inlabelcode = True
 				elif k == 'value':
 					if self.inspars:
 						## TODO: check if the format is actually a CD
 						if not v in validsparscodes:
 							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					elif self.inlabelcode:
+						if labelcodere.match(v.lower()) == None:
+							print(v)
+							print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					if not self.indeposito:
+						if v.startswith("Depósito"):
+							print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						elif v.startswith("D.L."):
+							print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				elif k == 'description':
 					if self.prev == self.release:
 						continue
