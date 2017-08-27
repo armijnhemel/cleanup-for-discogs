@@ -173,17 +173,20 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.inlabelcode = True
 				elif k == 'value':
 					if self.inspars:
-						## TODO: check if the format is actually a CD
-						if not v in validsparscodes:
-							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						if self.config['check_spars_code']:
+							## TODO: check if the format is actually a CD
+							if not v in validsparscodes:
+								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					elif self.inlabelcode:
-						if labelcodere.match(v.lower()) == None:
-							print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						if self.config['check_label_code']:
+							if labelcodere.match(v.lower()) == None:
+								print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					if not self.indeposito:
-						if v.startswith("Depósito"):
-							print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						elif v.startswith("D.L."):
-							print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						if self.config['check_deposito']:
+							if v.startswith("Depósito"):
+								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							elif v.startswith("D.L."):
+								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				elif k == 'description':
 					if self.prev == self.release:
 						continue
@@ -244,11 +247,13 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 
+							if found:
+								continue
+
 							## debug code to print descriptions that were skipped.
 							## Useful to find misspellings of "depósito legal"
 							if self.config['debug']:
-								if not found:
-									print(self.description, self.release)
+								print(self.description, self.release)
 					sys.stdout.flush()
 	def characters(self, content):
 		if self.incountry:
