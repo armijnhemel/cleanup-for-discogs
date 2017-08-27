@@ -178,7 +178,6 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					elif self.inlabelcode:
 						if labelcodere.match(v.lower()) == None:
-							print(v)
 							print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					if not self.indeposito:
 						if v.startswith("Depósito"):
