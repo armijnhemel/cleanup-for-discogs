@@ -127,6 +127,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inspars = False
 		self.indeposito = False
 		self.inlabelcode = False
+		self.inrightssociety = False
 		self.innotes = False
 		self.release = None
 		self.country = None
@@ -140,6 +141,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inreleased = False
 		self.inspars = False
 		self.inlabelcode = False
+		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
 		if name == "release":
@@ -171,6 +173,8 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.indeposito = True
 					elif v == 'Label Code':
 						self.inlabelcode = True
+					elif v == 'Rights Society':
+						self.inrightssociety = True
 				elif k == 'value':
 					if self.inspars:
 						if self.config['check_spars_code']:
@@ -181,6 +185,10 @@ class discogs_handler(xml.sax.ContentHandler):
 						if self.config['check_label_code']:
 							if labelcodere.match(v.lower()) == None:
 								print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					elif self.inrightssociety:
+						if self.config['check_label_code']:
+							if v.startswith('LC'):
+								print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					if not self.indeposito:
 						if self.config['check_deposito']:
 							if v.startswith("Depósito"):
