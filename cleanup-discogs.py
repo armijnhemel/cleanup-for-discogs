@@ -127,6 +127,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inspars = False
 		self.indeposito = False
 		self.inlabelcode = False
+		self.inbarcode = False
 		self.inrightssociety = False
 		self.innotes = False
 		self.release = None
@@ -141,6 +142,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inreleased = False
 		self.inspars = False
 		self.inlabelcode = False
+		self.inbarcode = False
 		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
@@ -175,25 +177,49 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.inlabelcode = True
 					elif v == 'Rights Society':
 						self.inrightssociety = True
+					elif v == 'Barcode':
+						self.inbarcode = True
 				elif k == 'value':
 					if self.inspars:
 						if self.config['check_spars_code']:
 							## TODO: check if the format is actually a CD
 							if not v in validsparscodes:
+								self.count += 1
+								self.prev = self.release
 								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					elif self.inlabelcode:
 						if self.config['check_label_code']:
 							if labelcodere.match(v.lower()) == None:
+								self.count += 1
+								self.prev = self.release
 								print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					elif self.inrightssociety:
 						if self.config['check_label_code']:
 							if v.startswith('LC'):
+								self.count += 1
+								self.prev = self.release
 								print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					elif self.inbarcode:
+						if self.config['check_label_code']:
+							if v.lower().startswith('lc'):
+								if labelcodere.match(v.lower()) != None:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						if self.config['check_deposito']:
+							if depositovalre.match(v.lower()) != None:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					if not self.indeposito:
 						if self.config['check_deposito']:
 							if v.startswith("Depósito"):
+								self.count += 1
+								self.prev = self.release
 								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							elif v.startswith("D.L."):
+								self.count += 1
+								self.prev = self.release
 								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				elif k == 'description':
 					if self.prev == self.release:
