@@ -180,6 +180,8 @@ class discogs_handler(xml.sax.ContentHandler):
 					elif v == 'Barcode':
 						self.inbarcode = True
 				elif k == 'value':
+					if self.prev == self.release:
+						continue
 					if self.inspars:
 						if self.config['check_spars_code']:
 							## TODO: check if the format is actually a CD
