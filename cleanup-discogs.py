@@ -207,10 +207,11 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						if self.config['check_deposito']:
-							if depositovalre.match(v.lower()) != None:
-								self.count += 1
-								self.prev = self.release
-								print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							if self.country == 'Spain':
+								if depositovalre.match(v.lower()) != None:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					if not self.indeposito:
 						if self.config['check_deposito']:
 							if v.startswith("Depósito"):
