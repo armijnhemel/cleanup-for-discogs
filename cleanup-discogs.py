@@ -246,6 +246,11 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
+						if self.description == "labelcode":
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
 					if self.config['check_spars_code']:
 						if self.description == "spars code":
 							self.count += 1
