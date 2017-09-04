@@ -224,6 +224,12 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					else:
+						if self.config['check_deposito']:
+							if v.endswith('.'):
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				elif k == 'description':
 					if self.prev == self.release:
 						continue
