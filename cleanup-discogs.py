@@ -120,6 +120,9 @@ labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
 ## https://www.discogs.com/forum/thread/339244
 validsparscodes = set(['AAD', 'ADD', 'DDD', 'DAD', 'DDDD', 'DDAD'])
 
+## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
+rights_societies = ['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA']
+
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
 		self.incountry = False
@@ -215,11 +218,12 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						if self.config['check_rights_society']:
-							if self.country == 'Spain':
-								if v.replace('.', '') == "SGAE":
+							for r in rights_societies:
+								if v.replace('.', '') == r:
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									break
 					if not self.indeposito:
 						if self.country == 'Spain':
 							if self.config['check_deposito']:
