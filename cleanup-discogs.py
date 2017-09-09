@@ -247,7 +247,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						continue
 					self.description = v.lower()
 					if self.config['check_rights_society']:
-						if self.description == "rights society":
+						if self.description in ["rights society", "rights societies", "right society"]:
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
