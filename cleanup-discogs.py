@@ -290,24 +290,24 @@ class discogs_handler(xml.sax.ContentHandler):
 					if self.country == 'Spain':
 						if self.config['check_deposito']:
 							found = False
-							for d in depositores:
-								result = d.search(self.description)
-								if result != None:
-									self.count += 1
-									found = True
-									self.prev = self.release
-									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									break
+							if v == 'Depósito Legal':
+								found = True
+							else:
+								for d in depositores:
+									result = d.search(self.description)
+									if result != None:
+										found = True
+										break
 							## sometimes the depósito value itself can be found in the free text field
 							if not found:
 								deposres = depositovalre.match(self.description)
 								if deposres != None:
-									self.count += 1
 									found = True
-									self.prev = self.release
-									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 
 							if found:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								continue
 
 							## debug code to print descriptions that were skipped.
