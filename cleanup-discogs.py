@@ -152,6 +152,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		if name == "release":
 			## new release entry, so reset the isrejected field
 			self.isrejected = False
+			self.isdraft = False
+			self.isdeleted = False
 			self.debugcount += 1
 			for (k,v) in attrs.items():
 				if k == 'id':
@@ -159,8 +161,12 @@ class discogs_handler(xml.sax.ContentHandler):
 				elif k == 'status':
 					if v == 'Rejected':
 						self.isrejected = True
+					elif v == 'Draft':
+						self.isdraft = True
+					elif v == 'Deleted':
+						self.isdeleted = True
 			return
-		if self.isrejected:
+		if self.isrejected or self.isdraft or self.isdeleted:
 			return
 		if name == 'country':
 			self.incountry = True
