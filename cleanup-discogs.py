@@ -183,8 +183,9 @@ class discogs_handler(xml.sax.ContentHandler):
 					elif v == 'Barcode':
 						self.inbarcode = True
 				elif k == 'value':
-					if self.prev == self.release:
-						continue
+					if not self.config['reportall']
+						if self.prev == self.release:
+							continue
 					if self.inspars:
 						if self.config['check_spars_code']:
 							## TODO: check if the format is actually a CD
@@ -243,8 +244,9 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				elif k == 'description':
-					if self.prev == self.release:
-						continue
+					if not self.config['reportall']:
+						if self.prev == self.release:
+							continue
 					self.description = v.lower()
 					if self.config['check_rights_society']:
 						if self.description in ["rights society", "rights societies", "right society"]:
@@ -476,6 +478,16 @@ def main(argv):
 			except Exception:
 				check_month = True
 			config_settings['check_month'] = check_month
+
+			## reporting all: default is False
+			try:
+				if config.get(section, 'reportall') == 'yes':
+					reportall = True
+				else:
+					reportall = False
+			except Exception:
+				reportall = True
+			config_settings['reportall'] = reportall
 
 			## debug: default is False
 			try:
