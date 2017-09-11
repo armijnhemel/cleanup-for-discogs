@@ -189,7 +189,7 @@ class discogs_handler(xml.sax.ContentHandler):
 					elif v == 'Barcode':
 						self.inbarcode = True
 				elif k == 'value':
-					if not self.config['reportall']
+					if not self.config['reportall']:
 						if self.prev == self.release:
 							continue
 					if self.inspars:
