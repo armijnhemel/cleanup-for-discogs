@@ -139,6 +139,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.count = 0
 		self.prev = None
 		self.isrejected = False
+		self.isdraft = False
+		self.isdeleted = False
 		self.config = config_settings
 	def startElement(self, name, attrs):
 		self.incountry = False
