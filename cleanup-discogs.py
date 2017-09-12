@@ -213,6 +213,9 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								continue
+						if self.config['check_rights_society']:
+							pass
 					elif self.inbarcode:
 						if self.config['check_label_code']:
 							if v.lower().startswith('lc'):
@@ -228,7 +231,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						if self.config['check_rights_society']:
 							for r in rights_societies:
-								if v.replace('.', '') == r:
+								if v.replace('.', '') == r or v.replace(' ', '') == r:
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
