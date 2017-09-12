@@ -487,7 +487,7 @@ def main(argv):
 				else:
 					check_month = False
 			except Exception:
-				check_month = True
+				check_month = False
 			config_settings['check_month'] = check_month
 
 			## reporting all: default is False
@@ -497,7 +497,7 @@ def main(argv):
 				else:
 					reportall = False
 			except Exception:
-				reportall = True
+				reportall = False
 			config_settings['reportall'] = reportall
 
 			## debug: default is False
