@@ -157,6 +157,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.isdraft = False
 			self.isdeleted = False
 			self.debugcount += 1
+			self.iscd = False
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
@@ -172,6 +173,11 @@ class discogs_handler(xml.sax.ContentHandler):
 			return
 		if name == 'country':
 			self.incountry = True
+		elif name == 'format':
+			for (k,v) in attrs.items():
+				if k == 'name':
+					if v == 'CD':
+						self.iscd = True
 		elif name == 'released':
 			self.inreleased = True
 		elif name == 'notes':
