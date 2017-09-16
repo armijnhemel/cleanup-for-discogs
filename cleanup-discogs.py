@@ -109,7 +109,7 @@ depositores.append(re.compile(u'legal depos?t'))
 depositores.append(re.compile(u'legal dep\.'))
 
 ## deposito values, does not capture everything
-depositovalre = re.compile(u'[abcmovz][\s\.\-/_]\s*\d{2}\.?\d{3}\s*[\-\./_]\s*(?:19|20)?\d{2}')
+depositovalre = re.compile(u'[abcmovz][\s\.\-/_:]\s*\d{2}\.?\d{3}\s*[\-\./_]\s*(?:19|20)?\d{2}')
 
 ## label code
 labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
