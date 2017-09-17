@@ -294,6 +294,16 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
+						if 'international standard recording code' in self.description:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
+						if 'isrc' in self.description:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
 					if self.config['check_mastering_sid']:
 						if self.description == "mastering sid code":
 							self.count += 1
