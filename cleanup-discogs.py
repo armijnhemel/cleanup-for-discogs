@@ -142,7 +142,40 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.isdraft = False
 		self.isdeleted = False
 		self.config = config_settings
+		self.contentbuffer = ''
 	def startElement(self, name, attrs):
+		## first process the contentbuffer
+		if self.incountry:
+			self.country = self.contentbuffer
+		elif self.inreleased:
+			if self.config['check_month']:
+				if '-00-' in self.contentbuffer:
+					self.count += 1
+					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					sys.stdout.flush()
+		elif self.innotes:
+			if self.country == 'Spain':
+				if self.config['check_deposito']:
+					## sometimes "deposito legal" can be found in the "notes" section
+					content_lower = self.contentbuffer.lower()
+					for d in depositores:
+						result = d.search(content_lower)
+						if result != None:
+							self.count += 1
+							found = True
+							self.prev = self.release
+							print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							break
+			if self.config['check_html']:
+				## see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
+				if '&lt;a href="http://www.discogs.com/release/' in self.contentbuffer.lower():
+					self.count += 1
+					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+			if self.config['check_url']:
+				if '[url=http://www.discogs.com/release/' in self.contentbuffer.lower():
+					self.count += 1
+					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+		sys.stdout.flush()
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
@@ -151,6 +184,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
+		self.contentbuffer = ''
 		if name == "release":
 			## new release entry, so reset the isrejected field
 			self.isrejected = False
@@ -350,37 +384,7 @@ class discogs_handler(xml.sax.ContentHandler):
 								print(self.description, self.release)
 					sys.stdout.flush()
 	def characters(self, content):
-		if self.incountry:
-			self.country = content
-		elif self.inreleased:
-			if self.config['check_month']:
-				if '-00-' in content:
-					self.count += 1
-					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-					sys.stdout.flush()
-		elif self.innotes:
-			if self.country == 'Spain':
-				if self.config['check_deposito']:
-					## sometimes "deposito legal" can be found in the "notes" section
-					content_lower = content.lower()
-					for d in depositores:
-						result = d.search(content_lower)
-						if result != None:
-							self.count += 1
-							found = True
-							self.prev = self.release
-							print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							break
-			if self.config['check_html']:
-				## see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
-				if '&lt;a href="http://www.discogs.com/release/' in content.lower():
-					self.count += 1
-					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-			if self.config['check_url']:
-				if '[url=http://www.discogs.com/release/' in content.lower():
-					self.count += 1
-					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-		sys.stdout.flush()
+		self.contentbuffer += content
 
 def main(argv):
 	parser = argparse.ArgumentParser()
