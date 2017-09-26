@@ -338,6 +338,18 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
+						if 'irsc' in self.description:
+							## misspelling
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
+						if 'iscr' in self.description:
+							## misspelling
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							continue
 						if 'international standard code recording' in self.description:
 							self.count += 1
 							self.prev = self.release
