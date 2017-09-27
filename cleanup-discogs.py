@@ -120,6 +120,12 @@ labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
 ## https://www.discogs.com/forum/thread/339244
 validsparscodes = set(['AAD', 'ADD', 'DDD', 'DAD', 'DDDD', 'DDAD'])
 
+spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
+"sparse code", "sparc code", "spars.code", "sparcs", "sparsc code",
+"spard code", "sparks code", "sparrs code", "sparscode", "sparce code",
+"saprs-code", "saprs code", "sars code", "sprs code", "spas code",
+"pars code", "spars  code", "sparr code", "sparts code", "spras code"])
+
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
 rights_societies = ['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA']
 
@@ -236,7 +242,11 @@ class discogs_handler(xml.sax.ContentHandler):
 							continue
 					if self.inspars:
 						if self.config['check_spars_code']:
-							## TODO: check if the format is actually a CD
+							## TODO: check if the format is actually a CD or CD-like medium
+							#if not self.iscd:
+							#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
+							#	self.count += 1
+							#	self.prev = self.release
 							if not v in validsparscodes:
 								self.count += 1
 								self.prev = self.release
@@ -317,11 +327,17 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
 					if self.config['check_spars_code']:
-						if self.description == "spars code":
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
+						if not self.inspars:
+							sparsfound = False
+							for spars in spars_ftf:
+								if spars in self.description:
+									sparsfound = True
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									break
+							if sparsfound:
+								continue
 					if self.config['check_isrc']:
 						if self.description.startswith('isrc'):
 							self.count += 1
