@@ -134,6 +134,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
+		self.inother = False
 		self.indeposito = False
 		self.inlabelcode = False
 		self.inbarcode = False
@@ -185,6 +186,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
+		self.inother = False
 		self.inlabelcode = False
 		self.inbarcode = False
 		self.inrightssociety = False
@@ -236,6 +238,8 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.inrightssociety = True
 					elif v == 'Barcode':
 						self.inbarcode = True
+					elif v == 'Other':
+						self.inother = True
 				elif k == 'value':
 					if not self.config['reportall']:
 						if self.prev == self.release:
@@ -251,7 +255,14 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-					elif self.inlabelcode:
+					elif not self.inother:
+						if self.config['check_spars_code']:
+							if v in validsparscodes:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								continue
+					if self.inlabelcode:
 						if self.config['check_label_code']:
 							if labelcodere.match(v.lower()) == None:
 								self.count += 1
@@ -334,7 +345,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									sparsfound = True
 									self.count += 1
 									self.prev = self.release
-									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)), spars)
 									break
 							if sparsfound:
 								continue
