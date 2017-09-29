@@ -126,6 +126,8 @@ spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 "saprs-code", "saprs code", "sars code", "sprs code", "spas code",
 "pars code", "spars  code", "sparr code", "sparts code", "spras code"])
 
+label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
+
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
 rights_societies = ['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA']
 
@@ -255,7 +257,8 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-					elif not self.inother:
+								continue
+					if not self.inother:
 						if self.config['check_spars_code']:
 							if v in validsparscodes:
 								self.count += 1
@@ -268,7 +271,8 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-					elif self.inrightssociety:
+								continue
+					if self.inrightssociety:
 						if self.config['check_label_code']:
 							if v.startswith('LC'):
 								self.count += 1
@@ -277,19 +281,21 @@ class discogs_handler(xml.sax.ContentHandler):
 								continue
 						if self.config['check_rights_society']:
 							pass
-					elif self.inbarcode:
+					if self.inbarcode:
 						if self.config['check_label_code']:
 							if v.lower().startswith('lc'):
 								if labelcodere.match(v.lower()) != None:
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 						if self.country == 'Spain':
 							if self.config['check_deposito']:
 								if depositovalre.match(v.lower()) != None:
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 						if self.config['check_rights_society']:
 							for r in rights_societies:
 								if v.replace('.', '') == r or v.replace(' ', '') == r:
@@ -304,10 +310,12 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 								elif v.startswith("D.L."):
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 					else:
 						if self.country == 'Spain':
 							if self.config['check_deposito']:
@@ -315,6 +323,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.count += 1
 									self.prev = self.release
 									print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 				elif k == 'description':
 					if not self.config['reportall']:
 						if self.prev == self.release:
@@ -327,12 +336,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							continue
 					if self.config['check_label_code']:
-						if self.description == "label code":
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-						if self.description == "labelcode":
+						if self.description in label_code_ftf:
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -345,7 +349,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									sparsfound = True
 									self.count += 1
 									self.prev = self.release
-									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)), spars)
+									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									break
 							if sparsfound:
 								continue
