@@ -23,3 +23,7 @@ Usage:
 for example:
 
     $ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz
+
+More background information about these scripts available on my blog:
+
+https://vinylanddata.blogspot.com/
