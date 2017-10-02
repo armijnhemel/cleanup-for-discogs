@@ -141,9 +141,11 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inlabelcode = False
 		self.inbarcode = False
 		self.inrightssociety = False
+		self.intracklist = False
 		self.innotes = False
 		self.release = None
 		self.country = None
+		self.indescription = False
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
@@ -195,6 +197,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
+		self.indescription = False
+		self.intracklist = False
 		self.contentbuffer = ''
 		if name == "release":
 			## new release entry, so reset the isrejected field
@@ -218,11 +222,15 @@ class discogs_handler(xml.sax.ContentHandler):
 			return
 		if name == 'country':
 			self.incountry = True
+		elif name == 'tracklist':
+			self.intracklist = True
 		elif name == 'format':
 			for (k,v) in attrs.items():
 				if k == 'name':
 					if v == 'CD':
 						self.iscd = True
+		elif name == 'description':
+			self.indescription = True
 		elif name == 'released':
 			self.inreleased = True
 		elif name == 'notes':
