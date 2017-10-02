@@ -118,7 +118,7 @@ labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
 ## also include 4 letter code, even though not officially a SPARS code
 ## Some people use "Sony distribution codes" in the SPARS field:
 ## https://www.discogs.com/forum/thread/339244
-validsparscodes = set(['AAD', 'ADD', 'DDD', 'DAD', 'DDDD', 'DDAD'])
+validsparscodes = set(['aad', 'add', 'ddd', 'dad', 'dddd', 'ddad'])
 
 spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 "sparse code", "sparc code", "spars.code", "sparcs", "sparsc code",
@@ -147,6 +147,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
+		self.iscd = False
 		self.isrejected = False
 		self.isdraft = False
 		self.isdeleted = False
@@ -253,18 +254,30 @@ class discogs_handler(xml.sax.ContentHandler):
 							#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
 							#	self.count += 1
 							#	self.prev = self.release
-							if not v in validsparscodes:
+							if not v.lower() in validsparscodes:
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								continue
-					if not self.inother:
+					elif not self.inother:
 						if self.config['check_spars_code']:
-							if v in validsparscodes:
+							if v.lower() in validsparscodes:
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								continue
+							if 'd' in v.lower():
+								## just check a few other possibilities of possible SPARS codes
+								if v.lower().replace(' ', '') in validsparscodes:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
+								if v.lower().replace('.', '') in validsparscodes:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 					if self.inlabelcode:
 						if self.config['check_label_code']:
 							if labelcodere.match(v.lower()) == None:
