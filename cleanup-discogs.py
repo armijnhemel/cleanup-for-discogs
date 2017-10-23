@@ -108,8 +108,11 @@ depositores.append(re.compile(u'legai des?posit'))
 depositores.append(re.compile(u'legal depos?t'))
 depositores.append(re.compile(u'legal dep\.'))
 
+## basque: http://www.euskadi.eus/deposito-legal/web01-a2libzer/es/impresion.html
+depositores.append(re.compile(u'l\.g\.'))
+
 ## deposito values, does not capture everything
-depositovalre = re.compile(u'[abcmovz][\s\.\-/_:]\s*\d{2}\.?\d{3}\s*[\-\./_]\s*(?:19|20)?\d{2}')
+depositovalre = re.compile(u'[abcjlmopstvz][\s\.\-/_:]\s*\d{2}\.?\d{3}\s*[\-\./_]\s*(?:19|20)?\d{2}')
 
 ## label code
 labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
@@ -118,13 +121,15 @@ labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
 ## also include 4 letter code, even though not officially a SPARS code
 ## Some people use "Sony distribution codes" in the SPARS field:
 ## https://www.discogs.com/forum/thread/339244
-validsparscodes = set(['aad', 'add', 'ddd', 'dad', 'dddd', 'ddad'])
+validsparscodes = set(['aaa', 'aad', 'add', 'ddd', 'dad', 'dda', 'dddd', 'ddad'])
 
 spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 "sparse code", "sparc code", "spars.code", "sparcs", "sparsc code",
 "spard code", "sparks code", "sparrs code", "sparscode", "sparce code",
 "saprs-code", "saprs code", "sars code", "sprs code", "spas code",
-"pars code", "spars  code", "sparr code", "sparts code", "spras code"])
+"pars code", "spars  code", "sparr code", "sparts code", "spras code",
+"spars cod", "spars cde", "spars cpde", "spars cods", "spars codde", "spars ccde"
+"spars coe", "spars coce", "spars coda", "spars"])
 
 label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
 
@@ -149,10 +154,12 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
+		self.formattexts = []
 		self.iscd = False
 		self.isrejected = False
 		self.isdraft = False
 		self.isdeleted = False
+		self.depositofound = False
 		self.config = config_settings
 		self.contentbuffer = ''
 	def startElement(self, name, attrs):
@@ -166,8 +173,12 @@ class discogs_handler(xml.sax.ContentHandler):
 					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					sys.stdout.flush()
 		elif self.innotes:
+			if '카지노' in self.contentbuffer:
+				## Korean casino spam that pops up every once in a while
+				print('Spam: https://www.discogs.com/release/%s' % str(self.release))
+				sys.stdout.flush()
 			if self.country == 'Spain':
-				if self.config['check_deposito']:
+				if self.config['check_deposito'] and not self.depositofound:
 					## sometimes "deposito legal" can be found in the "notes" section
 					content_lower = self.contentbuffer.lower()
 					for d in depositores:
@@ -205,8 +216,11 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.isrejected = False
 			self.isdraft = False
 			self.isdeleted = False
+			self.depositofound = False
+			self.seentracklist = False
 			self.debugcount += 1
 			self.iscd = False
+			self.formattexts = []
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
@@ -223,7 +237,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		if name == 'country':
 			self.incountry = True
 		elif name == 'tracklist':
-			self.intracklist = True
+			self.entracklist = True
 		elif name == 'format':
 			for (k,v) in attrs.items():
 				if k == 'name':
@@ -243,6 +257,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.inspars = True
 					elif v == 'Depósito Legal':
 						self.indeposito = True
+						self.depositofound = True
 					elif v == 'Label Code':
 						self.inlabelcode = True
 					elif v == 'Rights Society':
@@ -288,6 +303,11 @@ class discogs_handler(xml.sax.ContentHandler):
 									continue
 					if self.inlabelcode:
 						if self.config['check_label_code']:
+							## check how many people use 'O' instead of '0'
+							if v.lower().startswith('lc'):
+								if 'O' in v:
+									print('Spelling error in Label Code): https://www.discogs.com/release/%s' % str(self.release))
+									sys.stdout.flush()
 							if labelcodere.match(v.lower()) == None:
 								self.count += 1
 								self.prev = self.release
@@ -295,13 +315,21 @@ class discogs_handler(xml.sax.ContentHandler):
 								continue
 					if self.inrightssociety:
 						if self.config['check_label_code']:
-							if v.startswith('LC'):
-								self.count += 1
-								self.prev = self.release
-								print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								continue
+							if v.lower().startswith('lc'):
+								if labelcodere.match(v.lower()) != None:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									continue
 						if self.config['check_rights_society']:
 							pass
+					elif not self.inother:
+						for r in rights_societies:
+							if v.replace('.', '') == r or v.replace(' ', '') == r:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								break
 					if self.inbarcode:
 						if self.config['check_label_code']:
 							if v.lower().startswith('lc'):
@@ -311,7 +339,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									continue
 						if self.country == 'Spain':
-							if self.config['check_deposito']:
+							if self.config['check_deposito'] and not self.depositofound:
 								if depositovalre.match(v.lower()) != None:
 									self.count += 1
 									self.prev = self.release
@@ -424,6 +452,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							found = False
 							if v == 'Depósito Legal':
 								found = True
+								self.depositofound = True
 							else:
 								for d in depositores:
 									result = d.search(self.description)
