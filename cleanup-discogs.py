@@ -237,7 +237,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		if name == 'country':
 			self.incountry = True
 		elif name == 'tracklist':
-			self.entracklist = True
+			self.intracklist = True
 		elif name == 'format':
 			for (k,v) in attrs.items():
 				if k == 'name':
