@@ -134,7 +134,7 @@ spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
 
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
-rights_societies = ['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA']
+rights_societies = ['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA', 'ASCAP', 'BMI', 'JASRAC', 'AEPI', 'OSA', 'SOKOJ', 'SOCAN', 'NCB']
 
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
@@ -145,6 +145,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.indeposito = False
 		self.inlabelcode = False
 		self.inbarcode = False
+		self.inasin = False
 		self.inrightssociety = False
 		self.intracklist = False
 		self.innotes = False
@@ -205,6 +206,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inother = False
 		self.inlabelcode = False
 		self.inbarcode = False
+		self.inasin = False
 		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
@@ -251,231 +253,234 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.innotes = True
 		elif name == 'identifier':
 			isdeposito = False
-			for (k,v) in attrs.items():
-				if k == 'type':
-					if v == 'SPARS Code':
-						self.inspars = True
-					elif v == 'Depósito Legal':
-						self.indeposito = True
-						self.depositofound = True
-					elif v == 'Label Code':
-						self.inlabelcode = True
-					elif v == 'Rights Society':
-						self.inrightssociety = True
-					elif v == 'Barcode':
-						self.inbarcode = True
-					elif v == 'Other':
-						self.inother = True
-				elif k == 'value':
-					if not self.config['reportall']:
-						if self.prev == self.release:
-							continue
-					if self.inspars:
-						if self.config['check_spars_code']:
-							## TODO: check if the format is actually a CD or CD-like medium
-							#if not self.iscd:
-							#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
-							#	self.count += 1
-							#	self.prev = self.release
-							if not v.lower() in validsparscodes:
-								self.count += 1
-								self.prev = self.release
-								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								continue
-					elif not self.inother:
-						if self.config['check_spars_code']:
-							if v.lower() in validsparscodes:
+			attritems = dict(attrs.items())
+			if 'type' in attritems:
+				v = attritems['type']
+				if v == 'SPARS Code':
+					self.inspars = True
+				elif v == 'Depósito Legal':
+					self.indeposito = True
+					self.depositofound = True
+				elif v == 'Label Code':
+					self.inlabelcode = True
+				elif v == 'Rights Society':
+					self.inrightssociety = True
+				elif v == 'Barcode':
+					self.inbarcode = True
+				elif v == 'ASIN':
+					self.inasin = True
+				elif v == 'Other':
+					self.inother = True
+			if 'value' in attritems:
+				v = attritems['value']
+				if not self.config['reportall']:
+					if self.prev == self.release:
+						return
+				if self.inspars:
+					if self.config['check_spars_code']:
+						## TODO: check if the format is actually a CD or CD-like medium
+						#if not self.iscd:
+						#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
+						#	self.count += 1
+						#	self.prev = self.release
+						if not v.lower() in validsparscodes:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+				elif not self.inother:
+					if self.config['check_spars_code']:
+						if v.lower() in validsparscodes:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+						if 'd' in v.lower():
+							## just check a few other possibilities of possible SPARS codes
+							if v.lower().replace(' ', '') in validsparscodes:
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								continue
-							if 'd' in v.lower():
-								## just check a few other possibilities of possible SPARS codes
-								if v.lower().replace(' ', '') in validsparscodes:
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-								if v.lower().replace('.', '') in validsparscodes:
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-					if self.inlabelcode:
-						if self.config['check_label_code']:
-							## check how many people use 'O' instead of '0'
-							if v.lower().startswith('lc'):
-								if 'O' in v:
-									print('Spelling error in Label Code): https://www.discogs.com/release/%s' % str(self.release))
-									sys.stdout.flush()
-							if labelcodere.match(v.lower()) == None:
+								return
+							if v.lower().replace('.', '') in validsparscodes:
 								self.count += 1
 								self.prev = self.release
-								print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								continue
-					if self.inrightssociety:
-						if self.config['check_label_code']:
-							if v.lower().startswith('lc'):
-								if labelcodere.match(v.lower()) != None:
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-						if self.config['check_rights_society']:
-							pass
-					elif not self.inother:
+								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+				if self.inlabelcode:
+					if self.config['check_label_code']:
+						## check how many people use 'O' instead of '0'
+						if v.lower().startswith('lc'):
+							if 'O' in v:
+								print('Spelling error in Label Code): https://www.discogs.com/release/%s' % str(self.release))
+								sys.stdout.flush()
+						if labelcodere.match(v.lower()) == None:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+				if self.inrightssociety:
+					if self.config['check_label_code']:
+						if v.lower().startswith('lc'):
+							if labelcodere.match(v.lower()) != None:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+					if self.config['check_rights_society']:
+						pass
+				elif not self.inother:
+					for r in rights_societies:
+						if v.replace('.', '') == r or v.replace(' ', '') == r:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							break
+				if self.inbarcode:
+					if self.config['check_label_code']:
+						if v.lower().startswith('lc'):
+							if labelcodere.match(v.lower()) != None:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+					if self.country == 'Spain':
+						if self.config['check_deposito'] and not self.depositofound:
+							if depositovalre.match(v.lower()) != None:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+					if self.config['check_rights_society']:
 						for r in rights_societies:
 							if v.replace('.', '') == r or v.replace(' ', '') == r:
 								self.count += 1
 								self.prev = self.release
-								print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								break
-					if self.inbarcode:
-						if self.config['check_label_code']:
-							if v.lower().startswith('lc'):
-								if labelcodere.match(v.lower()) != None:
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-						if self.country == 'Spain':
-							if self.config['check_deposito'] and not self.depositofound:
-								if depositovalre.match(v.lower()) != None:
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-						if self.config['check_rights_society']:
-							for r in rights_societies:
-								if v.replace('.', '') == r or v.replace(' ', '') == r:
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									break
-					if not self.indeposito:
-						if self.country == 'Spain':
-							if self.config['check_deposito']:
-								if v.startswith("Depósito"):
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-								elif v.startswith("D.L."):
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-					else:
-						if self.country == 'Spain':
-							if self.config['check_deposito']:
-								if v.endswith('.'):
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									continue
-				elif k == 'description':
-					if not self.config['reportall']:
-						if self.prev == self.release:
-							continue
-					self.description = v.lower()
-					if self.config['check_rights_society']:
-						if self.description in ["rights society", "rights societies", "right society"]:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-					if self.config['check_label_code']:
-						if self.description in label_code_ftf:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-					if self.config['check_spars_code']:
-						if not self.inspars:
-							sparsfound = False
-							for spars in spars_ftf:
-								if spars in self.description:
-									sparsfound = True
-									self.count += 1
-									self.prev = self.release
-									print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-									break
-							if sparsfound:
-								continue
-					if self.config['check_isrc']:
-						if self.description.startswith('isrc'):
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-						if 'international standard recording code' in self.description:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-						if 'isrc' in self.description:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-						if 'irsc' in self.description:
-							## misspelling
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-						if 'iscr' in self.description:
-							## misspelling
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-						if 'international standard code recording' in self.description:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-					if self.config['check_mastering_sid']:
-						if self.description == "mastering sid code":
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
-					if self.config['check_mould_sid']:
-						if self.description == "mould sid code":
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							continue
+				if not self.indeposito:
 					if self.country == 'Spain':
 						if self.config['check_deposito']:
-							found = False
-							if v == 'Depósito Legal':
-								found = True
-								self.depositofound = True
-							else:
-								for d in depositores:
-									result = d.search(self.description)
-									if result != None:
-										found = True
-										break
-							## sometimes the depósito value itself can be found in the free text field
-							if not found:
-								deposres = depositovalre.match(self.description)
-								if deposres != None:
-									found = True
-
-							if found:
+							if v.startswith("Depósito"):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								continue
+								return
+							elif v.startswith("D.L."):
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+				else:
+					if self.country == 'Spain':
+						if self.config['check_deposito']:
+							if v.endswith('.'):
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+			if 'description' in attritems:
+				v = attritems['description']
+				if not self.config['reportall']:
+					if self.prev == self.release:
+						return
+				self.description = v.lower()
+				if self.config['check_rights_society']:
+					if self.description in ["rights society", "rights societies", "right society"]:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+				if self.config['check_label_code']:
+					if self.description in label_code_ftf:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+				if self.config['check_spars_code']:
+					if not self.inspars:
+						sparsfound = False
+						for spars in spars_ftf:
+							if spars in self.description:
+								sparsfound = True
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								break
+						if sparsfound:
+							return
+				if self.config['check_isrc']:
+					if self.description.startswith('isrc'):
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+					if 'international standard recording code' in self.description:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+					if 'isrc' in self.description:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+					if 'irsc' in self.description:
+						## misspelling
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+					if 'iscr' in self.description:
+						## misspelling
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+					if 'international standard code recording' in self.description:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+				if self.config['check_mastering_sid']:
+					if self.description == "mastering sid code":
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+				if self.config['check_mould_sid']:
+					if self.description == "mould sid code":
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
+				if self.country == 'Spain':
+					if self.config['check_deposito'] and not self.indeposito:
+						found = False
+						for d in depositores:
+							result = d.search(self.description)
+							if result != None:
+								found = True
+								break
 
-							## debug code to print descriptions that were skipped.
-							## Useful to find misspellings of "depósito legal"
-							if self.config['debug']:
-								print(self.description, self.release)
-					sys.stdout.flush()
+						## sometimes the depósito value itself can be found in the free text field
+						if not found:
+							deposres = depositovalre.match(self.description)
+							if deposres != None:
+								found = True
+
+						if found:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+
+						## debug code to print descriptions that were skipped.
+						## Useful to find misspellings of "depósito legal"
+						if self.config['debug']:
+							print(self.description, self.release)
+				sys.stdout.flush()
+
 	def characters(self, content):
 		self.contentbuffer += content
 
@@ -552,6 +557,15 @@ def main(argv):
 			except Exception:
 				check_isrc = True
 			config_settings['check_isrc'] = check_isrc
+
+			try:
+				if config.get(section, 'asin') == 'yes':
+					check_asin = True
+				else:
+					check_asin = False
+			except Exception:
+				check_asin = True
+			config_settings['check_asin'] = check_asin
 
 			try:
 				if config.get(section, 'mastering_sid') == 'yes':
