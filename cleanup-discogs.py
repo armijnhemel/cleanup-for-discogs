@@ -111,8 +111,10 @@ depositores.append(re.compile(u'legal dep\.'))
 ## basque: http://www.euskadi.eus/deposito-legal/web01-a2libzer/es/impresion.html
 depositores.append(re.compile(u'l\.g\.'))
 
-## deposito values, does not capture everything
-depositovalre = re.compile(u'[abcjlmopstvz][\s\.\-/_:]\s*\d{2}\.?\d{3}\s*[\-\./_]\s*(?:19|20)?\d{2}')
+depositovalres = []
+## deposito values, probably does not capture everything
+depositovalres.append(re.compile(u'[abcjlmopstvz][\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}\s*[\-\./_]\s*(?:19|20)?\d{2}'))
+depositovalres.append(re.compile(u'(?:ab|al|as|av|ba|bi|bu|cc|ca|co|cr|cs|gc|gi|gr|gu|hu|le|lr|lu|ma|mu|na|or|pm|po|sa|se|sg|so|ss|s\.\s.|te|tf|to|va|vi|za)[\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}\s*[\-\./_]\s*(?:19|20)?\d{2}'))
 
 ## label code
 labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
@@ -152,6 +154,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.release = None
 		self.country = None
 		self.indescription = False
+		self.indescriptions = False
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
@@ -236,8 +239,38 @@ class discogs_handler(xml.sax.ContentHandler):
 			return
 		if self.isrejected or self.isdraft or self.isdeleted:
 			return
+		if name == 'descriptions':
+			self.indescriptions = True
+		elif not name == 'description':
+			self.indescriptions = False
+
 		if name == 'country':
 			self.incountry = True
+		elif name == 'label':
+			for (k,v) in attrs.items():
+				if k == 'catno':
+					catno = v.lower()
+					if catno.startswith('lc'):
+						if labelcodere.match(catno) != None:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+					## now check for D.L.
+					dlfound = False
+					for d in depositores:
+						result = d.search(catno)
+						if result != None:
+							for depositovalre in depositovalres:
+								if depositovalre.search(catno) != None:
+									dlfound = True
+									break
+
+					if dlfound:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
 		elif name == 'tracklist':
 			self.intracklist = True
 		elif name == 'format':
@@ -267,8 +300,6 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.inrightssociety = True
 				elif v == 'Barcode':
 					self.inbarcode = True
-				elif v == 'ASIN':
-					self.inasin = True
 				elif v == 'Other':
 					self.inother = True
 			if 'value' in attritems:
@@ -312,7 +343,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						## check how many people use 'O' instead of '0'
 						if v.lower().startswith('lc'):
 							if 'O' in v:
-								print('Spelling error in Label Code): https://www.discogs.com/release/%s' % str(self.release))
+								print('%8d -- Spelling error in Label Code): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								sys.stdout.flush()
 						if labelcodere.match(v.lower()) == None:
 							self.count += 1
@@ -346,11 +377,12 @@ class discogs_handler(xml.sax.ContentHandler):
 								return
 					if self.country == 'Spain':
 						if self.config['check_deposito'] and not self.depositofound:
-							if depositovalre.match(v.lower()) != None:
-								self.count += 1
-								self.prev = self.release
-								print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								return
+							for depositovalre in depositovalres:
+								if depositovalre.match(v.lower()) != None:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									return
 					if self.config['check_rights_society']:
 						for r in rights_societies:
 							if v.replace('.', '') == r or v.replace(' ', '') == r:
@@ -386,7 +418,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						return
 				self.description = v.lower()
 				if self.config['check_rights_society']:
-					if self.description in ["rights society", "rights societies", "right society"]:
+					if self.description in ["rights society", "rights societies", "right society", "mechanical rights society"]:
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -465,9 +497,11 @@ class discogs_handler(xml.sax.ContentHandler):
 
 						## sometimes the depósito value itself can be found in the free text field
 						if not found:
-							deposres = depositovalre.match(self.description)
-							if deposres != None:
-								found = True
+							for depositovalre in depositovalres:
+								deposres = depositovalre.match(self.description)
+								if deposres != None:
+									found = True
+									break
 
 						if found:
 							self.count += 1
