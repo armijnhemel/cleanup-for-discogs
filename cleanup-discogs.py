@@ -170,6 +170,10 @@ class discogs_handler(xml.sax.ContentHandler):
 		## first process the contentbuffer
 		if self.incountry:
 			self.country = self.contentbuffer
+		elif self.indescription:
+			if self.indescriptions:
+				if 'Styrene' in self.contentbuffer:
+					pass
 		elif self.inreleased:
 			if self.config['check_month']:
 				if '-00-' in self.contentbuffer:
@@ -278,6 +282,12 @@ class discogs_handler(xml.sax.ContentHandler):
 				if k == 'name':
 					if v == 'CD':
 						self.iscd = True
+				elif k == 'text':
+					if v != '':
+						if v.lower() in validsparscodes:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Possible SPARS Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		elif name == 'description':
 			self.indescription = True
 		elif name == 'released':
@@ -300,6 +310,8 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.inrightssociety = True
 				elif v == 'Barcode':
 					self.inbarcode = True
+				elif v == 'ASIN':
+					self.inasin = True
 				elif v == 'Other':
 					self.inother = True
 			if 'value' in attritems:
