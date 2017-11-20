@@ -449,7 +449,7 @@ class discogs_handler(xml.sax.ContentHandler):
 										if sep == '.' and len(depositoyeartext) == 3:
 											continue
 										if '.' in depositoyeartext:
-											depositoyeartext.replace('.', '')
+											depositoyeartext = depositoyeartext.replace('.', '')
 										depositoyear = int(depositoyeartext)
 										if depositoyear < 100:
 											if depositoyear <= 17:
