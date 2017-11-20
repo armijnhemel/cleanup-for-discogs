@@ -117,7 +117,8 @@ depositovalres.append(re.compile(u'[abcjlmopstvz][\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}
 depositovalres.append(re.compile(u'(?:ab|al|as|av|ba|bi|bu|cc|ca|co|cr|cs|gc|gi|gr|gu|hu|le|lr|lu|ma|mu|na|or|pm|po|sa|se|sg|so|ss|s\.\s.|te|tf|to|va|vi|za)[\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}\s*[\-\./_]\s*(?:19|20)?\d{2}'))
 
 ## label code
-labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
+#labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
+labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}$')
 
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
@@ -180,6 +181,12 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.count += 1
 					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					sys.stdout.flush()
+			if self.contentbuffer != '':
+				try:
+					self.year = int(self.contentbuffer.split('-', 1)[0])
+				except:
+					print('%8d -- Year \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, self.contentbuffer, str(self.release)))
+					sys.stdout.flush()
 		elif self.innotes:
 			if '카지노' in self.contentbuffer:
 				## Korean casino spam that pops up every once in a while
@@ -207,6 +214,8 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.count += 1
 					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		sys.stdout.flush()
+
+		## now reset some values
 		self.incountry = False
 		self.inreleased = False
 		self.inspars = False
@@ -229,6 +238,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.seentracklist = False
 			self.debugcount += 1
 			self.iscd = False
+			self.year = None
 			self.formattexts = []
 			for (k,v) in attrs.items():
 				if k == 'id':
@@ -423,6 +433,52 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.prev = self.release
 								print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								return
+							if self.year != None:
+								## now try to find the year
+								depositoyear = None
+								if v.strip().endswith('℗'):
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Depósito Legal (formatting, has ℗): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									## ugly hack, remove ℗ to make at least be able to do some sort of check
+									v = v.strip().rsplit('℗', 1)[0]
+								## several separators, including some Unicode ones
+								for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
+									try:
+										depositoyeartext = v.strip().rsplit(sep, 1)[-1]
+										if sep == '.' and len(depositoyeartext) == 3:
+											continue
+										if '.' in depositoyeartext:
+											depositoyeartext.replace('.', '')
+										depositoyear = int(depositoyeartext)
+										if depositoyear < 100:
+											if depositoyear <= 17:
+												depositoyear += 2000
+											else:
+												depositoyear += 1900
+										break
+									except:
+										pass
+
+								## TODO, also allow (year), example: https://www.discogs.com/release/265497
+								if depositoyear != None:
+									if depositoyear < 1900:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif depositoyear > 2017:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif self.year < depositoyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Depósito Legal (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								else:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Depósito Legal (year not found): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								sys.stdout.flush()
 			if 'description' in attritems:
 				v = attritems['description']
 				if not self.config['reportall']:
