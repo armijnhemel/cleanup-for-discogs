@@ -265,27 +265,29 @@ class discogs_handler(xml.sax.ContentHandler):
 			for (k,v) in attrs.items():
 				if k == 'catno':
 					catno = v.lower()
-					if catno.startswith('lc'):
-						if labelcodere.match(catno) != None:
+					if self.config['check_label_code']:
+						if catno.startswith('lc'):
+							if labelcodere.match(catno) != None:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+					if self.config['check_deposito']:
+						## now check for D.L.
+						dlfound = False
+						for d in depositores:
+							result = d.search(catno)
+							if result != None:
+								for depositovalre in depositovalres:
+									if depositovalre.search(catno) != None:
+										dlfound = True
+										break
+
+						if dlfound:
 							self.count += 1
 							self.prev = self.release
-							print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
-					## now check for D.L.
-					dlfound = False
-					for d in depositores:
-						result = d.search(catno)
-						if result != None:
-							for depositovalre in depositovalres:
-								if depositovalre.search(catno) != None:
-									dlfound = True
-									break
-
-					if dlfound:
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
 		elif name == 'tracklist':
 			self.intracklist = True
 		elif name == 'format':
