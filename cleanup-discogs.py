@@ -297,10 +297,11 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.iscd = True
 				elif k == 'text':
 					if v != '':
-						if v.lower() in validsparscodes:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Possible SPARS Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						if self.config['check_spars_code']:
+							if v.lower() in validsparscodes:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Possible SPARS Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		elif name == 'description':
 			self.indescription = True
 		elif name == 'released':
