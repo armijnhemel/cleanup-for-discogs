@@ -10,11 +10,20 @@ Currently checks the BaOI fields from Discogs and reports errors for (amongst ot
 * rights society
 * mastering SID code
 * mould SID code
+* ISRC
+* ASIN
 
 It checks the 'notes' field for:
 
 * depósito legal
 * direct links to releases in discogs using url formatting which can possibly be replaced with release formatting
+
+It checks the 'released' field for:
+
+* invalid month (00)
+* invalid year
+
+Also included are some checks to cross-correlate the release year with the year embedded in a depósito legal value (Spanish releases only).
 
 Usage:
 
