@@ -114,7 +114,7 @@ depositores.append(re.compile(u'l\.g\.'))
 depositovalres = []
 ## deposito values, probably does not capture everything
 depositovalres.append(re.compile(u'[abcjlmopstvz][\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}\s*[\-\./_]\s*(?:19|20)?\d{2}'))
-depositovalres.append(re.compile(u'(?:ab|al|as|av|ba|bi|bu|cc|ca|co|cr|cs|gc|gi|gr|gu|hu|le|lr|lu|ma|mu|na|or|pm|po|sa|se|sg|so|ss|s\.\s.|te|tf|to|va|vi|za)[\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}\s*[\-\./_]\s*(?:19|20)?\d{2}'))
+depositovalres.append(re.compile(u'(?:ab|al|as|av|ba|bi|bu|cc|ca|co|cr|cs|gc|gi|gr|gu|hu|le|lr|lu|ma|mu|na|or|pm|po|sa|se|sg|so|ss|s\.\s.|te|tf|t\.f\.|to|va|vi|za)[\s\.\-/_:]\s*\d{0,2}\.?\d{2,3}\s*[\-\./_]\s*(?:19|20)?\d{2}'))
 
 ## label code
 #labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
@@ -412,6 +412,13 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.prev = self.release
 								print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								break
+				if self.inasin:
+					if not len(v.split(':')[-1].strip()) == 10:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						sys.stdout.flush()
+						return
 				if not self.indeposito:
 					if self.country == 'Spain':
 						if self.config['check_deposito']:
