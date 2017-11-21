@@ -181,12 +181,13 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.count += 1
 					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					sys.stdout.flush()
-			if self.contentbuffer != '':
-				try:
-					self.year = int(self.contentbuffer.split('-', 1)[0])
-				except:
-					print('%8d -- Year \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, self.contentbuffer, str(self.release)))
-					sys.stdout.flush()
+			if self.config['check_year']:
+				if self.contentbuffer != '':
+					try:
+						self.year = int(self.contentbuffer.split('-', 1)[0])
+					except:
+						print('%8d -- Year \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, self.contentbuffer, str(self.release)))
+						sys.stdout.flush()
 		elif self.innotes:
 			if '카지노' in self.contentbuffer:
 				## Korean casino spam that pops up every once in a while
@@ -383,12 +384,13 @@ class discogs_handler(xml.sax.ContentHandler):
 					if self.config['check_rights_society']:
 						pass
 				elif not self.inother:
-					for r in rights_societies:
-						if v.replace('.', '') == r or v.replace(' ', '') == r:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							break
+					if self.config['check_rights_society']:
+						for r in rights_societies:
+							if v.replace('.', '') == r or v.replace(' ', '') == r:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								break
 				if self.inbarcode:
 					if self.config['check_label_code']:
 						if v.lower().startswith('lc'):
@@ -516,6 +518,12 @@ class discogs_handler(xml.sax.ContentHandler):
 								break
 						if sparsfound:
 							return
+				if self.config['check_asin']:
+					if self.description.startswith('asin'):
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						return
 				if self.config['check_isrc']:
 					if self.description.startswith('isrc'):
 						self.count += 1
@@ -731,6 +739,15 @@ def main(argv):
 				check_month = False
 			config_settings['check_month'] = check_month
 
+			## year is wrong check: default is False
+			try:
+				if config.get(section, 'year') == 'yes':
+					check_year = True
+				else:
+					check_year = False
+			except Exception:
+				check_year = False
+			config_settings['check_year'] = check_year
 			## reporting all: default is False
 			try:
 				if config.get(section, 'reportall') == 'yes':
