@@ -136,6 +136,8 @@ spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 
 label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
 
+isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording'])
+
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
 rights_societies = ['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA', 'ASCAP', 'BMI', 'JASRAC', 'AEPI', 'OSA', 'SOKOJ', 'SOCAN', 'NCB']
 
@@ -149,6 +151,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inlabelcode = False
 		self.inbarcode = False
 		self.inasin = False
+		self.inisrc = False
 		self.inrightssociety = False
 		self.intracklist = False
 		self.innotes = False
@@ -224,6 +227,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inlabelcode = False
 		self.inbarcode = False
 		self.inasin = False
+		self.inisrc = False
 		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
@@ -326,6 +330,8 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.inbarcode = True
 				elif v == 'ASIN':
 					self.inasin = True
+				elif v == 'ISRC':
+					self.inisrc = True
 				elif v == 'Other':
 					self.inother = True
 			if 'value' in attritems:
@@ -422,6 +428,29 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						sys.stdout.flush()
+						return
+				if self.inisrc:
+					## Check the length of ISRC fields. According to the specifications these should
+					## be 12 in length. Some ISRC identifiers that have been recorded in the database
+					## cover a range of tracks. These will be reported as wrong ISRC codes. It is unclear
+					## what needs to be done with those.
+					## first get rid of cruft
+					isrc_tmp = v.strip().upper()
+					if isrc_tmp.startswith('ISRC'):
+						isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
+					if isrc_tmp.startswith('CODE'):
+						isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
+					## replace a few characters
+					isrc_tmp = isrc_tmp.replace('-', '')
+					isrc_tmp = isrc_tmp.replace(' ', '')
+					isrc_tmp = isrc_tmp.replace('.', '')
+					isrc_tmp = isrc_tmp.replace(':', '')
+					isrc_tmp = isrc_tmp.replace('–', '')
+					if not len(isrc_tmp) == 12:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						sys.stdout.flush()
 						return
 				if not self.indeposito:
@@ -522,7 +551,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						if sparsfound:
 							return
 				if self.config['check_asin']:
-					if self.description.startswith('asin'):
+					if not self.inasin and self.description.startswith('asin'):
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -533,33 +562,17 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.prev = self.release
 						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
-					if 'international standard recording code' in self.description:
+					if self.description.startswith('issrc'):
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
-					if 'isrc' in self.description:
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
-					if 'irsc' in self.description:
-						## misspelling
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
-					if 'iscr' in self.description:
-						## misspelling
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
-					if 'international standard code recording' in self.description:
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
+					for isrc in isrc_ftf:
+						if isrc in self.description:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
 				if self.config['check_mastering_sid']:
 					if self.description == "mastering sid code":
 						self.count += 1
