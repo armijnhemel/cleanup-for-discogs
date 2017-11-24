@@ -431,28 +431,30 @@ class discogs_handler(xml.sax.ContentHandler):
 						sys.stdout.flush()
 						return
 				if self.inisrc:
-					## Check the length of ISRC fields. According to the specifications these should
-					## be 12 in length. Some ISRC identifiers that have been recorded in the database
-					## cover a range of tracks. These will be reported as wrong ISRC codes. It is unclear
-					## what needs to be done with those.
-					## first get rid of cruft
-					isrc_tmp = v.strip().upper()
-					if isrc_tmp.startswith('ISRC'):
-						isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
-					if isrc_tmp.startswith('CODE'):
-						isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
-					## replace a few characters
-					isrc_tmp = isrc_tmp.replace('-', '')
-					isrc_tmp = isrc_tmp.replace(' ', '')
-					isrc_tmp = isrc_tmp.replace('.', '')
-					isrc_tmp = isrc_tmp.replace(':', '')
-					isrc_tmp = isrc_tmp.replace('–', '')
-					if not len(isrc_tmp) == 12:
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						sys.stdout.flush()
-						return
+					print('ISRC: https://www.discogs.com/release/%s' % str(self.release))
+					if self.config['check_isrc']:
+						## Check the length of ISRC fields. According to the specifications these should
+						## be 12 in length. Some ISRC identifiers that have been recorded in the database
+						## cover a range of tracks. These will be reported as wrong ISRC codes. It is unclear
+						## what needs to be done with those.
+						## first get rid of cruft
+						isrc_tmp = v.strip().upper()
+						if isrc_tmp.startswith('ISRC'):
+							isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
+						if isrc_tmp.startswith('CODE'):
+							isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
+						## replace a few characters
+						isrc_tmp = isrc_tmp.replace('-', '')
+						isrc_tmp = isrc_tmp.replace(' ', '')
+						isrc_tmp = isrc_tmp.replace('.', '')
+						isrc_tmp = isrc_tmp.replace(':', '')
+						isrc_tmp = isrc_tmp.replace('–', '')
+						if not len(isrc_tmp) == 12:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							sys.stdout.flush()
+							return
 				if not self.indeposito:
 					if self.country == 'Spain':
 						if self.config['check_deposito']:
