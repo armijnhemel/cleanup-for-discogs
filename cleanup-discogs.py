@@ -364,7 +364,6 @@ class discogs_handler(xml.sax.ContentHandler):
 							wrongspars = True
 
 						if wrongspars:
-							print("WRONG SPARS", v)
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
