@@ -213,10 +213,6 @@ class discogs_handler(xml.sax.ContentHandler):
 				if '&lt;a href="http://www.discogs.com/release/' in self.contentbuffer.lower():
 					self.count += 1
 					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-			if self.config['check_url']:
-				if '[url=http://www.discogs.com/release/' in self.contentbuffer.lower():
-					self.count += 1
-					print('%8d -- URL (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		sys.stdout.flush()
 
 		## now reset some values
@@ -754,14 +750,6 @@ def main(argv):
 				check_html = True
 			config_settings['check_html'] = check_html
 
-			try:
-				if config.get(section, 'url') == 'yes':
-					check_url = True
-				else:
-					check_url = False
-			except Exception:
-				check_url = False
-			config_settings['check_url'] = check_url
 
 			## month is 00 check: default is False
 			try:
