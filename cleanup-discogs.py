@@ -298,7 +298,10 @@ class discogs_handler(xml.sax.ContentHandler):
 				elif k == 'text':
 					if v != '':
 						if self.config['check_spars_code']:
-							if v.lower() in validsparscodes:
+							tmpspars = v.lower().strip()
+							for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
+								tmpspars = tmpspars.replace(s, '')
+							if tmpspars in validsparscodes:
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- Possible SPARS Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
