@@ -16,7 +16,7 @@ Currently checks the BaOI fields from Discogs and reports errors for (amongst ot
 It checks the 'notes' field for:
 
 * depósito legal
-* direct links to releases in discogs using url formatting which can possibly be replaced with release formatting
+* old URLs that should be replaced with Discogs format text: https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
 
 It checks the 'released' field for:
 

@@ -372,13 +372,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
 						if 'd' in v.lower():
+							tmpspars = v.lower().strip()
+							for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
+								tmpspars = tmpspars.replace(s, '')
+
 							## just check a few other possibilities of possible SPARS codes
-							if v.lower().replace(' ', '') in validsparscodes:
-								self.count += 1
-								self.prev = self.release
-								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								return
-							if v.lower().replace('.', '') in validsparscodes:
+							if tmpspars in validsparscodes:
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -561,9 +560,7 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								self.prev = self.release
 								print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								break
-						if sparsfound:
-							return
+								return
 				if self.config['check_asin']:
 					if not self.inasin and self.description.startswith('asin'):
 						self.count += 1
