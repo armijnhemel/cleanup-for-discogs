@@ -124,7 +124,7 @@ labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}$')
 ## also include 4 letter code, even though not officially a SPARS code
 ## Some people use "Sony distribution codes" in the SPARS field:
 ## https://www.discogs.com/forum/thread/339244
-validsparscodes = set(['aaa', 'aad', 'add', 'ddd', 'dad', 'dda', 'dddd', 'ddad'])
+validsparscodes = set(['aaa', 'aad', 'add', 'ada', 'daa', 'ddd', 'dad', 'dda', 'dddd', 'ddad'])
 
 spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 "sparse code", "sparc code", "spars.code", "sparcs", "sparsc code",
@@ -346,9 +346,19 @@ class discogs_handler(xml.sax.ContentHandler):
 						#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
 						#	self.count += 1
 						#	self.prev = self.release
+						if v == "none":
+							return
+						## Sony format codes
+						## https://www.discogs.com/forum/thread/339244
+						## https://www.discogs.com/forum/thread/358285
+						if v == 'CDC' or v == 'CDM':
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Sony Format Code in SPARS: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
 						wrongspars = False
 						tmpspars = v.lower().strip()
-						for s in ['.', ' ', '•', '·']:
+						for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
 							tmpspars = tmpspars.replace(s, '')
 						if not tmpspars in validsparscodes:
 							wrongspars = True
