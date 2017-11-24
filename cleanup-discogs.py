@@ -346,7 +346,15 @@ class discogs_handler(xml.sax.ContentHandler):
 						#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
 						#	self.count += 1
 						#	self.prev = self.release
-						if not v.lower() in validsparscodes:
+						wrongspars = False
+						tmpspars = v.lower().strip()
+						for s in ['.', ' ', '•', '·']:
+							tmpspars = tmpspars.replace(s, '')
+						if not tmpspars in validsparscodes:
+							wrongspars = True
+
+						if wrongspars:
+							print("WRONG SPARS", v)
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -431,7 +439,6 @@ class discogs_handler(xml.sax.ContentHandler):
 						sys.stdout.flush()
 						return
 				if self.inisrc:
-					print('ISRC: https://www.discogs.com/release/%s' % str(self.release))
 					if self.config['check_isrc']:
 						## Check the length of ISRC fields. According to the specifications these should
 						## be 12 in length. Some ISRC identifiers that have been recorded in the database
