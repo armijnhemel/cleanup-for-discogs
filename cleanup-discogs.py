@@ -145,10 +145,10 @@ rights_societies = set(['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUIS
 ## These are all exact matches, as too often there are descriptions, such as "near mastering SID code"
 ## or similar and using a regular expression would lead to many false positives.
 ## Some of these might seem exactly the same, such as 'mastering sid code' and 'mastering sid сode' but
-## they are not, as the letter uses a Cyrillic 'с', sigh.
+## they are not, as the latter uses a Cyrillic 'с', sigh.
 masteringsids = set(['mastering sid code', 'master sid code', 'master sid', 'masterung sid code', 'mastrering sid code', 'matering sid code', 'sid code mastering', 'sid code (mastering)', 'sid code: mastering','sid code [mastering]', '(sid code, mastering)', 'sid code, mastering', 'sid code - mastering', 'sid-code, mastering', 'sid code - mastering code', 'sid code (mastering code)', 'sid code: mastering code', 'sid mastering code', 'sid - mastering code', 'sid (mastering code)', 'sid mastetring code', 'cd sid master', 'cd sid mastering', 'cd sid mastering code', 'cd: sid mastering code', 'cd, sid mastering code', 'cd, sid - mastering code', 'cds, mastering sid code', 'mastered sid code', 'masterd sid code', 'masteirng sid code', 'sid master code', 'mastering sid codes', 'mastering sid', 'mastering sid-code', 'sid master', 's.i.d. master code', 'sid (master)', 'sid mastering', 'sid masterind code', 'sid (mastering)', 'cd1 mastering sid code', 'cd2 mastering sid code', 'mastering s.i.d. code', 'mastering sid code cd2', 'mastering sid code cd3', 'cd mastering sid code', 'the mastering sid code', 'mastering sid code cd1', 'mastering sid code dvd', 'sid code mastering cd1', 'sid mastering code cd 1', 'sid mastering code cd1', 'cd centre etching - sid mastering code', 'mastering sid сode', 'masterin sid code', 'masterring sid code', 'cd centre etching - mastering sid code'])
 
-mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code', 'modul sid code', 'moould sid code', 'moudl sid code', 'moud sid code', 'moulded sid code', 'mouldering sid-code', 'moulding sid code', 'mouldg sid code', 'moulde sid code', 'mould sid-code', 'mould sid codes', 'moul sid code', 'muold sid code', 'sid code mold', 'sid code mould', 'sid-code (mould)', 'sid code: mould', 'sid code, mould', 'sid code - mould', 'sid code (moild)', 'sid code [mould]', '(sid code, mould)', 'sid-code, mould', 'sid code (mould)', 'sid code - mould code', 'sid code (mould code)', 'sid code: mould code', 'sid code moulded', 'sid code (moulded)', 'sid code, moulding', 'sid code mould (inner ring)', 'sid code (mould - inner ring)', 'sid code (mould, inner ring)', 'sid code mould - inner ring', 'sid (mold code)', 'sid mold code', 'sid moul code', 'sid mould', 'sid - mould', 'sid (mould)', 'sid, mould', 'sid - mould code', 'sid mould code', 'sid mould code cd1', 'sid mould code cd 1', 'sid mould code cd2', 'sid mould code cd 2', 'sid mould code disc 1', 'sid mould code, disc 1', 'sid mould code - disc 1', 'sid mould code disc 2', 'sid mould code, disc 2', 'sid mould code - disc 2', 'sid mould code disc 3', 'sid mould code - disc 3', 'sid mould code disc 4', 'sid mould code disc 5', 'sid mould disc 1', 'sid mould disc 2', 'sid mould disc 3', 'sid mould disc 4', 'sid mould disc 5', 'sid mould disc 6', 'sid muold code', 'sid mouls code', 'cd sid mould', 'cd sid mould code', 'cd, sid mould code', 'cd, sid - mould code', 'cds, mould sid code', 'mould sid code cd1', 'mould sid code cd2'])
+mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code', 'modul sid code', 'moould sid code', 'moudl sid code', 'moud sid code', 'moulded sid code', 'mouldering sid-code', 'moulding sid code', 'mouldg sid code', 'moulde sid code', 'mould sid-code', 'mould sid codes', 'moul sid code', 'muold sid code', 'sid code mold', 'sid code mould', 'sid-code (mould)', 'sid code: mould', 'sid code, mould', 'sid code - mould', 'sid code (moild)', 'sid code [mould]', '(sid code, mould)', 'sid-code, mould', 'sid code (mould)', 'sid code - mould code', 'sid code (mould code)', 'sid code: mould code', 'sid code moulded', 'sid code (moulded)', 'sid code, moulding', 'sid code mould (inner ring)', 'sid code (mould - inner ring)', 'sid code (mould, inner ring)', 'sid code mould - inner ring', 'sid (mold code)', 'sid mold code', 'sid moul code', 'sid mould', 'sid - mould', 'sid (mould)', 'sid, mould', 'sid - mould code', 'sid mould code', 'sid mould code cd1', 'sid mould code cd 1', 'sid mould code cd2', 'sid mould code cd 2', 'sid mould code disc 1', 'sid mould code, disc 1', 'sid mould code - disc 1', 'sid mould code disc 2', 'sid mould code, disc 2', 'sid mould code - disc 2', 'sid mould code disc 3', 'sid mould code - disc 3', 'sid mould code disc 4', 'sid mould code disc 5', 'sid mould disc 1', 'sid mould disc 2', 'sid mould disc 3', 'sid mould disc 4', 'sid mould disc 5', 'sid mould disc 6', 'sid muold code', 'sid mouls code', 'cd sid mould', 'cd sid mould code', 'cd, sid mould code', 'cd, sid - mould code', 'cds, mould sid code', 'mould sid code cd1', 'mould sid code cd2', 'sid-code mould', 'mould sid code, variant 1', 'mould sid code, variant 2', 'mould sid code dvd', 'mould sid code - dvd', 'mould sid code [dvd]', 'mould sid code, dvd', 'mould sid code (dvd)', 'mould sid code cd', 'mould sid-code', 'dvd mould sid code', 'dvd, mould sid code', 'dvd (mould sid code)', 'dvd - mould sid code'])
 
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
@@ -599,28 +599,28 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
 				if self.config['check_mastering_sid']:
-					if self.description in ['source identification code', 'sid', 'sid code', 'sid-code']:
+					if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
-					if self.description in masteringsids:
+					if self.description.strip() in masteringsids:
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
-					if self.description in ['sid code matrix', 'sid code - matrix', 'sid code (matrix)', 'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)', 'sid code, matrix ring', 'sid code: matrix ring']:
+					if self.description.strip() in ['sid code matrix', 'sid code - matrix', 'sid code (matrix)', 'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)', 'sid code, matrix ring', 'sid code: matrix ring']:
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- Possible Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
 				if self.config['check_mould_sid']:
-					if self.description in ['source identification code', 'sid', 'sid code', 'sid-code']:
+					if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
-					if self.description in mouldsids:
+					if self.description.strip() in mouldsids:
 						self.count += 1
 						self.prev = self.release
 						print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
