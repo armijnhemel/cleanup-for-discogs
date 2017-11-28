@@ -125,6 +125,9 @@ depositovalres.append(re.compile(u'(?:ab|al|as|av|ba|bi|bu|cc|ca|co|cr|cs|gc|gi|
 #labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
 labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}$')
 
+masteringsidre = re.compile(u'\s*(?:ifpi)?\s*l\w{3,4}$')
+mouldsidre = re.compile(u'\s*(?:ifpi)?\s*\w{4,5}$')
+
 ## https://en.wikipedia.org/wiki/SPARS_code
 ## also include 4 letter code, even though not officially a SPARS code
 ## Some people use "Sony distribution codes" in the SPARS field:
@@ -141,7 +144,7 @@ spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 
 label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
 
-isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording'])
+isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording', 'i.s.r.c.'])
 
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
 rights_societies = set(['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA', 'ASCAP', 'BMI', 'JASRAC', 'AEPI', 'OSA', 'SOKOJ', 'SOCAN', 'NCB'])
@@ -269,7 +272,6 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.isdraft = True
 					elif v == 'Deleted':
 						self.isdeleted = True
-			return
 		if self.isrejected or self.isdraft or self.isdeleted:
 			return
 		if name == 'descriptions':
@@ -504,6 +506,36 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							sys.stdout.flush()
 							return
+				if self.inmouldsid:
+					if self.config['check_mould_sid']:
+						if v.strip() == 'none':
+							return
+						## cleanup first for not so heavy formatting booboos
+						mould_tmp = v.strip().lower().replace(' ', '')
+						mould_tmp = mould_tmp.replace('-', '')
+						## some people insist on using ƒ instead of f
+						mould_tmp = mould_tmp.replace('ƒ', 'f')
+						res = mouldsidre.search(mould_tmp)
+						if res == None:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Mould SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+				if self.inmasteringsid:
+					if self.config['check_mastering_sid']:
+						if v.strip() == 'none':
+							return
+						## cleanup first for not so heavy formatting booboos
+						master_tmp = v.strip().lower().replace(' ', '')
+						master_tmp = master_tmp.replace('-', '')
+						## some people insist on using ƒ instead of f
+						master_tmp = master_tmp.replace('ƒ', 'f')
+						res = masteringsidre.search(master_tmp)
+						if res == None:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
 				if not self.indeposito:
 					if self.country == 'Spain':
 						if self.config['check_deposito']:
@@ -624,8 +656,8 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
-				if not self.inmasteringsid:
-					if self.config['check_mastering_sid']:
+				if self.config['check_mastering_sid']:
+					if not self.inmasteringsid:
 						if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
 							self.count += 1
 							self.prev = self.release
@@ -641,8 +673,8 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Possible Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
-				if not self.inmouldsid:
-					if self.config['check_mould_sid']:
+				if self.config['check_mould_sid']:
+					if not self.inmouldsid:
 						if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
 							self.count += 1
 							self.prev = self.release
