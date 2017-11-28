@@ -147,7 +147,7 @@ label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
 isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording', 'i.s.r.c.'])
 
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
-rights_societies = set(['SGAE', 'BIEM', 'GEMA', 'STEMRA', 'SIAE', 'SABAM', 'SUISA', 'ASCAP', 'BMI', 'JASRAC', 'AEPI', 'OSA', 'SOKOJ', 'SOCAN', 'NCB'])
+rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM ", "ADDAF", "AEPI", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR", "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA", "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA", "CAPAC", "CASH", "CEDAR", "CISAC", "CMRRA", "COTT", "EAU", "FCA", "FILSCAP", "GEMA", "GESAC", "GESAP", "GRAMO", "GVL", "HDS", "HFA", "IMRO", "IPRS", "JASRAC", "KCI", "KODA", "KOMCA", "LATGA-A", "MACP", "MECOLICO", "MCPS", "MCSC", "MCSK", "MESAM", "MUSICAUTOR", "MUST", "NCB", "OSA", "PAMRA", "PPL", "PROCAN", "PRS", "RAO", "SABAM", "SACEM", "SACEM Luxembourg", "SACM", "SACVEN", "SADAIC", "SAMI", "SAMRO", "SAYCO", "SAZAS", "SBACEM", "SCPP", "SCD", "SDRM", "SEDRIM", "SENA", "SESAC", "SGA", "SGAE", "SIAE", "SOCAN", "SODRAC", "SOKOJ", "SOZA", "SPA", "STEF", "STEMRA", "STIM", "SUISA", "TEOSTO", "TONO", "UACRR", "UBC", "UCMR-ADA", "ZAIKS "])
 
 ## SID codes spellings
 ## These are all exact matches, as too often there are descriptions, such as "near mastering SID code"
