@@ -471,6 +471,7 @@ class discogs_handler(xml.sax.ContentHandler):
 								print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								break
 				if self.inasin:
+					## temporary hack, move to own configuration option
 					asinstrict = False
 					if not asinstrict:
 						tmpasin = v.strip().replace('-', '')
@@ -507,6 +508,8 @@ class discogs_handler(xml.sax.ContentHandler):
 							sys.stdout.flush()
 							return
 				if self.inmouldsid:
+					## temporary hack, move to own configuration option
+					mould_sid_strict = False
 					if self.config['check_mould_sid']:
 						if v.strip() == 'none':
 							return
@@ -515,12 +518,18 @@ class discogs_handler(xml.sax.ContentHandler):
 						mould_tmp = mould_tmp.replace('-', '')
 						## some people insist on using ƒ instead of f
 						mould_tmp = mould_tmp.replace('ƒ', 'f')
-						res = mouldsidre.search(mould_tmp)
+						res = mouldsidre.match(mould_tmp)
 						if res == None:
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Mould SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
+						if mould_sid_strict:
+							mould_split = mould_tmp.split('ifpi', 1)[-1]
+							for ch in ['i', 'o', 's', 'q']:
+								if ch in mould_split[-2:]:
+									print('%8d -- Mould SID Code (strict value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									return
 				if self.inmasteringsid:
 					if self.config['check_mastering_sid']:
 						if v.strip() == 'none':
@@ -530,7 +539,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						master_tmp = master_tmp.replace('-', '')
 						## some people insist on using ƒ instead of f
 						master_tmp = master_tmp.replace('ƒ', 'f')
-						res = masteringsidre.search(master_tmp)
+						res = masteringsidre.match(master_tmp)
 						if res == None:
 							self.count += 1
 							self.prev = self.release
