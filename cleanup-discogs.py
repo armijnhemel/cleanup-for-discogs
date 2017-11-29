@@ -528,8 +528,16 @@ class discogs_handler(xml.sax.ContentHandler):
 							mould_split = mould_tmp.split('ifpi', 1)[-1]
 							for ch in ['i', 'o', 's', 'q']:
 								if ch in mould_split[-2:]:
+									self.count += 1
+									self.prev = self.release
 									print('%8d -- Mould SID Code (strict value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									return
+						if self.year != None:
+							if self.year < 1993:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 				if self.inmasteringsid:
 					if self.config['check_mastering_sid']:
 						if v.strip() == 'none':
@@ -545,6 +553,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
+						if self.year != None:
+							if self.year < 1993:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 				if not self.indeposito:
 					if self.country == 'Spain':
 						if self.config['check_deposito']:
