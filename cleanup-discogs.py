@@ -232,6 +232,10 @@ class discogs_handler(xml.sax.ContentHandler):
 				if '&lt;a href="http://www.discogs.com/release/' in self.contentbuffer.lower():
 					self.count += 1
 					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+			if self.config['check_creative_commons']:
+				if 'creative commons' in self.contentbuffer.lower():
+					self.count += 1
+					print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		sys.stdout.flush()
 
 		## now reset some values
@@ -370,6 +374,10 @@ class discogs_handler(xml.sax.ContentHandler):
 				if not self.config['reportall']:
 					if self.prev == self.release:
 						return
+				if self.config['check_creative_commons']:
+					if 'creative commons' in v.lower():
+						self.count += 1
+						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				if self.inspars:
 					if self.config['check_spars_code']:
 						## TODO: check if the format is actually a CD or CD-like medium
@@ -632,6 +640,10 @@ class discogs_handler(xml.sax.ContentHandler):
 					if self.prev == self.release:
 						return
 				self.description = v.lower()
+				if self.config['check_creative_commons']:
+					if 'creative commons' in self.description:
+						self.count += 1
+						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				## squash repeated spaces
 				self.description = re.sub('\s+', ' ', self.description)
 				if self.config['check_rights_society']:
@@ -902,6 +914,16 @@ def main(argv):
 			except Exception:
 				debug = False
 			config_settings['debug'] = debug
+
+			## report creative commons references: default is False
+			try:
+				if config.get(section, 'creative_commons') == 'yes':
+					creative_commons = True
+				else:
+					creative_commons = False
+			except Exception:
+				creative_commons = False
+			config_settings['check_creative_commons'] = creative_commons
 
 	configfile.close()
 
