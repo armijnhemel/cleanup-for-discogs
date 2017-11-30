@@ -794,136 +794,132 @@ def main(argv):
 
 	for section in config.sections():
 		if section == 'cleanup':
+			## store settings for depósito legal checks
 			try:
 				if config.get(section, 'deposito') == 'yes':
-					check_deposito = True
+					config_settings['check_deposito'] = True
 				else:
-					check_deposito = False
+					config_settings['check_deposito'] = False
 			except Exception:
-				check_deposito = True
-			config_settings['check_deposito'] = check_deposito
+				config_settings['check_deposito'] = True
 
+			## store settings for rights society checks
 			try:
 				if config.get(section, 'rights_society') == 'yes':
-					check_rights_society = True
+					config_settings['check_rights_society'] = True
 				else:
-					check_rights_society = False
+					config_settings['check_rights_society'] = False
 			except Exception:
-				check_rights_society = True
-			config_settings['check_rights_society'] = check_rights_society
+				config_settings['check_rights_society'] = True
 
+			## store settings for rights society checks
 			try:
 				if config.get(section, 'label_code') == 'yes':
-					check_label_code = True
+					config_settings['check_label_code'] = True
 				else:
-					check_label_code = False
+					config_settings['check_label_code'] = False
 			except Exception:
-				check_label_code = True
-			config_settings['check_label_code'] = check_label_code
+				config_settings['check_label_code'] = True
 
+			## store settings for ISRC checks
 			try:
 				if config.get(section, 'isrc') == 'yes':
-					check_isrc = True
+					config_settings['check_isrc'] = True
 				else:
-					check_isrc = False
+					config_settings['check_isrc'] = False
 			except Exception:
-				check_isrc = True
-			config_settings['check_isrc'] = check_isrc
+				config_settings['check_isrc'] = True
 
+			## store settings for ASIN checks
 			try:
 				if config.get(section, 'asin') == 'yes':
-					check_asin = True
+					config_settings['check_asin'] = True
 				else:
-					check_asin = False
+					config_settings['check_asin'] = False
 			except Exception:
-				check_asin = True
-			config_settings['check_asin'] = check_asin
+				config_settings['check_asin'] = True
 
+			## store settings for mastering SID checks
 			try:
 				if config.get(section, 'mastering_sid') == 'yes':
-					check_mastering_sid = True
+					config_settings['check_mastering_sid'] = True
 				else:
-					check_mastering_sid = False
+					config_settings['check_mastering_sid'] = False
 			except Exception:
-				check_mastering_sid = True
-			config_settings['check_mastering_sid'] = check_mastering_sid
+				config_settings['check_mastering_sid'] = True
 
+			## store settings for mould SID checks
 			try:
 				if config.get(section, 'mould_sid') == 'yes':
-					check_mould_sid = True
+					config_settings['check_mould_sid'] = True
 				else:
-					check_mould_sid = False
+					config_settings['check_mould_sid'] = False
 			except Exception:
-				check_mould_sid = True
-			config_settings['check_mould_sid'] = check_mould_sid
+				config_settings['check_mould_sid'] = True
 
+			## store settings for SPARS Code checks
 			try:
 				if config.get(section, 'spars') == 'yes':
-					check_spars = True
+					config_settings['check_spars_code'] = True
 				else:
-					check_spars = False
+					config_settings['check_spars_code'] = False
 			except Exception:
-				check_spars = True
-			config_settings['check_spars_code'] = check_spars
+				config_settings['check_spars_code'] = True
 
+			## store settings for URLs in Notes checks
 			try:
 				if config.get(section, 'html') == 'yes':
-					check_html = True
+					config_settings['check_html'] = True
 				else:
-					check_html = False
+					config_settings['check_html'] = False
 			except Exception:
-				check_html = True
-			config_settings['check_html'] = check_html
+				config_settings['check_html'] = True
 
 
 			## month is 00 check: default is False
 			try:
 				if config.get(section, 'month') == 'yes':
-					check_month = True
+					config_settings['check_month'] = True
 				else:
-					check_month = False
+					config_settings['check_month'] = False
 			except Exception:
-				check_month = False
-			config_settings['check_month'] = check_month
+				config_settings['check_month'] = False
 
 			## year is wrong check: default is False
 			try:
 				if config.get(section, 'year') == 'yes':
-					check_year = True
+					config_settings['check_year'] = True
 				else:
-					check_year = False
+					config_settings['check_year'] = False
 			except Exception:
-				check_year = False
-			config_settings['check_year'] = check_year
+				config_settings['check_year'] = False
+
 			## reporting all: default is False
 			try:
 				if config.get(section, 'reportall') == 'yes':
-					reportall = True
+					config_settings['reportall'] = True
 				else:
-					reportall = False
+					config_settings['reportall'] = False
 			except Exception:
-				reportall = False
-			config_settings['reportall'] = reportall
+				config_settings['reportall'] = False
 
 			## debug: default is False
 			try:
 				if config.get(section, 'debug') == 'yes':
-					debug = True
+					config_settings['debug'] = True
 				else:
-					debug = False
+					config_settings['debug'] = False
 			except Exception:
-				debug = False
-			config_settings['debug'] = debug
+				config_settings['debug'] = False
 
 			## report creative commons references: default is False
 			try:
 				if config.get(section, 'creative_commons') == 'yes':
-					creative_commons = True
+					config_settings['check_creative_commons'] = True
 				else:
-					creative_commons = False
+					config_settings['check_creative_commons'] = False
 			except Exception:
-				creative_commons = False
-			config_settings['check_creative_commons'] = creative_commons
+				config_settings['check_creative_commons'] = False
 
 	configfile.close()
 
