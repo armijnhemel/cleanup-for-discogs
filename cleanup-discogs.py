@@ -181,7 +181,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
-		self.formattexts = []
+		self.formattexts = set([])
 		self.iscd = False
 		self.isrejected = False
 		self.isdraft = False
@@ -265,7 +265,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.debugcount += 1
 			self.iscd = False
 			self.year = None
-			self.formattexts = []
+			self.formattexts = set([])
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
@@ -319,6 +319,7 @@ class discogs_handler(xml.sax.ContentHandler):
 				if k == 'name':
 					if v == 'CD':
 						self.iscd = True
+					self.formattexts.add(v)
 				elif k == 'text':
 					if v != '':
 						if self.config['check_spars_code']:
@@ -540,6 +541,14 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Mould SID Code (strict value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									return
+						## rough check to find SID codes for vinyl records
+						if len(self.formattexts) == 1:
+							for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
+								if fmt in self.formattexts:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Mould SID Code (Wrong Format: %s): https://www.discogs.com/release/%s' % (self.count, fmt, str(self.release)))
+									return
 						if self.year != None:
 							if self.year < 1993:
 								self.count += 1
@@ -561,6 +570,14 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
+						## rough check to find SID codes for vinyl records
+						if len(self.formattexts) == 1:
+							for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
+								if fmt in self.formattexts:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Mastering SID Code (Wrong Format: %s): https://www.discogs.com/release/%s' % (self.count, fmt, str(self.release)))
+									return
 						if self.year != None:
 							if self.year < 1993:
 								self.count += 1
