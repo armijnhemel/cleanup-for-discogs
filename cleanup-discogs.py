@@ -541,7 +541,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Mould SID Code (strict value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									return
-						## rough check to find SID codes for vinyl records
+						## rough check to find SID codes for formats other than CD/CD-like
 						if len(self.formattexts) == 1:
 							for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
 								if fmt in self.formattexts:
@@ -570,7 +570,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
-						## rough check to find SID codes for vinyl records
+						## rough check to find SID codes for formats other than CD/CD-like
 						if len(self.formattexts) == 1:
 							for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
 								if fmt in self.formattexts:
