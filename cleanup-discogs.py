@@ -236,6 +236,9 @@ class discogs_handler(xml.sax.ContentHandler):
 				if 'creative commons' in self.contentbuffer.lower():
 					self.count += 1
 					print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+				elif 'ShareAlike' in self.contentbuffer:
+					self.count += 1
+					print('%8d -- Creative Commons reference (ShareAlike): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		sys.stdout.flush()
 
 		## now reset some values
@@ -651,6 +654,15 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print("%8d -- Depósito Legal (year not found): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 								sys.stdout.flush()
+				if self.country == 'India':
+					if 'pkd' in v.lower() or "production date" in v.lower():
+						if self.year != None:
+							pass
+						else:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
 			if 'description' in attritems:
 				v = attritems['description']
 				if not self.config['reportall']:
@@ -763,6 +775,15 @@ class discogs_handler(xml.sax.ContentHandler):
 						if self.config['check_deposito']:
 							if self.indeposito:
 								return
+				elif self.country == 'India':
+					if 'pkd' in self.description or "production date" in self.description:
+						if self.year != None:
+							pass
+						else:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
 
 				## debug code to print descriptions that were skipped.
 				## Useful to find misspellings of various fields
