@@ -658,35 +658,36 @@ class discogs_handler(xml.sax.ContentHandler):
 									print("%8d -- Depósito Legal (year not found): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 								sys.stdout.flush()
 				if self.country == 'India':
-					if 'pkd' in v.lower() or "production date" in v.lower():
-						if self.year != None:
-							## try a few variants
-							pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", v)
-							if pkdres != None:
-								pkdyear = int(pkdres.groups()[0])
-								if pkdyear < 100:
-									## correct the year. This won't work correctly after 2099.
-									if pkdyear <= currentyear - 2000:
-										pkdyear += 2000
-									else:
-										pkdyear += 1900
-								if pkdyear < 1900:
-									self.count += 1
-									self.prev = self.release
-									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-								elif pkdyear > currentyear:
-									self.count += 1
-									self.prev = self.release
-									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-								elif self.year < pkdyear:
-									self.count += 1
-									self.prev = self.release
-									print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-						else:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							return
+					if self.config['check_pkd']:
+						if 'pkd' in v.lower() or "production date" in v.lower():
+							if self.year != None:
+								## try a few variants
+								pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", v)
+								if pkdres != None:
+									pkdyear = int(pkdres.groups()[0])
+									if pkdyear < 100:
+										## correct the year. This won't work correctly after 2099.
+										if pkdyear <= currentyear - 2000:
+											pkdyear += 2000
+										else:
+											pkdyear += 1900
+									if pkdyear < 1900:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif pkdyear > currentyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif self.year < pkdyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+							else:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 			if 'description' in attritems:
 				v = attritems['description']
 				attrvalue = attritems['value']
@@ -801,35 +802,36 @@ class discogs_handler(xml.sax.ContentHandler):
 							if self.indeposito:
 								return
 				elif self.country == 'India':
-					if 'pkd' in self.description or "production date" in self.description:
-						if self.year != None:
-							## try a few variants
-							pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", attrvalue)
-							if pkdres != None:
-								pkdyear = int(pkdres.groups()[0])
-								if pkdyear < 100:
-									## correct the year. This won't work correctly after 2099.
-									if pkdyear <= currentyear - 2000:
-										pkdyear += 2000
-									else:
-										pkdyear += 1900
-								if pkdyear < 1900:
-									self.count += 1
-									self.prev = self.release
-									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-								elif pkdyear > currentyear:
-									self.count += 1
-									self.prev = self.release
-									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-								elif self.year < pkdyear:
-									self.count += 1
-									self.prev = self.release
-									print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-						else:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							return
+					if self.config['check_pkd']:
+						if 'pkd' in self.description or "production date" in self.description:
+							if self.year != None:
+								## try a few variants
+								pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", attrvalue)
+								if pkdres != None:
+									pkdyear = int(pkdres.groups()[0])
+									if pkdyear < 100:
+										## correct the year. This won't work correctly after 2099.
+										if pkdyear <= currentyear - 2000:
+											pkdyear += 2000
+										else:
+											pkdyear += 1900
+									if pkdyear < 1900:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif pkdyear > currentyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif self.year < pkdyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+							else:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 
 				## debug code to print descriptions that were skipped.
 				## Useful to find misspellings of various fields
@@ -949,6 +951,15 @@ def main(argv):
 					config_settings['check_spars_code'] = False
 			except Exception:
 				config_settings['check_spars_code'] = True
+
+			## store settings for Indian PKD checks
+			try:
+				if config.get(section, 'pkd') == 'yes':
+					config_settings['check_pkd'] = True
+				else:
+					config_settings['check_pkd'] = False
+			except Exception:
+				config_settings['check_pkd'] = True
 
 			## store settings for URLs in Notes checks
 			try:
