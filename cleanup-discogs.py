@@ -203,11 +203,12 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.count += 1
 					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 					sys.stdout.flush()
-			if self.config['check_year']:
-				if self.contentbuffer != '':
-					try:
-						self.year = int(self.contentbuffer.split('-', 1)[0])
-					except:
+			if self.contentbuffer != '':
+				try:
+					self.year = int(self.contentbuffer.split('-', 1)[0])
+				except:
+					if self.config['check_year']:
+						self.count += 1
 						print('%8d -- Year \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, self.contentbuffer, str(self.release)))
 						sys.stdout.flush()
 		elif self.innotes:
@@ -483,18 +484,19 @@ class discogs_handler(xml.sax.ContentHandler):
 								print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								break
 				if self.inasin:
-					## temporary hack, move to own configuration option
-					asinstrict = False
-					if not asinstrict:
-						tmpasin = v.strip().replace('-', '')
-					else:
-						tmpasin = v
-					if not len(tmpasin.split(':')[-1].strip()) == 10:
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						sys.stdout.flush()
-						return
+					if self.config['check_asin']:
+						## temporary hack, move to own configuration option
+						asinstrict = False
+						if not asinstrict:
+							tmpasin = v.strip().replace('-', '')
+						else:
+							tmpasin = v
+						if not len(tmpasin.split(':')[-1].strip()) == 10:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							sys.stdout.flush()
+							return
 				if self.inisrc:
 					if self.config['check_isrc']:
 						## Check the length of ISRC fields. According to the specifications these should
@@ -627,7 +629,8 @@ class discogs_handler(xml.sax.ContentHandler):
 											depositoyeartext = depositoyeartext.replace('.', '')
 										depositoyear = int(depositoyeartext)
 										if depositoyear < 100:
-											if depositoyear <= 17:
+											## correct the year. This won't work correctly after 2099.
+											if depositoyear <= currentyear - 2000:
 												depositoyear += 2000
 											else:
 												depositoyear += 1900
@@ -657,7 +660,28 @@ class discogs_handler(xml.sax.ContentHandler):
 				if self.country == 'India':
 					if 'pkd' in v.lower() or "production date" in v.lower():
 						if self.year != None:
-							pass
+							## try a few variants
+							pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", v)
+							if pkdres != None:
+								pkdyear = int(pkdres.groups()[0])
+								if pkdyear < 100:
+									## correct the year. This won't work correctly after 2099.
+									if pkdyear <= currentyear - 2000:
+										pkdyear += 2000
+									else:
+										pkdyear += 1900
+								if pkdyear < 1900:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								elif pkdyear > currentyear:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								elif self.year < pkdyear:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 						else:
 							self.count += 1
 							self.prev = self.release
@@ -665,6 +689,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							return
 			if 'description' in attritems:
 				v = attritems['description']
+				attrvalue = attritems['value']
 				if not self.config['reportall']:
 					if self.prev == self.release:
 						return
@@ -778,7 +803,28 @@ class discogs_handler(xml.sax.ContentHandler):
 				elif self.country == 'India':
 					if 'pkd' in self.description or "production date" in self.description:
 						if self.year != None:
-							pass
+							## try a few variants
+							pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", attrvalue)
+							if pkdres != None:
+								pkdyear = int(pkdres.groups()[0])
+								if pkdyear < 100:
+									## correct the year. This won't work correctly after 2099.
+									if pkdyear <= currentyear - 2000:
+										pkdyear += 2000
+									else:
+										pkdyear += 1900
+								if pkdyear < 1900:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								elif pkdyear > currentyear:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								elif self.year < pkdyear:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 						else:
 							self.count += 1
 							self.prev = self.release
