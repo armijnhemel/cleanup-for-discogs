@@ -161,7 +161,7 @@ masteringsids = set(['mastering sid code', 'master sid code', 'master sid', 'mas
 mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code', 'modul sid code', 'moould sid code', 'moudl sid code', 'moud sid code', 'moulded sid code', 'mouldering sid-code', 'moulding sid code', 'mouldg sid code', 'moulde sid code', 'mould sid-code', 'mould sid codes', 'moul sid code', 'muold sid code', 'sid code mold', 'sid code mould', 'sid-code (mould)', 'sid code: mould', 'sid code, mould', 'sid code - mould', 'sid code (moild)', 'sid code [mould]', '(sid code, mould)', 'sid-code, mould', 'sid code (mould)', 'sid code - mould code', 'sid code (mould code)', 'sid code: mould code', 'sid code moulded', 'sid code (moulded)', 'sid code, moulding', 'sid code mould (inner ring)', 'sid code (mould - inner ring)', 'sid code (mould, inner ring)', 'sid code mould - inner ring', 'sid (mold code)', 'sid mold code', 'sid moul code', 'sid mould', 'sid - mould', 'sid (mould)', 'sid, mould', 'sid - mould code', 'sid mould code', 'sid mould code cd1', 'sid mould code cd 1', 'sid mould code cd2', 'sid mould code cd 2', 'sid mould code disc 1', 'sid mould code, disc 1', 'sid mould code - disc 1', 'sid mould code disc 2', 'sid mould code, disc 2', 'sid mould code - disc 2', 'sid mould code disc 3', 'sid mould code - disc 3', 'sid mould code disc 4', 'sid mould code disc 5', 'sid mould disc 1', 'sid mould disc 2', 'sid mould disc 3', 'sid mould disc 4', 'sid mould disc 5', 'sid mould disc 6', 'sid muold code', 'sid mouls code', 'cd sid mould', 'cd sid mould code', 'cd, sid mould code', 'cd, sid - mould code', 'cds, mould sid code', 'mould sid code cd1', 'mould sid code cd2', 'sid-code mould', 'mould sid code, variant 1', 'mould sid code, variant 2', 'mould sid code dvd', 'mould sid code - dvd', 'mould sid code [dvd]', 'mould sid code, dvd', 'mould sid code (dvd)', 'mould sid code cd', 'mould sid-code', 'dvd mould sid code', 'dvd, mould sid code', 'dvd (mould sid code)', 'dvd - mould sid code', 'cd1 mould sid code', 'cd 1 mould sid code', 'cd1 : mould sid code', 'cd1, mould sid code', 'cd2 mould sid code', 'cd centre etching - mould sid code', 'cd centre etching - sid mould code', 'mould sid. code', 'mould sid code, both discs', 'cd mould (sid)', 'cd mould sid', 'cd mould sid code', 'cd - mould sid code', 'cd: mould sid code', 'cd mould, sid code', 'cd (mould sid code)', 'cd, mould sid code', 'disc 1 mould (sid)', 'disc 1 mould sid code', 'disc 1 (mould sid code)', '(disc 1) mould sid code', 'disc 1 - mould sid code', 'disc (1) - mould sid code', 'disc 1 sid code moulded', 'disc 1 sid mould', 'disc 1 sid mould code', 'disc 1 - sid mould code', 'disc 2 mould sid code', 'disc 2 (mould sid code)', '(disc 2) mould sid code', 'disc (2) - mould sid code', 'dvd sid mould code', 'dvd: sid mould code', 'dvd1 mould sid code', 'dvd1 sid code mould', 'dvd2 mould sid code', 'dvd2 sid code mould', 'mould sid code 1', 'mould sid code 2', 'mould sid code both discs', 'mould sid code (both discs)', 'mould sid code - cd1', 'mould sid code, cd', 'mould sid code cd 1', 'mould sid code (cd1)', 'mould sid code [cd]', 'mould sid code - cd1', 'mould sid code cd1 & cd2', 'mould sid code (cd 2)', 'mould sid code (cd2)', 'mould sid code - cd2', 'mould sid code disc 2', 'mould sid code dvd1', 'mould s.i.d.', 'mould s.i.d. code', 'moulds.i.d. code', 's.i.d. mould code', 's.i.d. moulding code', 'modul sid code (both discs)'])
 
 ## a list of creative commons identifiers
-creativecommons = ['CC-BY-NC-ND', 'ShareAlike']
+creativecommons = ['CC-BY-NC-ND', 'CC-BY-ND', 'CC-BY-SA', 'ShareAlike']
 
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
@@ -239,14 +239,19 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.count += 1
 					print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 			if self.config['check_creative_commons']:
-				if 'creative commons' in self.contentbuffer.lower():
-					self.count += 1
-					print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+				ccfound = False
 				for cc in creativecommons:
 					if cc in self.contentbuffer:
 						self.count += 1
 						print('%8d -- Creative Commons reference (%s): https://www.discogs.com/release/%s' % (self.count, cc, str(self.release)))
+						ccfound = True
 						break
+
+				if not ccfound:
+					if 'creative commons' in self.contentbuffer.lower():
+						self.count += 1
+						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+						ccfound = True
 		sys.stdout.flush()
 
 		## now reset some values
@@ -737,7 +742,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
 				if self.config['check_isrc']:
-					if not self.isinrc:
+					if not self.inisrc:
 						if self.description.startswith('isrc'):
 							self.count += 1
 							self.prev = self.release
