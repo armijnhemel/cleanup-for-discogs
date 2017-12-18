@@ -737,22 +737,23 @@ class discogs_handler(xml.sax.ContentHandler):
 						print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						return
 				if self.config['check_isrc']:
-					if self.description.startswith('isrc'):
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
-					if self.description.startswith('issrc'):
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
-					for isrc in isrc_ftf:
-						if isrc in self.description:
+					if not self.isinrc:
+						if self.description.startswith('isrc'):
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
+						if self.description.startswith('issrc'):
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+						for isrc in isrc_ftf:
+							if isrc in self.description:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 				if self.config['check_mastering_sid']:
 					if not self.inmasteringsid:
 						if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
