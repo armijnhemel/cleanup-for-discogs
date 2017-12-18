@@ -194,6 +194,10 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.depositofound = False
 		self.config = config_settings
 		self.contentbuffer = ''
+		if config_settings['check_credits']:
+			creditsfile = open(config_settings['creditsfile'], 'r')
+			self.credits = list(map(lambda x: x.strip(), creditsfile.readlines()))
+			creditsfile.close()
 	def startElement(self, name, attrs):
 		## first process the contentbuffer
 		if self.incountry:
@@ -974,6 +978,18 @@ def main(argv):
 			except Exception:
 				config_settings['check_pkd'] = True
 
+			## store settings for credits list checks
+			try:
+				if config.get(section, 'credits') == 'yes':
+					creditsfile = config.get(section, 'creditsfile')
+					if os.path.exists(creditsfile):
+						config_settings['creditsfile'] = creditsfile
+						config_settings['check_credits'] = True
+				else:
+					config_settings['check_credits'] = False
+			except Exception:
+				config_settings['check_credits'] = True
+
 			## store settings for URLs in Notes checks
 			try:
 				if config.get(section, 'html') == 'yes':
@@ -1031,14 +1047,14 @@ def main(argv):
 
 	configfile.close()
 
-	parser = xml.sax.make_parser()
-	parser.setContentHandler(discogs_handler(config_settings))
+	dumpfileparser = xml.sax.make_parser()
+	dumpfileparser.setContentHandler(discogs_handler(config_settings))
 	try:
 		dumpfile = gzip.open(args.datadump, "rb")
 	except Exception:
 		print("Cannot open dump file", file=sys.stderr)
 		sys.exit(1)
-	parser.parse(dumpfile)
+	dumpfileparser.parse(dumpfile)
 
 	dumpfile.close()
 
