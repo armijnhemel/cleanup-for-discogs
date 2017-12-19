@@ -229,6 +229,10 @@ class discogs_handler(xml.sax.ContentHandler):
 								for role in roles:
 									if role == '':
 										continue
+									## ugly hack because sometimes the extra data between [ and ]
+									## appears halfway the words in a role, sigh.
+									if role == 'By':
+										continue
 									if not role in self.credits:
 										self.count += 1
 										print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
