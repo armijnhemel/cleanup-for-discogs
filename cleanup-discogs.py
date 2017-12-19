@@ -205,34 +205,35 @@ class discogs_handler(xml.sax.ContentHandler):
 		if self.incountry:
 			self.country = self.contentbuffer
 		elif self.inrole:
-			roledata = self.contentbuffer.strip()
-			if roledata != '':
-				if not '[' in roledata:
-					roles = map(lambda x: x.strip(), roledata.split(','))
-					for role in roles:
-						if role == '':
-							continue
-						if not role in self.credits:
-							self.count += 1
-							print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-							sys.stdout.flush()
-				else:
-					## sometimes there is an additional description in the role in between [ and ]
-					rolesplit = roledata.split('[')
-					for rs in rolesplit:
-						if ']' in rs:
-							rs_tmp = rs
-							while ']' in rs_tmp:
-								rs_tmp = rs_tmp.split(']', 1)[1]
-							roles = map(lambda x: x.strip(), rs_tmp.split(','))
-							for role in roles:
-								if role == '':
-									continue
-								if not role in self.credits:
-									self.count += 1
-									print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-									sys.stdout.flush()
-									continue
+			if self.config['check_credits']:
+				roledata = self.contentbuffer.strip()
+				if roledata != '':
+					if not '[' in roledata:
+						roles = map(lambda x: x.strip(), roledata.split(','))
+						for role in roles:
+							if role == '':
+								continue
+							if not role in self.credits:
+								self.count += 1
+								print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
+								sys.stdout.flush()
+					else:
+						## sometimes there is an additional description in the role in between [ and ]
+						rolesplit = roledata.split('[')
+						for rs in rolesplit:
+							if ']' in rs:
+								rs_tmp = rs
+								while ']' in rs_tmp:
+									rs_tmp = rs_tmp.split(']', 1)[1]
+								roles = map(lambda x: x.strip(), rs_tmp.split(','))
+								for role in roles:
+									if role == '':
+										continue
+									if not role in self.credits:
+										self.count += 1
+										print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
+										sys.stdout.flush()
+										continue
 					pass
 		elif self.indescription:
 			if self.indescriptions:
@@ -1025,7 +1026,7 @@ def main(argv):
 				else:
 					config_settings['check_credits'] = False
 			except Exception:
-				config_settings['check_credits'] = True
+				config_settings['check_credits'] = False
 
 			## store settings for URLs in Notes checks
 			try:
