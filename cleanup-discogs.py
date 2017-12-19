@@ -166,6 +166,7 @@ creativecommons = ['CC-BY-NC-ND', 'CC-BY-ND', 'CC-BY-SA', 'ShareAlike']
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
 		self.incountry = False
+		self.inrole = False
 		self.inreleased = False
 		self.inspars = False
 		self.inother = False
@@ -181,6 +182,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.innotes = False
 		self.release = None
 		self.country = None
+		self.role = None
 		self.indescription = False
 		self.indescriptions = False
 		self.debugcount = 0
@@ -196,12 +198,24 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.contentbuffer = ''
 		if config_settings['check_credits']:
 			creditsfile = open(config_settings['creditsfile'], 'r')
-			self.credits = list(map(lambda x: x.strip(), creditsfile.readlines()))
+			self.credits = set(map(lambda x: x.strip(), creditsfile.readlines()))
 			creditsfile.close()
 	def startElement(self, name, attrs):
 		## first process the contentbuffer
 		if self.incountry:
 			self.country = self.contentbuffer
+		elif self.inrole:
+			roledata = self.contentbuffer.strip()
+			if roledata != '':
+				if not '[' in roledata:
+					roles = map(lambda x: x.strip(), roledata.split(','))
+					for role in roles:
+						if role == '':
+							continue
+						if not role in self.credits:
+							self.count += 1
+							print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
+							sys.stdout.flush()
 		elif self.indescription:
 			if self.indescriptions:
 				if 'Styrene' in self.contentbuffer:
@@ -261,6 +275,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		## now reset some values
 		self.incountry = False
 		self.inreleased = False
+		self.inrole = False
 		self.inspars = False
 		self.inother = False
 		self.inlabelcode = False
@@ -285,6 +300,8 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.debugcount += 1
 			self.iscd = False
 			self.year = None
+			self.role = None
+			self.country = None
 			self.formattexts = set([])
 			for (k,v) in attrs.items():
 				if k == 'id':
@@ -305,6 +322,8 @@ class discogs_handler(xml.sax.ContentHandler):
 
 		if name == 'country':
 			self.incountry = True
+		elif name == 'role':
+			self.inrole = True
 		elif name == 'label':
 			for (k,v) in attrs.items():
 				if k == 'catno':
