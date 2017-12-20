@@ -760,11 +760,12 @@ class discogs_handler(xml.sax.ContentHandler):
 				## squash repeated spaces
 				self.description = re.sub('\s+', ' ', self.description)
 				if self.config['check_rights_society']:
-					if self.description in ["rights society", "rights societies", "right society", "mechanical rights society"]:
-						self.count += 1
-						self.prev = self.release
-						print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-						return
+					if not self.inrightssociety:
+						if self.description in ["rights society", "rights societies", "right society", "mechanical rights society"]:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
 				if self.config['check_label_code']:
 					if self.description in label_code_ftf:
 						self.count += 1
