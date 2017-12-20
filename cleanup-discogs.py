@@ -151,6 +151,8 @@ isrc_ftf = set(['international standard recording code','international standard 
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
 rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM ", "ADDAF", "AEPI", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR", "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA", "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA", "CAPAC", "CASH", "CEDAR", "CISAC", "CMRRA", "COTT", "EAU", "FCA", "FILSCAP", "GEMA", "GESAC", "GESAP", "GRAMO", "GVL", "HDS", "HFA", "IMRO", "IPRS", "JASRAC", "KCI", "KODA", "KOMCA", "LATGA-A", "MACP", "MECOLICO", "MCPS", "MCSC", "MCSK", "MESAM", "MUSICAUTOR", "MUST", "NCB", "n©b", "OSA", "PAMRA", "PPL", "PROCAN", "PRS", "RAO", "SABAM", "SACEM", "SACEM Luxembourg", "SACM", "SACVEN", "SADAIC", "SAMI", "SAMRO", "SAYCO", "SAZAS", "SBACEM", "SCPP", "SCD", "SDRM", "SEDRIM", "SENA", "SESAC", "SGA", "SGAE", "SIAE", "SOCAN", "SODRAC", "SOKOJ", "SOZA", "SPA", "STEF", "STEMRA", "STIM", "SUISA", "TEOSTO", "TONO", "UACRR", "UBC", "UCMR-ADA", "ZAIKS"])
 
+rights_societies_ftf = set(["rights society", "rights societies", "right society", "mechanical rights society", "rights societiy", "rights societe", "rights societry", "rights societty", "rights societiers", "roghts society", "ritght society", "rigths society", "right society", "righty society", "rhights society", "righrs society", "righs society", "righst society"])
+
 ## SID codes spellings
 ## These are all exact matches, as too often there are descriptions, such as "near mastering SID code"
 ## or similar and using a regular expression would lead to many false positives.
@@ -761,7 +763,7 @@ class discogs_handler(xml.sax.ContentHandler):
 				self.description = re.sub('\s+', ' ', self.description)
 				if self.config['check_rights_society']:
 					if not self.inrightssociety:
-						if self.description in ["rights society", "rights societies", "right society", "mechanical rights society"]:
+						if self.description in rights_societies_ftf:
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
