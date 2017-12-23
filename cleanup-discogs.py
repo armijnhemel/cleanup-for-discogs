@@ -247,9 +247,15 @@ class discogs_handler(xml.sax.ContentHandler):
 					pass
 		elif self.inreleased:
 			if self.config['check_month']:
-				if '-00-' in self.contentbuffer:
-					self.count += 1
-					print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+				monthres = re.search('-(\d+)-', self.contentbuffer)
+				if monthres != None:
+					monthnr = int(monthres.groups()[0])
+					if monthnr == 0:
+						self.count += 1
+						print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+					elif monthnr > 12:
+						self.count += 1
+						print('%8d -- Month impossible (%d): https://www.discogs.com/release/%s' % (self.count, monthnr, str(self.release)))
 					sys.stdout.flush()
 			if self.contentbuffer != '':
 				try:
