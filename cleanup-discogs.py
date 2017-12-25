@@ -301,6 +301,18 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.count += 1
 						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						ccfound = True
+		if self.intracklist and self.inposition:
+			if self.config['check_tracklisting']:
+				if self.tracklistcorrect != False:
+					if len(self.formattexts) == 1:
+						if 'Vinyl' in self.formattexts or 'Cassette' in self.formattexts:
+							try:
+								int(self.contentbuffer)
+								self.count += 1
+								print('%8d -- Tracklisting: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								self.tracklistcorrect = False
+							except:
+								pass
 		sys.stdout.flush()
 
 		## now reset some values
@@ -319,7 +331,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.indeposito = False
 		self.innotes = False
 		self.indescription = False
-		self.intracklist = False
+		self.intitle = False
+		self.inposition = False
 		self.contentbuffer = ''
 		if name == "release":
 			## new release entry, so reset the isrejected field
@@ -330,9 +343,11 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.seentracklist = False
 			self.debugcount += 1
 			self.iscd = False
+			self.tracklistcorrect = True
 			self.year = None
 			self.role = None
 			self.country = None
+			self.intracklist = False
 			self.formattexts = set([])
 			for (k,v) in attrs.items():
 				if k == 'id':
@@ -384,6 +399,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							return
 		elif name == 'tracklist':
 			self.intracklist = True
+		elif name == 'videos':
+			self.intracklist = False
+		elif name == 'title':
+			self.intitle = True
+		elif name == 'position':
+			self.inposition = True
 		elif name == 'format':
 			for (k,v) in attrs.items():
 				if k == 'name':
@@ -1028,6 +1049,15 @@ def main(argv):
 					config_settings['check_pkd'] = False
 			except Exception:
 				config_settings['check_pkd'] = True
+
+			## store settings for tracklisting checks, default True
+			try:
+				if config.get(section, 'tracklisting') == 'yes':
+					config_settings['check_tracklisting'] = True
+				else:
+					config_settings['check_tracklisting'] = False
+			except Exception:
+				config_settings['check_tracklisting'] = True
 
 			## store settings for credits list checks
 			try:
