@@ -165,8 +165,10 @@ mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code', 'mo
 ## a list of creative commons identifiers
 creativecommons = ['CC-BY-NC-ND', 'CC-BY-ND', 'CC-BY-SA', 'ShareAlike']
 
+## a class with a handler for the SAX parser
 class discogs_handler(xml.sax.ContentHandler):
 	def __init__(self, config_settings):
+		## many default settings
 		self.incountry = False
 		self.inrole = False
 		self.inreleased = False
@@ -202,8 +204,11 @@ class discogs_handler(xml.sax.ContentHandler):
 			creditsfile = open(config_settings['creditsfile'], 'r')
 			self.credits = set(map(lambda x: x.strip(), creditsfile.readlines()))
 			creditsfile.close()
+
+	## startElement() is called every time a new XML element is parsed
 	def startElement(self, name, attrs):
-		## first process the contentbuffer
+		## first process the contentbuffer of the previous
+		## element that was stored.
 		if self.incountry:
 			self.country = self.contentbuffer
 		elif self.inrole:
@@ -240,7 +245,6 @@ class discogs_handler(xml.sax.ContentHandler):
 										print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
 										sys.stdout.flush()
 										continue
-					pass
 		elif self.indescription:
 			if self.indescriptions:
 				if 'Styrene' in self.contentbuffer:
@@ -939,7 +943,7 @@ def main(argv):
 	parser.add_argument("-d", "--datadump", action="store", dest="datadump", help="path to discogs data dump", metavar="DATA")
 	args = parser.parse_args()
 
-	## path of the gzip compressed releases file
+	## first some sanity checks for the gzip compressed releases file
 	if args.datadump == None:
 		parser.error("Data dump file missing")
 
@@ -949,6 +953,7 @@ def main(argv):
 	if not os.path.isfile(args.datadump):
 		parser.error("Data dump file is not a file")
 
+	## then some checks for the configuration file
 	if args.cfg == None:
 		parser.error("Configuration file missing")
 
@@ -965,6 +970,7 @@ def main(argv):
 		print("Cannot read configuration file", file=sys.stderr)
 		sys.exit(1)
 
+	## process the configuration file and store settings
 	config_settings = {}
 
 	for section in config.sections():
@@ -1128,6 +1134,7 @@ def main(argv):
 
 	configfile.close()
 
+	## create a SAX parser and feed the gzip compressed file to it
 	dumpfileparser = xml.sax.make_parser()
 	dumpfileparser.setContentHandler(discogs_handler(config_settings))
 	try:
