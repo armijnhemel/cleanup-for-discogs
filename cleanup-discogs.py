@@ -309,14 +309,15 @@ class discogs_handler(xml.sax.ContentHandler):
 			if self.config['check_tracklisting']:
 				if self.tracklistcorrect != False:
 					if len(self.formattexts) == 1:
-						if 'Vinyl' in self.formattexts or 'Cassette' in self.formattexts:
-							try:
-								int(self.contentbuffer)
-								self.count += 1
-								print('%8d -- Tracklisting: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								self.tracklistcorrect = False
-							except:
-								pass
+						for f in ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']:
+							if f in self.formattexts:
+								try:
+									int(self.contentbuffer)
+									self.count += 1
+									print('%8d -- Tracklisting (%s): https://www.discogs.com/release/%s' % (self.count, f, str(self.release)))
+									self.tracklistcorrect = False
+								except:
+									pass
 		sys.stdout.flush()
 
 		## now reset some values
