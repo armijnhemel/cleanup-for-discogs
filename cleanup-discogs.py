@@ -200,8 +200,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.depositofound = False
 		self.config = config_settings
 		self.contentbuffer = ''
-		if config_settings['check_credits']:
-			creditsfile = open(config_settings['creditsfile'], 'r')
+		if 'check_credits' in self.config:
+			creditsfile = open(self.config['creditsfile'], 'r')
 			self.credits = set(map(lambda x: x.strip(), creditsfile.readlines()))
 			creditsfile.close()
 
@@ -212,7 +212,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		if self.incountry:
 			self.country = self.contentbuffer
 		elif self.inrole:
-			if self.config['check_credits']:
+			if 'check_credits' in self.config:
 				roledata = self.contentbuffer.strip()
 				if roledata != '':
 					if not '[' in roledata:
@@ -926,6 +926,21 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.prev = self.release
 								print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								return
+				elif self.country == 'Czechoslovakia':
+					if self.config['check_manufacturing_date_cs']:
+						if 'date' in self.description:
+							if self.year != None:
+								manufacturing_date_res = re.search("(\d{2})\s+\d", attrvalue)
+								if manufacturing_date_res != None:
+									manufacturing_year = int(manufacturing_date_res.groups()[0])
+									if manufacturing_year < 100:
+										manufacturing_year += 1900
+										if manufacturing_year != self.year:
+											self.count += 1
+											self.prev = self.release
+											print("%8d -- Czechoslovak manufacturing date (release year wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									else:
+										pass
 
 				## debug code to print descriptions that were skipped.
 				## Useful to find misspellings of various fields
@@ -1056,6 +1071,14 @@ def main(argv):
 					config_settings['check_pkd'] = False
 			except Exception:
 				config_settings['check_pkd'] = True
+
+			try:
+				if config.get(section, 'manufacturing_date_cs') == 'yes':
+					config_settings['check_manufacturing_date_cs'] = True
+				else:
+					config_settings['check_manufacturing_date_cs'] = False
+			except Exception:
+				config_settings['check_manufacturing_date_cs'] = True
 
 			## store settings for tracklisting checks, default True
 			try:
