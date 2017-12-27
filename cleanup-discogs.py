@@ -183,6 +183,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inmouldsid = False
 		self.inrightssociety = False
 		self.intracklist = False
+		self.invideos = False
 		self.innotes = False
 		self.release = None
 		self.country = None
@@ -211,7 +212,16 @@ class discogs_handler(xml.sax.ContentHandler):
 		## element that was stored.
 		if self.incountry:
 			self.country = self.contentbuffer
-		elif self.inrole:
+		if self.config['check_spelling_cs']:
+			if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
+				## People use 0x115 instead of 0x11B, which look very similar but 0x115 is not valid
+				## in the Czech alphabet. Check for all data except the YouTube playlist.
+				## https://www.discogs.com/group/thread/757556
+				if not self.invideos:
+					if chr(0x115) in self.contentbuffer:
+						self.count += 1
+						print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+		if self.inrole:
 			if 'check_credits' in self.config:
 				roledata = self.contentbuffer.strip()
 				if roledata != '':
@@ -353,6 +363,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.role = None
 			self.country = None
 			self.intracklist = False
+			self.invideos = False
 			self.formattexts = set([])
 			for (k,v) in attrs.items():
 				if k == 'id':
@@ -405,7 +416,10 @@ class discogs_handler(xml.sax.ContentHandler):
 		elif name == 'tracklist':
 			self.intracklist = True
 		elif name == 'videos':
+			self.invideos = True
 			self.intracklist = False
+		elif name == 'companies':
+			self.invideos = False
 		elif name == 'title':
 			self.intitle = True
 		elif name == 'position':
@@ -787,6 +801,14 @@ class discogs_handler(xml.sax.ContentHandler):
 					if self.prev == self.release:
 						return
 				self.description = v.lower()
+				if self.config['check_spelling_cs']:
+					## People use 0x115 instead of 0x11B, which look very similar but 0x115 is not valid
+					## in the Czech alphabet.
+					## https://www.discogs.com/group/thread/757556
+					if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
+						if chr(0x115) in attrvalue or chr(0x115) in self.description:
+							self.count += 1
+							print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				if self.config['check_creative_commons']:
 					if 'creative commons' in self.description:
 						self.count += 1
@@ -1077,6 +1099,7 @@ def main(argv):
 			except Exception:
 				config_settings['check_pkd'] = True
 
+			## check for Czechoslovak manufacturing dates
 			try:
 				if config.get(section, 'manufacturing_date_cs') == 'yes':
 					config_settings['check_manufacturing_date_cs'] = True
@@ -1084,6 +1107,15 @@ def main(argv):
 					config_settings['check_manufacturing_date_cs'] = False
 			except Exception:
 				config_settings['check_manufacturing_date_cs'] = True
+
+			## check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
+			try:
+				if config.get(section, 'spelling_cs') == 'yes':
+					config_settings['spelling_cs'] = True
+				else:
+					config_settings['spelling_cs'] = False
+			except Exception:
+				config_settings['spelling_cs'] = True
 
 			## store settings for tracklisting checks, default True
 			try:
