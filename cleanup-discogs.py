@@ -1111,11 +1111,11 @@ def main(argv):
 			## check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
 			try:
 				if config.get(section, 'spelling_cs') == 'yes':
-					config_settings['spelling_cs'] = True
+					config_settings['check_spelling_cs'] = True
 				else:
-					config_settings['spelling_cs'] = False
+					config_settings['check_spelling_cs'] = False
 			except Exception:
-				config_settings['spelling_cs'] = True
+				config_settings['check_spelling_cs'] = True
 
 			## store settings for tracklisting checks, default True
 			try:
