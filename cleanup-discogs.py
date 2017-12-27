@@ -928,19 +928,24 @@ class discogs_handler(xml.sax.ContentHandler):
 								return
 				elif self.country == 'Czechoslovakia':
 					if self.config['check_manufacturing_date_cs']:
+						## config hack, needs to be in its own configuration option
+						strict_cs = False
 						if 'date' in self.description:
 							if self.year != None:
-								manufacturing_date_res = re.search("(\d{2})\s+\d", attrvalue)
+								manufacturing_date_res = re.search("(\d{2})\s+\d$", attrvalue.rstrip())
 								if manufacturing_date_res != None:
 									manufacturing_year = int(manufacturing_date_res.groups()[0])
 									if manufacturing_year < 100:
 										manufacturing_year += 1900
-										if manufacturing_year != self.year:
+										if manufacturing_year > self.year:
 											self.count += 1
 											self.prev = self.release
 											print("%8d -- Czechoslovak manufacturing date (release year wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-									else:
-										pass
+										## possibly this check makes sense, but not always
+										elif manufacturing_year < self.year and strict_cs:
+											self.count += 1
+											self.prev = self.release
+											print("%8d -- Czechoslovak manufacturing date (release year possibly wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 
 				## debug code to print descriptions that were skipped.
 				## Useful to find misspellings of various fields
