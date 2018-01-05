@@ -37,13 +37,13 @@
 ##   https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
 ##   There are still many releases where old hyperlinks are used.
 ## 
-## The results that are printed by this script are by no means complete.
+## The results that are printed by this script are by no means complete or accurate
 ##
 ## Licensed under the terms of the General Public License version 3
 ##
 ## SPDX-License-Identifier: GPL-3.0
 ##
-## Copyright 2017 - Armijn Hemel
+## Copyright 2017-2018 - Armijn Hemel
 
 import xml.sax
 import sys, os, gzip, re, datetime
@@ -286,7 +286,14 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.inrole = True
 		elif name == 'label':
 			for (k,v) in attrs.items():
-				if k == 'catno':
+				if k == 'name':
+					if self.config['check_label_name']:
+						if v == 'London':
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- Wrong label (London): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							return
+				elif k == 'catno':
 					catno = v.lower()
 					if self.config['check_label_code']:
 						if catno.startswith('lc'):
@@ -939,7 +946,7 @@ def main(argv):
 			except Exception:
 				config_settings['check_rights_society'] = True
 
-			## store settings for rights society checks
+			## store settings for label code checks
 			try:
 				if config.get(section, 'label_code') == 'yes':
 					config_settings['check_label_code'] = True
@@ -947,6 +954,15 @@ def main(argv):
 					config_settings['check_label_code'] = False
 			except Exception:
 				config_settings['check_label_code'] = True
+
+			## store settings for label name checks
+			try:
+				if config.get(section, 'label_name') == 'yes':
+					config_settings['check_label_name'] = True
+				else:
+					config_settings['check_label_name'] = False
+			except Exception:
+				config_settings['check_label_name'] = True
 
 			## store settings for ISRC checks
 			try:
