@@ -1109,7 +1109,7 @@ def main(argv):
 		for releasenr in range(startvalue, latest_release):
 			if startvalue == latest_release:
 				break
-			targetfilename = os.path.join(storedir, "%d.json" % releasenr)
+			targetfilename = os.path.join(storedir, "%d" % (releasenr//1000000), "%d.json" % releasenr)
 			if config_settings['skip404']:
 				if releasenr in skip404s:
 					continue
@@ -1172,6 +1172,7 @@ def main(argv):
 			count = processrelease(responsejson, config_settings, count, credits, ibuddy, favourites)
 			## be gentle for Discogs and sleep
 			time.sleep(0.2)
+			sys.stderr.flush()
 
 		## now set startvalue to latest_release
 		startvalue = latest_release
