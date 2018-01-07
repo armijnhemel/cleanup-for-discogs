@@ -212,7 +212,7 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
 					except:
 						pass
 				if formatqty == 1:
-					if t['position'].strip() != '' and t['position'].strip() != '-' and t['position'] in tracklistpositions:
+					if t['position'].strip() != '' and t['position'].strip() != '-' and t['type_'] != 'heading' and t['position'] in tracklistpositions:
 						count += 1
 						errormsgs.append('%8d -- Tracklisting reuse (%s, %s): https://www.discogs.com/release/%s' % (count, formattext, t['position'], str(release_id)))
 					tracklistpositions.add(t['position'])
