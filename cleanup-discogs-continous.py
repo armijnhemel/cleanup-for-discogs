@@ -223,9 +223,14 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
 		if 'catno' in l:
 			if config_settings['check_label_code']:
 				if l['catno'].lower().startswith('lc'):
-					if discogssmells.labelcodere.match(l['catno'].lower()) != None:
-						count += 1
-						errormsgs.append('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (count, str(release_id)))
+					falsepositive = False
+					## American releases on Epic (label 1005 in Discogs) sometimes start with LC
+					if l['id'] == 1005:
+						falsepositive = True
+					if not falsepositive:
+						if discogssmells.labelcodere.match(l['catno'].lower()) != None:
+							count += 1
+							errormsgs.append('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (count, str(release_id)))
 			if config_settings['check_deposito']:
 				## now check for D.L.
 				dlfound = False
@@ -1103,6 +1108,8 @@ def main(argv):
 	#favourites = set(['Bob Dylan', 'Iron Maiden', 'The Beatles'])
 	favourites = set()
 
+	newsleep = 600
+
 	## now start a big loop
 	## https://www.discogs.com/developers/#page:authentication
 	while(True):
@@ -1183,9 +1190,12 @@ def main(argv):
 		if latest_release == None:
 			print("Something went wrong, try again later", file=sys.stderr)
 			sys.exit(1)
+		print("Latest = %d" % latest_release, file=sys.stderr)
+		print("Sleeping for %d seconds" % newsleep, file=sys.stderr)
+		sys.stderr.flush()
 
 		## sleep for ten minutes to make sure some new things have been added to Discogs
-		time.sleep(600)
+		time.sleep(newsleep)
 	release404file.close()
 		
 if __name__ == "__main__":
