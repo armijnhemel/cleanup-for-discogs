@@ -25,6 +25,9 @@ currentyear = datetime.datetime.utcnow().year
 ## Since the API does not have a call to get the latest release that has been
 ## added to the database get it from the following webpage by scraping. This is ugly.
 ## https://www.discogs.com/search/?sort=date_added%2Cdesc&type=release
+##
+## The contents of this page are different depending on whether or not you are logged
+## into the website. If you are not logged in, then it is a few hours behind.
 def get_latest_release():
 	r = requests.get('https://www.discogs.com/search/?sort=date_added%2Cdesc&type=release')
 	if r.status_code != 200:
@@ -245,6 +248,12 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
 				if dlfound:
 					count += 1
 					errormsgs.append('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (count, str(release_id)))
+		if 'name' in l:
+			if config_settings['check_label_name']:
+				if l['name'] == 'London' and l['id'] == 26905:
+					count += 1
+					errormsgs.append('%8d -- Wrong label (London): https://www.discogs.com/release/%s' % (count, str(release_id)))
+					pass
 	'''
 	if name == 'format':
 		for (k,v) in attrs.items():
@@ -781,7 +790,7 @@ def main(argv):
 			except Exception:
 				config_settings['check_rights_society'] = True
 
-			## store settings for rights society checks
+			## store settings for label code checks
 			try:
 				if config.get(section, 'label_code') == 'yes':
 					config_settings['check_label_code'] = True
@@ -789,6 +798,15 @@ def main(argv):
 					config_settings['check_label_code'] = False
 			except Exception:
 				config_settings['check_label_code'] = True
+
+			## store settings for label name checks
+			try:
+				if config.get(section, 'label_name') == 'yes':
+					config_settings['check_label_name'] = True
+				else:
+					config_settings['check_label_name'] = False
+			except Exception:
+				config_settings['check_label_name'] = True
 
 			## store settings for ISRC checks
 			try:
@@ -1054,8 +1072,7 @@ def main(argv):
 	## use a (somewhat) exponential backoff in case too many requests have been made
 	ratelimitbackoff = 5
 
-	#latest_release = get_latest_release()
-	latest_release = 11361760
+	latest_release = get_latest_release()
 	if latest_release == None:
 		print("Something went wrong, try again later", file=sys.stderr)
 		sys.exit(1)
@@ -1142,12 +1159,15 @@ def main(argv):
 							retryafter = int(r.headers['Retry-After'])
 							print("Rate limiting, sleeping for %d seconds" % retryafter, file=sys.stderr)
 							time.sleep(retryafter)
+							sys.stderr.flush()
 						except:
 							print("Rate limiting, sleeping for %d seconds" % 60, file=sys.stderr)
 							time.sleep(60)
+							sys.stderr.flush()
 					else:
 						print("Rate limiting, sleeping for %d seconds" % 60, file=sys.stderr)
 						time.sleep(60)
+						sys.stderr.flush()
 				## TODO: the current release will not have been downloaded and processed
 				continue
 
@@ -1158,6 +1178,7 @@ def main(argv):
 				## no more requests are allowed, so sleep for some time, max 60 seconds
 				time.sleep(ratelimitbackoff)
 				print("Rate limiting, sleeping for %d seconds" % ratelimitbackoff, file=sys.stderr)
+				sys.stderr.flush()
 				if ratelimitbackoff < 60:
 					ratelimitbackoff = min(60, ratelimitbackoff * 2)
 			else:
