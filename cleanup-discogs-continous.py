@@ -156,23 +156,23 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
 				if 'role' in artist:
 					invalidroles = checkrole(artist, release_id, credits)
 					for role in invalidroles:
-						errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 						count += 1
+						errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 		if 'extraartists' in release:
 			for artist in release['extraartists']:
 				if 'role' in artist:
 					invalidroles = checkrole(artist, release_id, credits)
 					for role in invalidroles:
-						errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 						count += 1
+						errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 		for t in release['tracklist']:
 			if 'extraartists' in t:
 				for artist in t['extraartists']:
 					if 'role' in artist:
 						invalidroles = checkrole(artist, release_id, credits)
 						for role in invalidroles:
-							errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 							count += 1
+							errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 
 	## check release month and year
 	if 'released' in release:
