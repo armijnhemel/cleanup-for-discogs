@@ -470,12 +470,22 @@ class discogs_handler(xml.sax.ContentHandler):
 						pass
 				elif not self.inother:
 					if self.config['check_rights_society']:
-						for r in discogssmells.rights_societies:
-							if v.replace('.', '') == r or v.replace(' ', '') == r:
-								self.count += 1
-								self.prev = self.release
-								print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-								break
+						if '/' in v:
+							vsplits = v.split('/')
+							for vsplit in vsplits:
+								for r in discogssmells.rights_societies:
+									if vsplit.replace('.', '') == r or vsplit.replace(' ', '') == r:
+										self.count += 1
+										self.prev = self.release
+										print('%8d -- Rights Society (BaOI2): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+										break
+						else:
+							for r in discogssmells.rights_societies:
+								if v.replace('.', '') == r or v.replace(' ', '') == r:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									break
 				if self.inbarcode:
 					if self.config['check_label_code']:
 						if v.lower().startswith('lc'):
@@ -514,6 +524,13 @@ class discogs_handler(xml.sax.ContentHandler):
 							sys.stdout.flush()
 							return
 				if self.inisrc:
+					if self.config['check_rights_society']:
+						for r in discogssmells.rights_societies:
+							if v.replace('.', '') == r or v.replace(' ', '') == r:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Rights Society (in ISRC): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								break
 					if self.config['check_isrc']:
 						## Check the length of ISRC fields. According to the specifications these should
 						## be 12 in length. Some ISRC identifiers that have been recorded in the database
@@ -727,11 +744,21 @@ class discogs_handler(xml.sax.ContentHandler):
 				self.description = re.sub('\s+', ' ', self.description)
 				if self.config['check_rights_society']:
 					if not self.inrightssociety:
-						if self.description in discogssmells.rights_societies_ftf:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							return
+						if '/' in attrvalue:
+							vsplits = attrvalue.split('/')
+							for vsplit in vsplits:
+								for r in discogssmells.rights_societies:
+									if vsplit.replace('.', '') == r or vsplit.replace(' ', '') == r:
+										self.count += 1
+										self.prev = self.release
+										print('%8d -- Rights Society (BaOI2): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+										break
+						else:
+							if self.description in discogssmells.rights_societies_ftf:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 				if self.config['check_label_code']:
 					if self.description in discogssmells.label_code_ftf:
 						self.count += 1
