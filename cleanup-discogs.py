@@ -474,7 +474,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							vsplits = v.split('/')
 							for vsplit in vsplits:
 								for r in discogssmells.rights_societies:
-									if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r.l:
+									if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r:
 										self.count += 1
 										self.prev = self.release
 										print('%8d -- Rights Society (BaOI2): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
