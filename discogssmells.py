@@ -98,7 +98,7 @@ spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 "spars cod", "spars cde", "spars cpde", "spars cods", "spars codde", "spars ccde"
 "spars coe", "spars coce", "spars coda", "spars"])
 
-label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code'])
+label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code', 'labe code', 'laberl code'])
 
 isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording', 'i.s.r.c.'])
 
