@@ -112,7 +112,7 @@ rights_societies_ftf = set(["rights society", "rights societies", "right society
 ## on actual releases:
 ## https://www.discogs.com/release/8578592
 ## https://www.discogs.com/release/629916
-rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'STREMA', 'STERMA', 'STEMA', 'STEMPRA', 'STEMPA', 'STEMBRA', 'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC', 'JASNAC', 'JASRAK', 'JASRC', 'JASRAQ', 'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'GENA')
+rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'STREMA', 'STERMA', 'STEMA', 'STEMPRA', 'STEMPA', 'STEMBRA', 'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC', 'JASNAC', 'JASRAK', 'JASRC', 'JASRAQ', 'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'GENA'])
 
 ## SID codes spellings
 ## These are all exact matches, as too often there are descriptions, such as "near mastering SID code"
