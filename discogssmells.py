@@ -107,6 +107,11 @@ rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI", "ΑΕ�
 
 rights_societies_ftf = set(["rights society", "rights societies", "right society", "mechanical rights society", "rights societiy", "rights societe", "rights societry", "rights societty", "rights societiers", "roghts society", "ritght society", "rigths society", "right society", "righty society", "rhights society", "righrs society", "righs society", "righst society"])
 
+## several possible misspellings of rights societies
+## Not all of these are wrong all the time: STEMPRA has been used
+## on actual releases:
+## https://www.discogs.com/release/8578592
+## https://www.discogs.com/release/629916
 rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'STREMA', 'STERMA', 'STEMA', 'STEMPRA', 'STEMPA', 'STEMBRA', 'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC', 'JASNAC', 'JASRAK', 'JASRC', 'JASRAQ', 'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'GENA')
 
 ## SID codes spellings
