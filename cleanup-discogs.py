@@ -467,7 +467,12 @@ class discogs_handler(xml.sax.ContentHandler):
 								print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								return
 					if self.config['check_rights_society']:
-						pass
+						for r in discogssmells.rights_societies_wrong:
+							if r in v.upper():
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- Rights Society (possible wrong value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								break
 				elif not self.inother:
 					if self.config['check_rights_society']:
 						if '/' in v:
