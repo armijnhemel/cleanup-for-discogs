@@ -477,14 +477,14 @@ class discogs_handler(xml.sax.ContentHandler):
 									if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r:
 										self.count += 1
 										self.prev = self.release
-										print('%8d -- Rights Society (BaOI2): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+										print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 										break
 						else:
 							for r in discogssmells.rights_societies:
 								if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
 									self.count += 1
 									self.prev = self.release
-									print('%8d -- Rights Society (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+									print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									break
 				if self.inbarcode:
 					if self.config['check_label_code']:
