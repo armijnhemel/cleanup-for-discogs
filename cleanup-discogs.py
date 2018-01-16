@@ -90,7 +90,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.depositofound = False
 		self.config = config_settings
 		self.contentbuffer = ''
-		if 'check_credits' in self.config:
+		if self.config['check_credits']:
 			creditsfile = open(self.config['creditsfile'], 'r')
 			self.credits = set(map(lambda x: x.strip(), creditsfile.readlines()))
 			creditsfile.close()
@@ -111,7 +111,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.count += 1
 						print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		if self.inrole:
-			if 'check_credits' in self.config:
+			if self.config['check_credits']:
 				roledata = self.contentbuffer.strip()
 				if roledata != '':
 					if not '[' in roledata:
@@ -401,11 +401,6 @@ class discogs_handler(xml.sax.ContentHandler):
 						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				if self.inspars:
 					if self.config['check_spars_code']:
-						## TODO: check if the format is actually a CD or CD-like medium
-						#if not self.iscd:
-						#	print("SPARS (No CD): https://www.discogs.com/release/%s --" % str(self.release), str(self.release))
-						#	self.count += 1
-						#	self.prev = self.release
 						if v == "none":
 							return
 						## Sony format codes
@@ -422,6 +417,11 @@ class discogs_handler(xml.sax.ContentHandler):
 							tmpspars = tmpspars.replace(s, '')
 						if not tmpspars in discogssmells.validsparscodes:
 							wrongspars = True
+						for s in tmpspars:
+							if ord(s) > 256:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- SPARS Code (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
 
 						if wrongspars:
 							self.count += 1
@@ -437,7 +437,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							return
 						if 'd' in v.lower():
 							tmpspars = v.lower().strip()
-							for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
+							for s in ['.', ' ', '•', '∙', '·', '᛫', '[', ']', '-', '|', '/', '︱']:
 								tmpspars = tmpspars.replace(s, '')
 
 							## just check a few other possibilities of possible SPARS codes
@@ -473,6 +473,10 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.prev = self.release
 								print('%8d -- Rights Society (possible wrong value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								break
+					if v.upper() in discogssmells.rights_societies_wrong_char:
+						self.count += 1
+						self.prev = self.release
+						print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
 				elif not self.inother:
 					if self.config['check_rights_society']:
 						if '/' in v:
@@ -753,6 +757,11 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+							for rs in discogssmells.rights_societies_wrong_char:
+								if rs in attrvalue:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
 							return
 				if self.config['check_label_code']:
 					if self.description in discogssmells.label_code_ftf:
@@ -1068,6 +1077,7 @@ def main(argv):
 				config_settings['check_tracklisting'] = True
 
 			## store settings for credits list checks
+			config_settings['check_credits'] = False
 			try:
 				if config.get(section, 'credits') == 'yes':
 					creditsfile = config.get(section, 'creditsfile')
