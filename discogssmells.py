@@ -1,7 +1,7 @@
 ##
 ## Licensed under the terms of the General Public License version 3
 ##
-## SPDX-License-Identifier: GPL-3.0
+## SPDX-License-Identifier: GPL-3.0-only
 ##
 ## Copyright 2017 - Armijn Hemel
 
