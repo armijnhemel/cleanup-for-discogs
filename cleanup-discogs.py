@@ -910,6 +910,24 @@ class discogs_handler(xml.sax.ContentHandler):
 											self.prev = self.release
 											print("%8d -- Czechoslovak manufacturing date (release year possibly wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 
+				elif self.country == 'Greece':
+					if self.config['check_greek_license_number']:
+						if "license" in self.description.strip() and self.year != None:
+							licenseyearfound = False
+							for sep in ['/', ' ', '-', ')', '\'', '.']:
+								if licenseyearfound:
+									break
+								try:
+									license_year = int(attrvalue.strip().rsplit(sep, 1)[1])
+									if license_year < 100:
+										license_year += 1900
+									if license_year > self.year:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Greek license year wrong: https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									licenseyearfound = True
+								except:
+									pass
 				## debug code to print descriptions that were skipped.
 				## Useful to find misspellings of various fields
 				if self.config['debug']:
@@ -1048,6 +1066,15 @@ def main(argv):
 					config_settings['check_pkd'] = False
 			except Exception:
 				config_settings['check_pkd'] = True
+
+			## store settings for Greek license number checks
+			try:
+				if config.get(section, 'greek_license_number') == 'yes':
+					config_settings['check_greek_license_number'] = True
+				else:
+					config_settings['check_greek_license_number'] = False
+			except Exception:
+				config_settings['check_greek_license_number'] = True
 
 			## check for Czechoslovak manufacturing dates
 			try:
