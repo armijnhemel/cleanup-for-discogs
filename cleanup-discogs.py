@@ -70,6 +70,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inisrc = False
 		self.inmasteringsid = False
 		self.inmouldsid = False
+		self.inmatrix = False
 		self.inrightssociety = False
 		self.intracklist = False
 		self.invideos = False
@@ -238,6 +239,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.inisrc = False
 		self.inmasteringsid = False
 		self.inmouldsid = False
+		self.inmatrix = False
 		self.inrightssociety = False
 		self.indeposito = False
 		self.innotes = False
@@ -358,6 +360,12 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Possible Label Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 									return
+						if self.config['check_cdg']:
+							if v.lower().strip() == 'cd+g':
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- CD+G (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 		elif name == 'description':
 			self.indescription = True
 		elif name == 'released':
@@ -388,6 +396,8 @@ class discogs_handler(xml.sax.ContentHandler):
 					self.inmasteringsid = True
 				elif v == 'Mould SID Code':
 					self.inmouldsid = True
+				elif v == 'Matrix / Runout':
+					self.inmatrix = True
 				elif v == 'Other':
 					self.inother = True
 			if 'value' in attritems:
@@ -1075,6 +1085,15 @@ def main(argv):
 					config_settings['check_greek_license_number'] = False
 			except Exception:
 				config_settings['check_greek_license_number'] = True
+
+			## store settings for CD+G checks
+			try:
+				if config.get(section, 'cdg') == 'yes':
+					config_settings['check_cdg'] = True
+				else:
+					config_settings['check_cdg'] = False
+			except Exception:
+				config_settings['check_cdg'] = True
 
 			## check for Czechoslovak manufacturing dates
 			try:
