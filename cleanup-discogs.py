@@ -573,6 +573,30 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							sys.stdout.flush()
 							return
+						else:
+							isrcres = re.match("\w{5}(\d{2})\d{5}", isrc_tmp)
+							if isrcres == None:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- ISRC (wrong format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								sys.stdout.flush()
+								return
+							if self.year != None:
+								isrcyear = int(isrcres.groups()[0])
+								if isrcyear < 100:
+									## correct the year. This won't work correctly after 2099.
+									if isrcyear <= currentyear - 2000:
+										isrcyear += 2000
+									else:
+										isrcyear += 1900
+								if isrcyear > currentyear:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- ISRC (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+								elif self.year < isrcyear:
+									self.count += 1
+									self.prev = self.release
+									print("%8d -- ISRC (date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 				if self.inmouldsid:
 					## temporary hack, move to own configuration option
 					mould_sid_strict = False
