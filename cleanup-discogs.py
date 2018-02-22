@@ -332,11 +332,13 @@ class discogs_handler(xml.sax.ContentHandler):
 		elif name == 'position':
 			self.inposition = True
 		elif name == 'format':
+			curformat = None
 			for (k,v) in attrs.items():
 				if k == 'name':
 					if v == 'CD':
 						self.iscd = True
 					self.formattexts.add(v)
+					curformat = v
 				elif k == 'qty':
 					if self.formatmaxqty == 0:
 						self.formatmaxqty = max(self.formatmaxqty, int(v))
@@ -366,6 +368,10 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.prev = self.release
 								print('%8d -- CD+G (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								return
+						if v == 'DMM':
+							if curformat != 'Vinyl':
+								print('%8d -- DMM (%s, in Format): https://www.discogs.com/release/%s' % (self.count, curformat, str(self.release)))
+
 		elif name == 'description':
 			self.indescription = True
 		elif name == 'released':
