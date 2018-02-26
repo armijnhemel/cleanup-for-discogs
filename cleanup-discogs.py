@@ -415,6 +415,26 @@ class discogs_handler(xml.sax.ContentHandler):
 					if 'creative commons' in v.lower():
 						self.count += 1
 						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+				if self.config['check_matrix']:
+					if self.inmatrix:
+						if 'MFG BY CINRAM' in v and '#' in v and not 'USA' in v:
+							if self.year != None:
+								cinramres = re.search('#(\d{2})',v)
+								if cinramres != None:
+									cinramyear = int(cinramres.groups()[0])
+									## correct the year. This won't work correctly after 2099.
+									if cinramyear <= currentyear - 2000:
+										cinramyear += 2000
+									else:
+										cinramyear += 1900
+									if cinramyear > currentyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif self.year < cinramyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Matrix (release date %d earlier than %d): https://www.discogs.com/release/%s" % (self.count, cinramyear, self.year, str(self.release)))
 				if self.inspars:
 					if self.config['check_spars_code']:
 						if v == "none":
@@ -1124,6 +1144,15 @@ def main(argv):
 					config_settings['check_cdg'] = False
 			except Exception:
 				config_settings['check_cdg'] = True
+
+			## store settings for Matrix checks
+			try:
+				if config.get(section, 'matrix') == 'yes':
+					config_settings['check_matrix'] = True
+				else:
+					config_settings['check_matrix'] = False
+			except Exception:
+				config_settings['check_matrix'] = True
 
 			## check for Czechoslovak manufacturing dates
 			try:
