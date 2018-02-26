@@ -159,16 +159,29 @@ class discogs_handler(xml.sax.ContentHandler):
 			## https://www.discogs.com/label/381697-EDC-USA
 			if self.contentbuffer == '358102' and self.year != None:
 				if self.year < 1986:
+					self.count += 1
 					print('%8d -- Pressing plant PDO (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 			elif self.contentbuffer == '360848' and self.year != None:
 				if self.year < 1992:
+					self.count += 1
 					print('%8d -- Pressing plant PMDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 			elif self.contentbuffer == '266782' and self.year != None:
 				if self.year < 1999:
+					self.count += 1
 					print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 			elif self.contentbuffer == '381697' and self.year != None:
 				if self.year < 2005:
+					self.count += 1
 					print('%8d -- Pressing plant EDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+			## check for:
+			## https://www.discogs.com/label/7207-Dureco
+			## https://dureco.wordpress.com/2010/01/21/cd-productie-dureco-weesp-1988/
+			## seems to confirm that they only started to press CDs from 1988 onward.
+			if self.contentbuffer == '7207' and self.year != None:
+				if 'CD' in self.formattexts:
+					if self.year < 1988:
+						self.count += 1
+						print('%8d -- Pressing plant Dureco (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 		elif self.inreleased:
 			if self.config['check_month']:
 				monthres = re.search('-(\d+)-', self.contentbuffer)
