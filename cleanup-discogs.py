@@ -178,6 +178,8 @@ class discogs_handler(xml.sax.ContentHandler):
 			## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
 			## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
 			## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
+			## https://www.youtube.com/watch?v=laDLvlj8tIQ
+			## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
 			if self.contentbuffer == '7207' and self.year != None:
 				if 'CD' in self.formattexts:
 					if self.year < 1987:
