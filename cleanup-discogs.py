@@ -75,6 +75,8 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.intracklist = False
 		self.invideos = False
 		self.innotes = False
+		self.incompany = False
+		self.incompanyid = False
 		self.release = None
 		self.country = None
 		self.role = None
@@ -149,6 +151,24 @@ class discogs_handler(xml.sax.ContentHandler):
 			if self.indescriptions:
 				if 'Styrene' in self.contentbuffer:
 					pass
+		elif self.incompanyid:
+			## check for:
+			## https://www.discogs.com/label/358102-PDO-USA
+			## https://www.discogs.com/label/360848-PMDC-USA
+			## https://www.discogs.com/label/266782-UML
+			## https://www.discogs.com/label/381697-EDC-USA
+			if self.contentbuffer == '358102' and self.year != None:
+				if self.year < 1986:
+					print('%8d -- Pressing plant PDO (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+			elif self.contentbuffer == '360848' and self.year != None:
+				if self.year < 1992:
+					print('%8d -- Pressing plant PMDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+			elif self.contentbuffer == '266782' and self.year != None:
+				if self.year < 1999:
+					print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+			elif self.contentbuffer == '381697' and self.year != None:
+				if self.year < 2005:
+					print('%8d -- Pressing plant EDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 		elif self.inreleased:
 			if self.config['check_month']:
 				monthres = re.search('-(\d+)-', self.contentbuffer)
@@ -247,8 +267,10 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.intitle = False
 		self.inposition = False
 		self.contentbuffer = ''
+		if not self.incompany:
+			self.incompanyid = False
 		if name == "release":
-			## new release entry, so reset the isrejected field
+			## new release entry, so reset many fields
 			self.isrejected = False
 			self.isdraft = False
 			self.isdeleted = False
@@ -262,6 +284,8 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.country = None
 			self.intracklist = False
 			self.invideos = False
+			self.incompany = False
+			self.incompanyid = False
 			self.formattexts = set([])
 			self.formatmaxqty = 0
 			self.tracklistpositions = set()
@@ -282,6 +306,11 @@ class discogs_handler(xml.sax.ContentHandler):
 		elif not name == 'description':
 			self.indescriptions = False
 
+		if name == 'company':
+			self.incompany = True
+		if name == 'id':
+			if self.incompany:
+				self.incompanyid = True
 		if name == 'country':
 			self.incountry = True
 		elif name == 'role':
@@ -434,7 +463,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									elif self.year < cinramyear:
 										self.count += 1
 										self.prev = self.release
-										print("%8d -- Matrix (release date %d earlier than %d): https://www.discogs.com/release/%s" % (self.count, cinramyear, self.year, str(self.release)))
+										print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, cinramyear, str(self.release)))
 				if self.inspars:
 					if self.config['check_spars_code']:
 						if v == "none":
@@ -464,6 +493,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
+						elif self.year != None:
+							if self.year < 1984:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- SPARS Code (impossible year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
 				elif not self.inother:
 					if self.config['check_spars_code']:
 						if v.lower() in discogssmells.validsparscodes:
