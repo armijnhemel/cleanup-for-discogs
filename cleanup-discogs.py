@@ -175,11 +175,12 @@ class discogs_handler(xml.sax.ContentHandler):
 					print('%8d -- Pressing plant EDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 			## check for:
 			## https://www.discogs.com/label/7207-Dureco
-			## https://dureco.wordpress.com/2010/01/21/cd-productie-dureco-weesp-1988/
-			## seems to confirm that they only started to press CDs from 1988 onward.
+			## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
+			## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
+			## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
 			if self.contentbuffer == '7207' and self.year != None:
 				if 'CD' in self.formattexts:
-					if self.year < 1988:
+					if self.year < 1987:
 						self.count += 1
 						print('%8d -- Pressing plant Dureco (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 		elif self.inreleased:
