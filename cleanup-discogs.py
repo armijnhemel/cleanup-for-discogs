@@ -157,34 +157,58 @@ class discogs_handler(xml.sax.ContentHandler):
 			## https://www.discogs.com/label/360848-PMDC-USA
 			## https://www.discogs.com/label/266782-UML
 			## https://www.discogs.com/label/381697-EDC-USA
-			if self.contentbuffer == '358102' and self.year != None:
-				if self.year < 1986:
-					self.count += 1
-					print('%8d -- Pressing plant PDO (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-			elif self.contentbuffer == '360848' and self.year != None:
-				if self.year < 1992:
-					self.count += 1
-					print('%8d -- Pressing plant PMDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-			elif self.contentbuffer == '266782' and self.year != None:
-				if self.year < 1999:
-					self.count += 1
-					print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-			elif self.contentbuffer == '381697' and self.year != None:
-				if self.year < 2005:
-					self.count += 1
-					print('%8d -- Pressing plant EDC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-			## check for:
-			## https://www.discogs.com/label/7207-Dureco
-			## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
-			## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
-			## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
-			## https://www.youtube.com/watch?v=laDLvlj8tIQ
-			## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
-			if self.contentbuffer == '7207' and self.year != None:
-				if 'CD' in self.formattexts:
-					if self.year < 1987:
+			if self.year != None:
+				if self.contentbuffer == '358102':
+					if self.year < 1986:
 						self.count += 1
-						print('%8d -- Pressing plant Dureco (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+						print('%8d -- Pressing plant PDO, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+				elif self.contentbuffer == '360848':
+					if self.year < 1992:
+						self.count += 1
+						print('%8d -- Pressing plant PMDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+				elif self.contentbuffer == '266782':
+					if self.year < 1999:
+						self.count += 1
+						print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+				elif self.contentbuffer == '381697':
+					if self.year < 2005:
+						self.count += 1
+						print('%8d -- Pressing plant EDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
+				## check for
+				## https://www.discogs.com/label/358025-PDO-Germany
+				## https://www.discogs.com/label/342158-PMDC-Germany
+				## https://www.discogs.com/label/331548-Universal-M-L-Germany
+				## https://www.discogs.com/label/384133-EDC-Germany
+				if self.contentbuffer == '358025':
+					if self.year < 1986:
+						self.count += 1
+						print('%8d -- Pressing plant PDO, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+				elif self.contentbuffer == '342158':
+					if self.year < 1993:
+						self.count += 1
+						print('%8d -- Pressing plant PMDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+				elif self.contentbuffer == '331548':
+					if self.year < 1999:
+						self.count += 1
+						print('%8d -- Pressing plant Universal, M & L, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+				elif self.contentbuffer == '384133':
+					if self.year < 2005:
+						self.count += 1
+						print('%8d -- Pressing plant EDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
+				## check for:
+				## https://www.discogs.com/label/7207-Dureco
+				## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
+				## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
+				## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
+				## https://www.youtube.com/watch?v=laDLvlj8tIQ
+				## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
+				if self.contentbuffer == '7207':
+					if 'CD' in self.formattexts:
+						if self.year < 1987:
+							self.count += 1
+							print('%8d -- Pressing plant Dureco (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 		elif self.inreleased:
 			if self.config['check_month']:
 				monthres = re.search('-(\d+)-', self.contentbuffer)
