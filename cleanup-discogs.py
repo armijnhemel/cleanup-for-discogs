@@ -152,114 +152,115 @@ class discogs_handler(xml.sax.ContentHandler):
 				if 'Styrene' in self.contentbuffer:
 					pass
 		elif self.incompanyid:
-			## check for:
-			## https://www.discogs.com/label/358102-PDO-USA
-			## https://www.discogs.com/label/360848-PMDC-USA
-			## https://www.discogs.com/label/266782-UML
-			## https://www.discogs.com/label/381697-EDC-USA
-			if self.year != None:
-				if self.contentbuffer == '358102':
-					if self.year < 1986:
-						self.count += 1
-						print('%8d -- Pressing plant PDO, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				elif self.contentbuffer == '360848':
-					if self.year < 1992:
-						self.count += 1
-						print('%8d -- Pressing plant PMDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				elif self.contentbuffer == '266782':
-					if self.year < 1999:
-						self.count += 1
-						print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				elif self.contentbuffer == '381697':
-					if self.year < 2005:
-						self.count += 1
-						print('%8d -- Pressing plant EDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-				## check for
-				## https://www.discogs.com/label/358025-PDO-Germany
-				## https://www.discogs.com/label/342158-PMDC-Germany
-				## https://www.discogs.com/label/331548-Universal-M-L-Germany
-				## https://www.discogs.com/label/384133-EDC-Germany
-				if self.contentbuffer == '358025':
-					if self.year < 1986:
-						self.count += 1
-						print('%8d -- Pressing plant PDO, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				elif self.contentbuffer == '342158':
-					if self.year < 1993:
-						self.count += 1
-						print('%8d -- Pressing plant PMDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				elif self.contentbuffer == '331548':
-					if self.year < 1999:
-						self.count += 1
-						print('%8d -- Pressing plant Universal, M & L, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				elif self.contentbuffer == '384133':
-					if self.year < 2005:
-						self.count += 1
-						print('%8d -- Pressing plant EDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-				## https://www.discogs.com/label/265455-PMDC
-				if self.contentbuffer == '265455':
-					if self.year < 1992:
-						self.count += 1
-						print('%8d -- Pressing plant PMDC, France (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-				'''
-				## https://www.discogs.com/label/34825-Sony-DADC
-				if self.contentbuffer == '34825':
-					if self.year < 2000:
-						self.count += 1
-						print('%8d -- Pressing plant Sony DADC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-				'''
-
+			if self.config['check_plants']:
 				## check for:
-				## https://www.discogs.com/label/7207-Dureco
-				## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
-				## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
-				## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
-				## https://www.youtube.com/watch?v=laDLvlj8tIQ
-				## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
-				##
-				## Since Dureco was also a distributor there are sometimes false positives
-				if self.contentbuffer == '7207':
-					if 'CD' in self.formattexts:
-						if self.year < 1987:
+				## https://www.discogs.com/label/358102-PDO-USA
+				## https://www.discogs.com/label/360848-PMDC-USA
+				## https://www.discogs.com/label/266782-UML
+				## https://www.discogs.com/label/381697-EDC-USA
+				if self.year != None:
+					if self.contentbuffer == '358102':
+						if self.year < 1986:
 							self.count += 1
-							print('%8d -- Pressing plant Dureco (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+							print('%8d -- Pressing plant PDO, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '360848':
+						if self.year < 1992:
+							self.count += 1
+							print('%8d -- Pressing plant PMDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '266782':
+						if self.year < 1999:
+							self.count += 1
+							print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '381697':
+						if self.year < 2005:
+							self.count += 1
+							print('%8d -- Pressing plant EDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
-				## https://www.discogs.com/label/56025-MPO
-				if self.contentbuffer == '56025':
-					if 'CD' in self.formattexts:
-						if self.year < 1984:
+					## check for
+					## https://www.discogs.com/label/358025-PDO-Germany
+					## https://www.discogs.com/label/342158-PMDC-Germany
+					## https://www.discogs.com/label/331548-Universal-M-L-Germany
+					## https://www.discogs.com/label/384133-EDC-Germany
+					if self.contentbuffer == '358025':
+						if self.year < 1986:
 							self.count += 1
-							print('%8d -- Pressing plant MPO (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+							print('%8d -- Pressing plant PDO, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '342158':
+						if self.year < 1993:
+							self.count += 1
+							print('%8d -- Pressing plant PMDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '331548':
+						if self.year < 1999:
+							self.count += 1
+							print('%8d -- Pressing plant Universal, M & L, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '384133':
+						if self.year < 2005:
+							self.count += 1
+							print('%8d -- Pressing plant EDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
-				## https://www.discogs.com/label/93218-Nimbus
-				if self.contentbuffer == '93218':
-					if 'CD' in self.formattexts:
-						if self.year < 1984:
+					## https://www.discogs.com/label/265455-PMDC
+					if self.contentbuffer == '265455':
+						if self.year < 1992:
 							self.count += 1
-							print('%8d -- Pressing plant Nimbus (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+							print('%8d -- Pressing plant PMDC, France (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
-				## https://www.discogs.com/label/147881-Mayking
-				if self.contentbuffer == '147881':
-					if 'CD' in self.formattexts:
-						if self.year < 1985:
+					'''
+					## https://www.discogs.com/label/34825-Sony-DADC
+					if self.contentbuffer == '34825':
+						if self.year < 2000:
 							self.count += 1
-							print('%8d -- Pressing plant Nimbus (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+							print('%8d -- Pressing plant Sony DADC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					'''
 
-				## https://www.discogs.com/label/266256-EMI-Uden
-				if self.contentbuffer == '266256':
-					if 'CD' in self.formattexts:
-						if self.year < 1989:
-							self.count += 1
-							print('%8d -- Pressing plant EMI Uden (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					## check for:
+					## https://www.discogs.com/label/7207-Dureco
+					## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
+					## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
+					## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
+					## https://www.youtube.com/watch?v=laDLvlj8tIQ
+					## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
+					##
+					## Since Dureco was also a distributor there are sometimes false positives
+					if self.contentbuffer == '7207':
+						if 'CD' in self.formattexts:
+							if self.year < 1987:
+								self.count += 1
+								print('%8d -- Pressing plant Dureco (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
-				## https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
-				if self.contentbuffer == '291934':
-					if 'CD' in self.formattexts:
-						if self.year < 1996:
-							self.count += 1
-							print('%8d -- Pressing plant WEA Mfg Olyphant (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					## https://www.discogs.com/label/56025-MPO
+					if self.contentbuffer == '56025':
+						if 'CD' in self.formattexts:
+							if self.year < 1984:
+								self.count += 1
+								print('%8d -- Pressing plant MPO (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
+					## https://www.discogs.com/label/93218-Nimbus
+					if self.contentbuffer == '93218':
+						if 'CD' in self.formattexts:
+							if self.year < 1984:
+								self.count += 1
+								print('%8d -- Pressing plant Nimbus (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
+					## https://www.discogs.com/label/147881-Mayking
+					if self.contentbuffer == '147881':
+						if 'CD' in self.formattexts:
+							if self.year < 1985:
+								self.count += 1
+								print('%8d -- Pressing plant Nimbus (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
+					## https://www.discogs.com/label/266256-EMI-Uden
+					if self.contentbuffer == '266256':
+						if 'CD' in self.formattexts:
+							if self.year < 1989:
+								self.count += 1
+								print('%8d -- Pressing plant EMI Uden (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
+					## https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
+					if self.contentbuffer == '291934':
+						if 'CD' in self.formattexts:
+							if self.year < 1996:
+								self.count += 1
+								print('%8d -- Pressing plant WEA Mfg Olyphant (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
 		elif self.inreleased:
 			if self.config['check_month']:
@@ -318,6 +319,12 @@ class discogs_handler(xml.sax.ContentHandler):
 						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						ccfound = True
 		if self.intracklist and self.inposition:
+			## https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
+			if 'Vinyl' in self.formattexts:
+				if self.year != None:
+					if self.year < 1948:
+						self.count += 1
+						print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 			if self.config['check_tracklisting']:
 				if self.tracklistcorrect != False:
 					if len(self.formattexts) == 1:
@@ -1280,6 +1287,15 @@ def main(argv):
 					config_settings['check_matrix'] = False
 			except Exception:
 				config_settings['check_matrix'] = True
+
+			## store settings for manufacturing plant checks
+			try:
+				if config.get(section, 'plants') == 'yes':
+					config_settings['check_plants'] = True
+				else:
+					config_settings['check_plants'] = False
+			except Exception:
+				config_settings['check_plants'] = True
 
 			## check for Czechoslovak manufacturing dates
 			try:
