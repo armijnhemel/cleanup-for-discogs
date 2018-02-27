@@ -204,11 +204,13 @@ class discogs_handler(xml.sax.ContentHandler):
 				## https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
 				## https://www.youtube.com/watch?v=laDLvlj8tIQ
 				## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
+				##
+				## Since Dureco was also a distributor there are sometimes false positives
 				if self.contentbuffer == '7207':
 					if 'CD' in self.formattexts:
 						if self.year < 1987:
 							self.count += 1
-							print('%8d -- Pressing plant Dureco (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+							print('%8d -- Pressing plant Dureco (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 		elif self.inreleased:
 			if self.config['check_month']:
 				monthres = re.search('-(\d+)-', self.contentbuffer)
