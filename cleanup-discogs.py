@@ -319,12 +319,14 @@ class discogs_handler(xml.sax.ContentHandler):
 						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 						ccfound = True
 		if self.intracklist and self.inposition:
+			'''
 			## https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
 			if 'Vinyl' in self.formattexts:
 				if self.year != None:
 					if self.year < 1948:
 						self.count += 1
 						print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+			'''
 			if self.config['check_tracklisting']:
 				if self.tracklistcorrect != False:
 					if len(self.formattexts) == 1:
