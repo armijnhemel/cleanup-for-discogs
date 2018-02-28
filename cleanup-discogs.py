@@ -262,6 +262,13 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.count += 1
 								print('%8d -- Pressing plant WEA Mfg Olyphant (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
+					## https://www.discogs.com/label/271323-OptiMeS
+					if self.contentbuffer == '271323':
+						if 'CD' in self.formattexts:
+							if self.year < 1986:
+								self.count += 1
+								print('%8d -- Pressing plant Opti.Me.S (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+
 		elif self.inreleased:
 			if self.config['check_month']:
 				monthres = re.search('-(\d+)-', self.contentbuffer)
@@ -541,6 +548,22 @@ class discogs_handler(xml.sax.ContentHandler):
 				if not self.config['reportall']:
 					if self.prev == self.release:
 						return
+				if 'MADE IN USA BY PDMC' in v:
+					self.count += 1
+					self.prev = self.release
+					print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+				elif 'MADE IN GERMANY BY PDMC' in v:
+					self.count += 1
+					self.prev = self.release
+					print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+				elif 'MADE IN FRANCE BY PDMC' in v:
+					self.count += 1
+					self.prev = self.release
+					print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+				elif 'PDMC FRANCE' in v:
+					self.count += 1
+					self.prev = self.release
+					print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 				if self.config['check_creative_commons']:
 					if 'creative commons' in v.lower():
 						self.count += 1
