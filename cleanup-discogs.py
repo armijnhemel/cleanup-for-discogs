@@ -152,13 +152,26 @@ class discogs_handler(xml.sax.ContentHandler):
 				if 'Styrene' in self.contentbuffer:
 					pass
 		elif self.incompanyid:
-			if self.config['check_plants']:
-				## check for:
-				## https://www.discogs.com/label/358102-PDO-USA
-				## https://www.discogs.com/label/360848-PMDC-USA
-				## https://www.discogs.com/label/266782-UML
-				## https://www.discogs.com/label/381697-EDC-USA
+			if self.config['check_labels']:
 				if self.year != None:
+					## check for:
+					## https://www.discogs.com/label/205-Fontana
+					## https://www.discogs.com/label/7704-Philips
+					if self.contentbuffer == '205':
+						if self.year < 1957:
+							self.count += 1
+							print('%8d -- Label (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+					elif self.contentbuffer == '7704':
+						if self.year < 1950:
+							self.count += 1
+							print('%8d -- Label (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+			if self.config['check_plants']:
+				if self.year != None:
+					## check for:
+					## https://www.discogs.com/label/358102-PDO-USA
+					## https://www.discogs.com/label/360848-PMDC-USA
+					## https://www.discogs.com/label/266782-UML
+					## https://www.discogs.com/label/381697-EDC-USA
 					if self.contentbuffer == '358102':
 						if self.year < 1986:
 							self.count += 1
@@ -1312,6 +1325,15 @@ def main(argv):
 					config_settings['check_matrix'] = False
 			except Exception:
 				config_settings['check_matrix'] = True
+
+			## store settings for label checks
+			try:
+				if config.get(section, 'labels') == 'yes':
+					config_settings['check_labels'] = True
+				else:
+					config_settings['check_labels'] = False
+			except Exception:
+				config_settings['check_labels'] = True
 
 			## store settings for manufacturing plant checks
 			try:
