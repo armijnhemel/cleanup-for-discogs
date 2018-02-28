@@ -583,8 +583,8 @@ class discogs_handler(xml.sax.ContentHandler):
 						print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				if self.config['check_matrix']:
 					if self.inmatrix:
-						if 'MFG BY CINRAM' in v and '#' in v and not 'USA' in v:
-							if self.year != None:
+						if self.year != None:
+							if 'MFG BY CINRAM' in v and '#' in v and not 'USA' in v:
 								cinramres = re.search('#(\d{2})',v)
 								if cinramres != None:
 									cinramyear = int(cinramres.groups()[0])
@@ -601,6 +601,25 @@ class discogs_handler(xml.sax.ContentHandler):
 										self.count += 1
 										self.prev = self.release
 										print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, cinramyear, str(self.release)))
+							elif 'P+O' in v:
+								## https://www.discogs.com/label/277449-PO-Pallas
+								pallasres = re.search('P\+O-\d{4,6}-[AB]\d?\s+\d{2}-(\d{2})', v)
+								if pallasres != None:
+									pallasyear = int(pallasres.groups()[0])
+									## correct the year. This won't work correctly after 2099.
+									if pallasyear <= currentyear - 2000:
+										pallasyear += 2000
+									else:
+										pallasyear += 1900
+									if pallasyear > currentyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+									elif self.year < pallasyear:
+										self.count += 1
+										self.prev = self.release
+										print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, pallasyear, str(self.release)))
+
 				if self.inspars:
 					if self.config['check_spars_code']:
 						if v == "none":
