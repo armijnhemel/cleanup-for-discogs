@@ -603,7 +603,7 @@ class discogs_handler(xml.sax.ContentHandler):
 										print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, cinramyear, str(self.release)))
 							elif 'P+O' in v:
 								## https://www.discogs.com/label/277449-PO-Pallas
-								pallasres = re.search('P\+O-\d{4,6}-[AB]\d?\s+\d{2}-(\d{2})', v)
+								pallasres = re.search('P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', v)
 								if pallasres != None:
 									pallasyear = int(pallasres.groups()[0])
 									## correct the year. This won't work correctly after 2099.
