@@ -72,7 +72,7 @@ def main(argv):
 			print(l)
 	cleanupfile.close()
 
-	## count the number of releases, with a 
+	## count the number of releases, with a smell
 	statistics = collections.Counter()
 	statistics.update(map(lambda x: x//1000000, unique_releases))
 
