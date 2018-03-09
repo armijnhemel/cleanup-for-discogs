@@ -234,11 +234,20 @@ class discogs_handler(xml.sax.ContentHandler):
 					## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
 					##
 					## Since Dureco was also a distributor there are sometimes false positives
-					if self.contentbuffer == '7207':
+					plants = [('7207', 1987, 'Dureco')]
+					for pl in plants:
+						if self.contentbuffer == pl[0]:
+							if 'CD' in self.formattexts:
+								if self.year < pl[1]:
+									self.count += 1
+									print('%8d -- Pressing plant %s (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, pl[2], self.year, str(self.release)))
+
+					## https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
+					if self.contentbuffer == '300888':
 						if 'CD' in self.formattexts:
 							if self.year < 1987:
 								self.count += 1
-								print('%8d -- Pressing plant Dureco (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+								print('%8d -- Pressing plant Microservice (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
 
 					## https://www.discogs.com/label/56025-MPO
 					if self.contentbuffer == '56025':
@@ -1014,7 +1023,7 @@ class discogs_handler(xml.sax.ContentHandler):
 									self.prev = self.release
 									print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
 							return
-				if self.config['check_label_code']:
+				if self.config['check_label_code'] and not self.inlabelcode:
 					if self.description in discogssmells.label_code_ftf:
 						self.count += 1
 						self.prev = self.release
