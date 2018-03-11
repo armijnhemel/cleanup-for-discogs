@@ -642,23 +642,38 @@ class discogs_handler(xml.sax.ContentHandler):
 							print('%8d -- Sony Format Code in SPARS: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
 						wrongspars = False
+						sparstocheck = []
 						tmpspars = v.lower().strip()
-						for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
+						for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/', '∙']:
 							tmpspars = tmpspars.replace(s, '')
-						if not tmpspars in discogssmells.validsparscodes:
-							wrongspars = True
-						for s in tmpspars:
-							if ord(s) > 256:
+						if len(tmpspars) != 3:
+							sparssplit = False
+							for s in ['|', '/', ',', ' ', '&', '-']:
+								if s in v.lower().strip():
+									splitspars = list(map(lambda x: x.strip(), v.lower().strip().split(s)))
+									if len(list(filter(lambda x: len(x) == 3, splitspars))) != len(splitspars):
+										continue
+									sparssplit = True
+									break
+							if not sparssplit:
+								sparstocheck.append(tmpspars)
+						else:
+							sparstocheck.append(tmpspars)
+						for sparscheck in sparstocheck:
+							if not sparscheck in discogssmells.validsparscodes:
+								wrongspars = True
+							for s in sparscheck:
+								if ord(s) > 256:
+									self.count += 1
+									self.prev = self.release
+									print('%8d -- SPARS Code (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
+
+							if wrongspars:
 								self.count += 1
 								self.prev = self.release
-								print('%8d -- SPARS Code (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
-
-						if wrongspars:
-							self.count += 1
-							self.prev = self.release
-							print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-							return
-						elif self.year != None:
+								print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								return
+						if self.year != None:
 							if self.year < 1984:
 								self.count += 1
 								self.prev = self.release
