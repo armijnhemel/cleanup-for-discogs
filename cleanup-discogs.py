@@ -644,11 +644,11 @@ class discogs_handler(xml.sax.ContentHandler):
 						wrongspars = False
 						sparstocheck = []
 						tmpspars = v.lower().strip()
-						for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/', '∙']:
+						for s in ['.', ' ', '•', '·', '∙', '᛫', '[', ']', '-', '|', '/']:
 							tmpspars = tmpspars.replace(s, '')
 						if len(tmpspars) != 3:
 							sparssplit = False
-							for s in ['|', '/', ',', ' ', '&', '-']:
+							for s in ['|', '/', ',', ' ', '&', '-', '+']:
 								if s in v.lower().strip():
 									splitspars = list(map(lambda x: x.strip(), v.lower().strip().split(s)))
 									if len(list(filter(lambda x: len(x) == 3, splitspars))) != len(splitspars):
