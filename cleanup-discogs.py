@@ -226,6 +226,9 @@ class discogs_handler(xml.sax.ContentHandler):
 					'''
 
 					## check for:
+					##
+					## Dureco:
+					## -------
 					## https://www.discogs.com/label/7207-Dureco
 					## https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
 					## https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
@@ -234,62 +237,44 @@ class discogs_handler(xml.sax.ContentHandler):
 					## https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
 					##
 					## Since Dureco was also a distributor there are sometimes false positives
-					plants = [('7207', 1987, 'Dureco')]
+					##
+					## Microservice:
+					## -------------
+					## https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
+					##
+					## MPO:
+					## ----
+					## https://www.discogs.com/label/56025-MPO
+					##
+					## Nimbus:
+					## ------
+					## https://www.discogs.com/label/93218-Nimbus
+					##
+					## Mayking:
+					## -------
+					## https://www.discogs.com/label/147881-Mayking
+					##
+					## EMI Uden:
+					## --------
+					## https://www.discogs.com/label/266256-EMI-Uden
+					##
+					## WEA Mfg Olyphant:
+					## -----------------
+					## https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
+					##
+					## Opti.Me.S:
+					## ----------
+					## https://www.discogs.com/label/271323-OptiMeS
+					##
+					## Format: (plant id, year production started, label name)
+					plants = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'), ('56025', 1984, 'MPO'), ('93218', 1984, 'Nimbus'), ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'), ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
 					for pl in plants:
 						if self.contentbuffer == pl[0]:
 							if 'CD' in self.formattexts:
 								if self.year < pl[1]:
 									self.count += 1
 									print('%8d -- Pressing plant %s (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, pl[2], self.year, str(self.release)))
-
-					## https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
-					if self.contentbuffer == '300888':
-						if 'CD' in self.formattexts:
-							if self.year < 1987:
-								self.count += 1
-								print('%8d -- Pressing plant Microservice (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-					## https://www.discogs.com/label/56025-MPO
-					if self.contentbuffer == '56025':
-						if 'CD' in self.formattexts:
-							if self.year < 1984:
-								self.count += 1
-								print('%8d -- Pressing plant MPO (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-					## https://www.discogs.com/label/93218-Nimbus
-					if self.contentbuffer == '93218':
-						if 'CD' in self.formattexts:
-							if self.year < 1984:
-								self.count += 1
-								print('%8d -- Pressing plant Nimbus (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-					## https://www.discogs.com/label/147881-Mayking
-					if self.contentbuffer == '147881':
-						if 'CD' in self.formattexts:
-							if self.year < 1985:
-								self.count += 1
-								print('%8d -- Pressing plant Nimbus (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-					## https://www.discogs.com/label/266256-EMI-Uden
-					if self.contentbuffer == '266256':
-						if 'CD' in self.formattexts:
-							if self.year < 1989:
-								self.count += 1
-								print('%8d -- Pressing plant EMI Uden (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-					## https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
-					if self.contentbuffer == '291934':
-						if 'CD' in self.formattexts:
-							if self.year < 1996:
-								self.count += 1
-								print('%8d -- Pressing plant WEA Mfg Olyphant (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-					## https://www.discogs.com/label/271323-OptiMeS
-					if self.contentbuffer == '271323':
-						if 'CD' in self.formattexts:
-							if self.year < 1986:
-								self.count += 1
-								print('%8d -- Pressing plant Opti.Me.S (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
+									break
 
 		elif self.inreleased:
 			if self.config['check_month']:
