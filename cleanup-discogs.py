@@ -77,11 +77,14 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.innotes = False
 		self.incompany = False
 		self.incompanyid = False
+		self.inartistid = False
 		self.release = None
 		self.country = None
 		self.role = None
 		self.indescription = False
 		self.indescriptions = False
+		self.ingenre = False
+		self.inartist = False
 		self.debugcount = 0
 		self.count = 0
 		self.prev = None
@@ -102,6 +105,8 @@ class discogs_handler(xml.sax.ContentHandler):
 	def startElement(self, name, attrs):
 		## first process the contentbuffer of the previous
 		## element that was stored.
+		if self.ingenre:
+			self.genres.add(self.contentbuffer)
 		if self.incountry:
 			self.country = self.contentbuffer
 		if self.config['check_spelling_cs']:
@@ -151,6 +156,18 @@ class discogs_handler(xml.sax.ContentHandler):
 			if self.indescriptions:
 				if 'Styrene' in self.contentbuffer:
 					pass
+		elif self.inartistid:
+			if self.contentbuffer == '0':
+				self.count += 1
+				print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+				sys.stdout.flush()
+			## TODO: check for genres, as No Artist is often confused with Unknown Artist
+			#if self.contentbuffer == '118760':
+			#	if len(self.genres) != 0:
+			#		print("https://www.discogs.com/artist/%s" % self.contentbuffer, "https://www.discogs.com/release/%s" % str(self.release))
+			#		print(self.genres)
+			#		sys.exit(0)
+			self.artists.add(self.contentbuffer)
 		elif self.incompanyid:
 			if self.config['check_labels']:
 				if self.year != None:
@@ -380,10 +397,12 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.innotes = False
 		self.indescription = False
 		self.intitle = False
+		self.ingenre = False
 		self.inposition = False
 		self.contentbuffer = ''
 		if not self.incompany:
 			self.incompanyid = False
+		self.inartistid = False
 		if name == "release":
 			## new release entry, so reset many fields
 			self.isrejected = False
@@ -401,8 +420,12 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.invideos = False
 			self.incompany = False
 			self.incompanyid = False
+			self.inartistid = False
+			self.ingenre = False
 			self.formattexts = set([])
+			self.artists = set([])
 			self.formatmaxqty = 0
+			self.genres = set([])
 			self.tracklistpositions = set()
 			for (k,v) in attrs.items():
 				if k == 'id':
@@ -421,11 +444,17 @@ class discogs_handler(xml.sax.ContentHandler):
 		elif not name == 'description':
 			self.indescriptions = False
 
+		if name == 'artist':
+			self.inartist = True
+			self.incompany = False
 		if name == 'company':
 			self.incompany = True
+			self.inartist = False
 		if name == 'id':
 			if self.incompany:
 				self.incompanyid = True
+			if self.inartist:
+				self.inartistid = True
 		if name == 'country':
 			self.incountry = True
 		elif name == 'role':
@@ -464,6 +493,8 @@ class discogs_handler(xml.sax.ContentHandler):
 							self.prev = self.release
 							print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 							return
+		elif name == 'genre':
+			self.ingenre = True
 		elif name == 'tracklist':
 			self.intracklist = True
 		elif name == 'videos':
