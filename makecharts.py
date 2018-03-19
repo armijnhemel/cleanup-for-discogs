@@ -85,7 +85,6 @@ def main(argv):
 	## ensure that empty bars are generated if needed
 	if len(bardata) != last_index:
 		for i in range(0, last_index):
-			print(i)
 			if not bardata[i][0] == i:
 				for d in range(0,bardata[i][0] - i):
 					bardata.append((i,0))
