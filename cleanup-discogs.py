@@ -78,6 +78,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		self.incompany = False
 		self.incompanyid = False
 		self.inartistid = False
+		self.noartist = False
 		self.release = None
 		self.country = None
 		self.role = None
@@ -119,6 +120,15 @@ class discogs_handler(xml.sax.ContentHandler):
 						self.count += 1
 						print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 		if self.inrole:
+			if self.noartist:
+				wrongrolefornoartist = True
+				for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
+					if r in self.contentbuffer.strip():
+						wrongrolefornoartist = False
+						break
+				if wrongrolefornoartist:
+					pass
+					#print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
 			if self.config['check_credits']:
 				roledata = self.contentbuffer.strip()
 				if roledata != '':
@@ -161,6 +171,9 @@ class discogs_handler(xml.sax.ContentHandler):
 				self.count += 1
 				print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 				sys.stdout.flush()
+				self.noartist = True
+			else:
+				self.noartist = False
 			## TODO: check for genres, as No Artist is often confused with Unknown Artist
 			#if self.contentbuffer == '118760':
 			#	if len(self.genres) != 0:
@@ -421,6 +434,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.incompany = False
 			self.incompanyid = False
 			self.inartistid = False
+			self.noartist = False
 			self.ingenre = False
 			self.formattexts = set([])
 			self.artists = set([])
@@ -447,6 +461,7 @@ class discogs_handler(xml.sax.ContentHandler):
 		if name == 'artist':
 			self.inartist = True
 			self.incompany = False
+			self.noartist = False
 		if name == 'company':
 			self.incompany = True
 			self.inartist = False
@@ -455,6 +470,7 @@ class discogs_handler(xml.sax.ContentHandler):
 				self.incompanyid = True
 			if self.inartist:
 				self.inartistid = True
+				self.noartist = False
 		if name == 'country':
 			self.incountry = True
 		elif name == 'role':
@@ -664,7 +680,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							tmpspars = tmpspars.replace(s, '')
 						if len(tmpspars) != 3:
 							sparssplit = False
-							for s in ['|', '/', ',', ' ', '&', '-', '+']:
+							for s in ['|', '/', ',', ' ', '&', '-', '+', '•']:
 								if s in v.lower().strip():
 									splitspars = list(map(lambda x: x.strip(), v.lower().strip().split(s)))
 									if len(list(filter(lambda x: len(x) == 3, splitspars))) != len(splitspars):
