@@ -442,6 +442,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.genres = set([])
 			self.tracklistpositions = set()
 			self.isrcpositions = set()
+			self.isrcseen = set()
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
@@ -848,6 +849,12 @@ class discogs_handler(xml.sax.ContentHandler):
 							sys.stdout.flush()
 							return
 						else:
+							if isrc_tmp in self.isrcseen:
+								self.count += 1
+								self.prev = self.release
+								print('%8d -- ISRC (duplicate %s): https://www.discogs.com/release/%s' % (self.count, isrc_tmp, str(self.release)))
+								sys.stdout.flush()
+							self.isrcseen.add(isrc_tmp)
 							isrcres = re.match("\w{5}(\d{2})\d{5}", isrc_tmp)
 							if isrcres == None:
 								self.count += 1
