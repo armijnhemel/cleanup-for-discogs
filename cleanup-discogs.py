@@ -441,6 +441,7 @@ class discogs_handler(xml.sax.ContentHandler):
 			self.formatmaxqty = 0
 			self.genres = set([])
 			self.tracklistpositions = set()
+			self.isrcpositions = set()
 			for (k,v) in attrs.items():
 				if k == 'id':
 					self.release = v
@@ -1110,6 +1111,12 @@ class discogs_handler(xml.sax.ContentHandler):
 								self.prev = self.release
 								print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								return
+					else:
+						if self.description.strip() in self.isrcpositions:
+							self.count += 1
+							self.prev = self.release
+							print('%8d -- ISRC Code (description reuse %s): https://www.discogs.com/release/%s' % (self.count, self.description.strip(),str(self.release)))
+						self.isrcpositions.add(self.description.strip())
 				if self.config['check_mastering_sid']:
 					if not self.inmasteringsid:
 						if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
