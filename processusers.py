@@ -18,7 +18,7 @@ seenfirstuser = False
 needtd = False
 
 total = 0
-usertocontributions = {}
+usertocontributions = []
 
 for u in userfile:
 	if b'class="linked_username"' in u:
@@ -33,7 +33,7 @@ for u in userfile:
 			continue
 		needtd = False
 		amount = int(re.search(b"<td>([\d,]+)</td>", u).groups()[0].replace(b',', b''))
-		usertocontributions[username] = amount
+		usertocontributions.append((username, amount))
 		total+= amount
 
 ## finally close the file
@@ -43,7 +43,7 @@ oldcounter = 0
 counter = 0
 localtotal = 0
 accumulativetotal = 0
-users = sorted(usertocontributions.items(),key = lambda x: x[1], reverse=True)
+users = sorted(usertocontributions,key = lambda x: x[1], reverse=True)
 for u in users:
 	counter += 1
 	#print(u[0].decode(), u[1], "{:.2%}".format((u[1]/total)))
