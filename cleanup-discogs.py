@@ -736,7 +736,7 @@ class discogs_handler(xml.sax.ContentHandler):
 						## check how many people use 'O' instead of '0'
 						if v.lower().startswith('lc'):
 							if 'O' in v:
-								print('%8d -- Spelling error in Label Code): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+								print('%8d -- Spelling error (in Label Code): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								sys.stdout.flush()
 						if discogssmells.labelcodere.match(v.lower()) == None:
 							self.count += 1
