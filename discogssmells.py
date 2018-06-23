@@ -101,7 +101,7 @@ spars_ftf = set(["spars code", "spar code", "spars-code", "spare code",
 
 label_code_ftf = set(['label code', 'labelcode', 'lbel code', 'laabel code', 'labe code', 'laberl code'])
 
-isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording', 'i.s.r.c.', 'icrs'])
+isrc_ftf = set(['international standard recording code','international standard recording copyright', 'international standart recording code', 'isrc', 'irsc', 'iscr', 'international standard code recording', 'i.s.r.c.', 'icrs', 'international recording standard code', "isr code"])
 
 ## a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
 rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI", "ΑΕΠΙ", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR", "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA", "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA", "CAPAC", "CASH", "CEDAR", "CISAC", "CMRRA", "COMAR", "COTT", "EAU", "FCA", "FILSCAP", "GEMA", "GESAC", "GESAP", "GRAMO", "GVL", "HDS", "HFA", "IMRO", "IPRS", "JASRAC", "KCI", "KODA", "KOMCA", "LATGA-A", "MACP", "MECOLICO", "MCPS", "MCSC", "MCSK", "MESAM", "MUSICAUTOR", "MUST", "NCB", "n©b", "N©B", "N(C)B", "OSA", "PAMRA", "PPL", "PROCAN", "PRS", "RAO", "SABAM", "SACEM", "SACEM Luxembourg", "SACM", "SACVEN", "SADAIC", "SAKOJ", "SAMI", "SAMRO", "SAYCO", "SAZAS", "SBACEM", "SCPP", "SCD", "SDRM", "SEDRIM", "SENA", "SESAC", "SGA", "SGAE", "SIAE", "SIMIM", "SOCAN", "SODRAC", "SOKOJ", "SOZA", "SPA", "STEF", "STEMRA", "STIM", "SUISA", "TEOSTO", "TONO", "UACRR", "UBC", "UCMR-ADA", "ZAIKS", "ZPAV"])
