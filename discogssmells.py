@@ -116,7 +116,7 @@ rights_societies_ftf = set(['(right societies)', '(rights society', '(rights soc
 ## STEMA:
 ## https://www.discogs.com/release/1511006
 ## https://www.discogs.com/release/529700
-rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'STREMA', 'STERMA', 'STEMA', 'STEMPRA', 'STEMPA', 'STEMBRA', 'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC', 'JASNAC', 'JASRAK', 'JASRC', 'JASRAQ', 'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'GENA'])
+rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'ETEMRA', 'SEMRA','SEMTRA', 'STAMRA', 'STEAMRA', 'STREMA', 'STREMRA', 'STERMA', 'STERMRA', 'STEMA', 'STERA', 'STETMRA', 'STEMPRA', 'STEMCA', 'STEMPA', 'STEMBRA', 'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'STENRA', 'TEMRA', 'JAIRAC', 'JAJSRAC', 'JAMRAC', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC', 'JASNAC', 'JASRACK', 'JASREC', 'JASTAC', 'JASTRAC', 'JASRAK', 'JASRA', 'JASRC', 'JASRAQ', 'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'JASHAC', 'RJASRAC', 'YASRAC', 'GMA', 'GENA', 'GAMA', 'GE;A', 'GAME', 'GEMRA', 'GGEMA', 'GEMMA', 'GEMNA', 'GENMA', 'GEAM', 'GEEMA', 'GEME', 'GEMM', 'GEMS', 'GMEA', 'SSABAM', 'SBAM', 'SABBAM', 'SABEM', 'SABAN', 'SABM', 'SABIAM', 'SABMA', 'SABAAM', 'SAAM', 'SABNAM', 'SEBAM', 'SGEA', "SGSE'])
 
 ## a set of rights society names with characters from the wrong character set
 rights_societies_wrong_char = set(['ΒΙΕΜ', 'BΙEM', 'BΙΕΜ', 'BIEΜ', 'AEΠΙ', 'AEΠI', 'AΕΠΙ', 'AΕΠI', 'AΕPI', 'AEПI', 'АЕПI', 'PAO', 'PАО', 'РAО', 'РАO', 'PAО', 'PАO', 'РAO'])
