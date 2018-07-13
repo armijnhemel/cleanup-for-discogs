@@ -80,7 +80,7 @@ depositovalres.append(re.compile(u'(?:ab|al|as|av|ba|bi|bu|cc|ca|co|cr|cs|gc|gi|
 
 ## label code
 #labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}')
-labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,5}$')
+labelcodere = re.compile(u'\s*(?:lc)?\s*[\-/]?\s*\d{4,6}$')
 
 masteringsidre = re.compile(u'\s*(?:ifpi)?\s*l\w{3,4}$')
 mouldsidre = re.compile(u'\s*(?:ifpi)?\s*\w{4,5}$')
