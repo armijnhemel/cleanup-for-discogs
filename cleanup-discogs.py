@@ -738,7 +738,7 @@ class discogs_handler(xml.sax.ContentHandler):
 							if 'O' in v:
 								print('%8d -- Spelling error (in Label Code): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
 								sys.stdout.flush()
-						if discogssmells.labelcodere.match(v.lower()) == None:
+						if discogssmells.labelcodere.match(v.lower().strip()) == None:
 							self.count += 1
 							self.prev = self.release
 							print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
