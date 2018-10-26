@@ -177,21 +177,22 @@ class discogs_handler(xml.sax.ContentHandler):
                 if 'Styrene' in self.contentbuffer:
                     pass
         elif self.inartistid:
-            if self.contentbuffer == '0':
-                self.count += 1
-                print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                sys.stdout.flush()
-                self.noartist = True
-            else:
-                self.noartist = False
-            # TODO: check for genres, as No Artist is
-            # often confused with Unknown Artist
-            #if self.contentbuffer == '118760':
-            #    if len(self.genres) != 0:
-            #        print("https://www.discogs.com/artist/%s" % self.contentbuffer, "https://www.discogs.com/release/%s" % str(self.release))
-            #        print(self.genres)
-            #        sys.exit(0)
-            self.artists.add(self.contentbuffer)
+            if self.config['check_artist']:
+                if self.contentbuffer == '0':
+                    self.count += 1
+                    print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+                    sys.stdout.flush()
+                    self.noartist = True
+                else:
+                    self.noartist = False
+                # TODO: check for genres, as No Artist is
+                # often confused with Unknown Artist
+                #if self.contentbuffer == '118760':
+                #    if len(self.genres) != 0:
+                #        print("https://www.discogs.com/artist/%s" % self.contentbuffer, "https://www.discogs.com/release/%s" % str(self.release))
+                #        print(self.genres)
+                #        sys.exit(0)
+                self.artists.add(self.contentbuffer)
         elif self.incompanyid:
             if self.config['check_labels']:
                 if self.year is not None:
@@ -1483,6 +1484,15 @@ def main(argv):
                     config_settings['check_tracklisting'] = False
             except Exception:
                 config_settings['check_tracklisting'] = True
+
+            # store settings for artists, default True
+            try:
+                if config.get(section, 'artist') == 'yes':
+                    config_settings['check_artist'] = True
+                else:
+                    config_settings['check_artist'] = False
+            except Exception:
+                config_settings['check_artist'] = True
 
             # store settings for credits list checks
             config_settings['check_credits'] = False
