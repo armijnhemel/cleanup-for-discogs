@@ -191,7 +191,9 @@ rights_societies_ftf = set(['(right societies)', '(rights society',
 # STEMA:
 # https://www.discogs.com/release/1511006
 # https://www.discogs.com/release/529700
-#rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIE', 'BIEIM','BIEAM','BIEEM', 'BIELM','BIEL', 'BIEMA', 'BIETM', 'BIRM', 'BIER', 'BIERM', 'BIE,', 'BIEW', 'BIIEM', 'BJEM', 'BLEM', 'BIJMA', 'BIMA', 'BUMS', 'BUMDA', 'BUMRA', 'ETEMRA', 'SEMRA','SEMTRA', 'STAMRA', 'STEAMRA', 'STREMA', 'STREMRA', 'STERMA', 'STERMRA', 'STEMA', 'STERA', 'STETMRA', 'STEMPRA', 'STEMCA', 'STEMPA', 'STEMBRA', 'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'STENRA', 'TEMRA', 'SREMRA', 'JAIRAC', 'JAJSRAC', 'JAMRAC', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC', 'JASNAC', 'JASRACK', 'JASREC', 'JASTAC', 'JASTRAC', 'JASRAK', 'JASRA', 'JASRC', 'JASRAQ', 'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'JSRAC', 'JASHAC', 'RJASRAC', 'YASRAC', 'GMA', 'GENA', 'GAMA', 'GE;A', 'GAME', 'GEMRA', 'GGEMA', 'GEMMA', 'GEMNA', 'GENMA', 'GEAM', 'GEEMA', 'GEME', 'GEMM', 'GEMS', 'GMEA', 'SSABAM', 'SBAM', 'SABBAM', 'SABEM', 'SABAN', 'SABM', 'SABIAM', 'SABMA', 'SABAAM', 'SAAM', 'SABNAM', 'SEBAM', 'SGEA', 'SGSE', 'MPCS', 'MCPA'])
+# There are a few wrong values, but currently they are also triggered
+# by correct values, so they are ignored for now.
+#rights_societies_wrong = set(['BIE', 'TEMRA'])
 rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'BIEAM', 'BIEEM', 'BIELM', 'BIEL', 'BIEMA',
                               'BIETM', 'BIRM', 'BIER', 'BIERM', 'BIE,', 'BIEW',
