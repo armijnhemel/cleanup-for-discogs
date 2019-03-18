@@ -8,7 +8,7 @@
 ##
 ## SPDX-License-Identifier: GPL-3.0-only
 ##
-## Copyright 2018 - Armijn Hemel
+## Copyright 2018-2019 - Armijn Hemel
 
 oldmonth = open('/home/armijn/discogs-data/may2018.txt', 'r')
 newmonth = open('/home/armijn/discogs-data/june2018.txt', 'r')
