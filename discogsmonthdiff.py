@@ -16,6 +16,12 @@ newmonth = open('/home/armijn/discogs-data/june2018.txt', 'r')
 oldreleases = []
 
 for i in oldmonth:
+        if 'Tracklisting' in i:
+               continue
+        if 'Role' in i:
+               continue
+        if 'Artist' in i:
+               continue
         oldreleases.append(int((i.strip().split('https://www.discogs.com/release/')[-1])))
 
 latestoldrelease = oldreleases[-1]
@@ -28,11 +34,22 @@ for i in newmonth:
         newrelease = int(i.strip().split('https://www.discogs.com/release/')[-1])
         if newrelease > latestoldrelease:
                 break
+        if 'Tracklisting' in i:
+               continue
+        if 'Role' in i:
+               continue
+        if 'Artist' in i:
+               continue
         if not newrelease in oldreleasesset:
-                newreleases.add(newrelease)
-                print(i.strip())
+                pass
+                #print(i.strip())
+        newreleases.add(newrelease)
 
 #print(len(newreleases))
+
+for i in oldreleases:
+        if i not in newreleases:
+                print(' -- https://www.discogs.com/release/%d' % i)
 
 oldmonth.close()
 newmonth.close()
