@@ -7,7 +7,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0
 #
-# Copyright 2017-2018 - Armijn Hemel
+# Copyright 2017-2019 - Armijn Hemel
 
 import os
 import sys
@@ -94,7 +94,7 @@ def main(argv):
     # ensure that empty bars are generated if needed
     if len(bardata) != last_index:
         for i in range(0, last_index):
-            if not bardata[i][0] == i:
+            if bardata[i][0] != i:
                 for d in range(0, bardata[i][0] - i):
                     bardata.append((i, 0))
                     bardata.sort()
