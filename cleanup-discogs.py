@@ -44,7 +44,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2018 - Armijn Hemel
+# Copyright 2017-2019 - Armijn Hemel
 
 import xml.sax
 import sys
@@ -934,7 +934,7 @@ class discogs_handler(xml.sax.ContentHandler):
                             if self.year < 1993:
                                 self.count += 1
                                 self.prev = self.release
-                                print('%8d -- SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+                                print('%8d -- Mould SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                 if self.inmasteringsid:
                     if self.config['check_mastering_sid']:
@@ -964,7 +964,7 @@ class discogs_handler(xml.sax.ContentHandler):
                             if self.year < 1993:
                                 self.count += 1
                                 self.prev = self.release
-                                print('%8d -- SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+                                print('%8d -- Mastering SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                 if not self.indeposito:
                     if self.country == 'Spain':
