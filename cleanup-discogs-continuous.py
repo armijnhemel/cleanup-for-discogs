@@ -1236,6 +1236,8 @@ def main(argv):
         if latest_release == None:
             print("Something went wrong, try again later", file=sys.stderr)
             sys.exit(1)
+        if latest_release < startvalue:
+            pass
         print("Latest = %d" % latest_release, file=sys.stderr)
         print("Sleeping for %d seconds" % newsleep, file=sys.stderr)
         sys.stderr.flush()
