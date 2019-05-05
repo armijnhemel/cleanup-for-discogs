@@ -163,28 +163,29 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
     # 2. extraartists (release level)
     # 3. extraartists (track level)
     if 'check_credits' in config_settings:
-        if 'artists' in release:
-            for artist in release['artists']:
-                if 'role' in artist:
-                    invalidroles = checkrole(artist, release_id, credits)
-                    for role in invalidroles:
-                        count += 1
-                        errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
-        if 'extraartists' in release:
-            for artist in release['extraartists']:
-                if 'role' in artist:
-                    invalidroles = checkrole(artist, release_id, credits)
-                    for role in invalidroles:
-                        count += 1
-                        errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
-        for t in release['tracklist']:
-            if 'extraartists' in t:
-                for artist in t['extraartists']:
+        if config_settings['check_credits']:
+            if 'artists' in release:
+                for artist in release['artists']:
                     if 'role' in artist:
                         invalidroles = checkrole(artist, release_id, credits)
                         for role in invalidroles:
                             count += 1
                             errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
+            if 'extraartists' in release:
+                for artist in release['extraartists']:
+                    if 'role' in artist:
+                        invalidroles = checkrole(artist, release_id, credits)
+                        for role in invalidroles:
+                            count += 1
+                            errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
+            for t in release['tracklist']:
+                if 'extraartists' in t:
+                    for artist in t['extraartists']:
+                        if 'role' in artist:
+                            invalidroles = checkrole(artist, release_id, credits)
+                            for role in invalidroles:
+                                count += 1
+                                errormsgs.append('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (count, role, str(release_id)))
 
     # check release month and year
     if 'released' in release:
