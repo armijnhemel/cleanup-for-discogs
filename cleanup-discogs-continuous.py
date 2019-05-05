@@ -753,6 +753,7 @@ def main(argv):
     # the following options are provided on the commandline
     parser.add_argument("-c", "--config", action="store", dest="cfg", help="path to configuration file", metavar="FILE")
     parser.add_argument("-s", "--startvalue", action="store", dest="startvalue", help="start value for releases", metavar="STARTVALUE")
+    parser.add_argument("-l", "--latest", action="store", dest="latest_value", help="value for latest release", metavar="LATEST")
     args = parser.parse_args()
 
     # some checks for the configuration file
@@ -779,6 +780,14 @@ def main(argv):
             startvalue = int(args.startvalue)
         except:
             parser.error("start value is not a valid integer, exciting")
+
+    latest_release = None
+    # check for a startvalue
+    if args.latest_value != None:
+        try:
+            latest_release = int(args.latest_value)
+        except:
+            parser.error("latest value is not a valid integer, exciting")
 
     # process the configuration file and store settings
     config_settings = {}
@@ -1083,7 +1092,6 @@ def main(argv):
             # simply create the file
             pass
 
-
     # use a (somewhat) exponential backoff in case too many requests have been made
     ratelimitbackoff = 5
 
@@ -1091,10 +1099,11 @@ def main(argv):
     useragentstring = "DiscogsCleanupForUser%s/0.1" % config_settings['username']
     headers = {'user-agent': useragentstring, 'Authorization': 'Discogs token=%s' % config_settings['token']}
 
-    latest_release = get_latest_release(headers)
-    if latest_release == None:
-        print("Something went wrong, try again later", file=sys.stderr)
-        sys.exit(1)
+    if latest_release is None:
+        latest_release = get_latest_release(headers)
+        if latest_release == None:
+            print("Something went wrong, try again later", file=sys.stderr)
+            sys.exit(1)
 
     # if no start value has been provided start with the latest from the
     # Discogs website.
