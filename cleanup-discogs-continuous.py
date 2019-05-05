@@ -200,11 +200,11 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                     elif monthnr > 12:
                         count += 1
                         errormsgs.append('%8d -- Month impossible (%d): https://www.discogs.com/release/%s' % (count, monthnr, str(release_id)))
-        if config_settings['check_year']:
-            try:
-                year = int(release['released'].split('-', 1)[0])
-                # TODO: check for implausible old years
-            except ValueError:
+        try:
+            year = int(release['released'].split('-', 1)[0])
+            # TODO: check for implausible old years
+        except ValueError:
+            if config_settings['check_year']:
                 count += 1
                 errormsgs.append('%8d -- Year \'%s\' invalid: https://www.discogs.com/release/%s' % (count, release['released'], str(release_id)))
 
