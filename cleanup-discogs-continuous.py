@@ -1060,6 +1060,7 @@ def main(argv):
 
     # a list of accepted roles. This is an external file, generated with extractcredits.py
     # from the 'helper-scripts' directory.
+    credits = set()
     if 'check_credits' in config_settings:
         if config_settings['check_credits']:
             creditsfile = open(config_settings['creditsfile'], 'r')
@@ -1147,6 +1148,7 @@ def main(argv):
             if startvalue == latest_release:
                 break
             targetfilename = os.path.join(storedir, "%d" % (releasenr//1000000), "%d.json" % releasenr)
+            os.makedirs(os.path.join(storedir, "%d" % (releasenr//1000000)), exist_ok=True)
             if config_settings['skip404']:
                 if releasenr in skip404s:
                     continue
