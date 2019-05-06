@@ -1092,7 +1092,7 @@ def main(argv):
     ratelimitbackoff = 5
 
     # set the User Agent and Authorization header for each user request
-    useragentstring = "DiscogsCleanupForUser%s/0.1" % config_settings['username']
+    useragentstring = "DiscogsCleanupForUser-%s/0.1" % config_settings['username']
     headers = {'user-agent': useragentstring, 'Authorization': 'Discogs token=%s' % config_settings['token']}
 
     if latest_release is None:
