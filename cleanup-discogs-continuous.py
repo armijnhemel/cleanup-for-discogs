@@ -5,7 +5,8 @@
 #
 # The checks are (nearly) identical to cleanup-discogs.py
 #
-# The results that are printed by this script are by no means complete or accurate.
+# The results that are printed by this script are by no means complete
+# or accurate.
 #
 # Licensed under the terms of the General Public License version 3
 #
@@ -34,7 +35,8 @@ currentyear = datetime.datetime.utcnow().year
 # grab the latest release from the API. Results tend to get cached
 # by the Discogs nginx instance for some reason.
 def get_latest_release(headers):
-    r = requests.get('https://api.discogs.com/database/search?type=release&sort=date_added', headers=headers)
+    latest = 'https://api.discogs.com/database/search?type=release&sort=date_added'
+    r = requests.get(latest, headers=headers)
     if r.status_code != 200:
         return
 
@@ -81,6 +83,8 @@ def checkrole(artist, release_id, credits):
 
 # process the contents of a release
 def processrelease(release, config_settings, count, credits, ibuddy, favourites):
+    releaseurl = 'https://www.discogs.com/release/%s'
+
     # only process entries that have a status of 'Accepted'
     if release['status'] == 'Rejected':
         return count
@@ -1120,9 +1124,9 @@ def main(argv):
         # stored.
         release404file = open(release404filename, 'a')
 
-    # This is just something very silly: if you have an iBuddy device and have the
-    # corresponding Python module installed it will respond to things it finds
-    # (currently only favourite artists).
+    # This is just something very silly: if you have an iBuddy device and
+    # have the corresponding Python module installed it will respond to
+    # data it finds (currently only favourite artists).
     #
     # https://github.com/armijnhemel/py3buddy
     #
@@ -1151,7 +1155,7 @@ def main(argv):
     # now start a big loop
     # https://www.discogs.com/developers/#page:authentication
     while True:
-        for releasenr in range(startvalue, latest_release):
+        for releasenr in range(startvalue, latest_release+1):
             if startvalue == latest_release:
                 break
             targetfilename = os.path.join(storedir, "%d" % (releasenr//1000000), "%d.json" % releasenr)
@@ -1197,7 +1201,8 @@ def main(argv):
             if 'X-Discogs-Ratelimit-Remaining' in r.headers:
                 ratelimit = int(r.headers['X-Discogs-Ratelimit-Remaining'])
             if ratelimit == 0:
-                # no more requests are allowed, so sleep for some time, max 60 seconds
+                # no more requests are allowed, so sleep for some
+                # time, max 60 seconds
                 time.sleep(ratelimitbackoff)
                 print("Rate limiting, sleeping for %d seconds" % ratelimitbackoff, file=sys.stderr)
                 sys.stderr.flush()
@@ -1206,8 +1211,9 @@ def main(argv):
             else:
                 ratelimitbackoff = 5
 
-            # now process the response. This should be JSON, so decode it, and also write
-            # the JSON data to a separate file for offline processing (if necessary).
+            # now process the response. This should be JSON, so decode it,
+            # and also write the JSON data to a separate file for offline
+            # processing (if necessary).
             try:
                 responsejson = r.json()
                 jsonreleasefile = open(targetfilename, 'w')
@@ -1232,14 +1238,15 @@ def main(argv):
         latest_release = get_latest_release(headers)
         if latest_release is None:
             print("Something went wrong, try again later", file=sys.stderr)
-            sys.exit(1)
+            break
         if latest_release < startvalue:
             pass
         print("Latest = %d" % latest_release, file=sys.stderr)
         print("Sleeping for %d seconds" % newsleep, file=sys.stderr)
         sys.stderr.flush()
 
-        # sleep for ten minutes to make sure some new things have been added to Discogs
+        # sleep for ten minutes to make sure some new things
+        # have been added to Discogs
         time.sleep(newsleep)
     release404file.close()
 
