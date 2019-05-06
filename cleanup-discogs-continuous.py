@@ -39,20 +39,16 @@ currentyear = datetime.datetime.utcnow().year
 # The contents of this page are different depending on whether or not you are logged
 # into the website. If you are not logged in, then it is a few hours behind.
 def get_latest_release(headers):
-    r = requests.get('https://www.discogs.com/search/?sort=date_added%2Cdesc&type=release', headers=headers)
+    r = requests.get('https://api.discogs.com/database/search?type=release&sort=date_added', headers=headers)
     if r.status_code != 200:
         return
 
     # now parse the response
-    responsehtml = r.text
-    dataidpos = responsehtml.find('data-object-id="')
-    dataidregex = re.compile('data-object-id="(\d+)"')
-    dataidres = dataidregex.search(responsehtml, dataidpos)
-    if dataidres != None:
-        latest_release = int(dataidres.groups()[0])
-        return latest_release
-    else:
+    responsejson = r.json()
+    if not 'results' in responsejson:
         return
+
+    return responsejson['results'][0]['id']
 
 
 # convenience method to check if roles are valid
