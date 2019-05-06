@@ -15,7 +15,6 @@
 
 import sys
 import os
-import gzip
 import re
 import datetime
 import time
@@ -32,12 +31,8 @@ import discogssmells
 # to the correct date or use NTP!
 currentyear = datetime.datetime.utcnow().year
 
-# Since the API does not have a call to get the latest release that has been
-# added to the database get it from the following webpage by scraping. This is ugly.
-# https://www.discogs.com/search/?sort=date_added%2Cdesc&type=release
-#
-# The contents of this page are different depending on whether or not you are logged
-# into the website. If you are not logged in, then it is a few hours behind.
+# grab the latest release from the API. Results tend to get cached
+# by the Discogs nginx instance for some reason.
 def get_latest_release(headers):
     r = requests.get('https://api.discogs.com/database/search?type=release&sort=date_added', headers=headers)
     if r.status_code != 200:
@@ -62,7 +57,8 @@ def checkrole(artist, release_id, credits):
             if not role in credits:
                 invalidroles.append(role)
     else:
-        # sometimes there is an additional description in the role in between [ and ]
+        # sometimes there is an additional description in the role in
+        # between [ and ]
         # This method is definitely not catching everything.
         rolesplit = artist['role'].split('[')
         for rs in rolesplit:
@@ -111,8 +107,9 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                 errormsgs.append('%8d -- Favourite Artist (%s): https://www.discogs.com/release/%s' % (count, artist['name'], str(release_id)))
 
     # check for misspellings of Czechoslovak and Czech releases
-    # People use 0x115 instead of 0x11B, which look very similar but 0x115 is not valid
-    # in the Czech alphabet. Check for all data except the YouTube playlist.
+    # People use 0x115 instead of 0x11B, which look very similar but 0x115
+    # is not valid in the Czech alphabet. Check for all data except
+    # the YouTube playlist.
     # https://www.discogs.com/group/thread/757556
     # This is important for the following elements:
     # * tracklist (title, subtracks not supported yet)
@@ -236,7 +233,8 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
             if config_settings['check_label_code']:
                 if l['catno'].lower().startswith('lc'):
                     falsepositive = False
-                    # American releases on Epic (label 1005 in Discogs) sometimes start with LC
+                    # American releases on Epic (label 1005 in Discogs)
+                    # sometimes start with LC
                     if l['id'] == 1005:
                         falsepositive = True
                     if not falsepositive:
@@ -262,7 +260,6 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                 if l['name'] == 'London' and l['id'] == 26905:
                     count += 1
                     errormsgs.append('%8d -- Wrong label (London): https://www.discogs.com/release/%s' % (count, str(release_id)))
-                    pass
     '''
     if name == 'format':
         for (k,v) in attrs.items():
@@ -356,7 +353,7 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                     if 'O' in identifier['value']:
                         errormsgs.append('%8d -- Spelling error in Label Code): https://www.discogs.com/release/%s' % (count, str(release_id)))
                         sys.stdout.flush()
-                if discogssmells.labelcodere.match(v.lower()) == None:
+                if discogssmells.labelcodere.match(v.lower()) is None:
                     count += 1
                     errormsgs.append('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (count, str(release_id)))
             else:
@@ -410,16 +407,19 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                         errormsgs.append('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (count, str(release_id)))
         if config_settings['check_isrc']:
             if identifier['type'] == 'ISRC':
-                # Check the length of ISRC fields. According to the specifications these should
-                # be 12 in length. Some ISRC identifiers that have been recorded in the database
-                # cover a range of tracks. These will be reported as wrong ISRC codes. It is unclear
-                # what needs to be done with those.
+                # Check the length of ISRC fields. According to the
+                # specifications these should be 12 in length. Some ISRC
+                # identifiers that have been recorded in the database
+                # span a range of tracks. These will be reported as wrong ISRC
+                # codes. It is unclear what needs to be done with those.
+
                 # first get rid of cruft
                 isrc_tmp = v.strip().upper()
                 if isrc_tmp.startswith('ISRC'):
                     isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
                 if isrc_tmp.startswith('CODE'):
                     isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
+
                 # replace a few characters
                 isrc_tmp = isrc_tmp.replace('-', '')
                 isrc_tmp = isrc_tmp.replace(' ', '')
@@ -495,7 +495,6 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                             else:
                                 count += 1
                                 errormsgs.append("%8d -- Depósito Legal (year not found): https://www.discogs.com/release/%s" % (count, str(release_id)))
-                        pass
                     elif identifier['type'] == 'Barcode':
                         for depositovalre in discogssmells.depositovalres:
                             if depositovalre.match(v.lower()) != None:
@@ -545,7 +544,7 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                     # some people insist on using ƒ instead of f
                     mould_tmp = mould_tmp.replace('ƒ', 'f')
                     res = discogssmells.mouldsidre.match(mould_tmp)
-                    if res == None:
+                    if res is None:
                         count += 1
                         errormsgs.append('%8d -- Mould SID Code (value): https://www.discogs.com/release/%s' % (count, str(release_id)))
                     else:
@@ -589,7 +588,7 @@ def processrelease(release, config_settings, count, credits, ibuddy, favourites)
                     # some people insist on using ƒ instead of f
                     master_tmp = master_tmp.replace('ƒ', 'f')
                     res = discogssmells.masteringsidre.match(master_tmp)
-                    if res == None:
+                    if res is None:
                         count += 1
                         errormsgs.append('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (count, str(release_id)))
                     else:
@@ -753,7 +752,7 @@ def main(argv):
     args = parser.parse_args()
 
     # some checks for the configuration file
-    if args.cfg == None:
+    if args.cfg is None:
         parser.error("Configuration file missing")
 
     if not os.path.exists(args.cfg):
@@ -1054,13 +1053,13 @@ def main(argv):
             config_settings['use_notify_send'] = False
 
     configfile.close()
-    if config_settings['storedir'] == None:
+    if config_settings['storedir'] is None:
         print("Data store directory non-existent or not writable, exiting.", file=sys.stderr)
         sys.exit(1)
-    if config_settings['token'] == None:
+    if config_settings['token'] is None:
         print("Token not specified, exiting.", file=sys.stderr)
         sys.exit(1)
-    if config_settings['username'] == None:
+    if config_settings['username'] is None:
         print("Discogs user name not specified, exiting.", file=sys.stderr)
         sys.exit(1)
 
@@ -1093,17 +1092,19 @@ def main(argv):
 
     # set the User Agent and Authorization header for each user request
     useragentstring = "DiscogsCleanupForUser-%s/0.1" % config_settings['username']
-    headers = {'user-agent': useragentstring, 'Authorization': 'Discogs token=%s' % config_settings['token']}
+    headers = {'user-agent': useragentstring,
+               'Authorization': 'Discogs token=%s' % config_settings['token']
+              }
 
     if latest_release is None:
         latest_release = get_latest_release(headers)
-        if latest_release == None:
+        if latest_release is None:
             print("Something went wrong, try again later", file=sys.stderr)
             sys.exit(1)
 
     # if no start value has been provided start with the latest from the
     # Discogs website.
-    if startvalue == None:
+    if startvalue is None:
         startvalue = latest_release
 
     # populate a set with all the 404s that were found.
@@ -1137,7 +1138,7 @@ def main(argv):
     if ibuddy_enabled:
         ibuddy_config = {}
         ibuddy = py3buddy.iBuddy(ibuddy_config)
-        if ibuddy.dev == None:
+        if ibuddy.dev is None:
             ibuddy = None
             ibuddy_enabled = False
 
@@ -1149,7 +1150,7 @@ def main(argv):
 
     # now start a big loop
     # https://www.discogs.com/developers/#page:authentication
-    while(True):
+    while True:
         for releasenr in range(startvalue, latest_release):
             if startvalue == latest_release:
                 break
@@ -1229,7 +1230,7 @@ def main(argv):
         # and find the newest release again
         print("Grabbing new data", file=sys.stderr)
         latest_release = get_latest_release(headers)
-        if latest_release == None:
+        if latest_release is None:
             print("Something went wrong, try again later", file=sys.stderr)
             sys.exit(1)
         if latest_release < startvalue:
