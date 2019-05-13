@@ -773,10 +773,11 @@ class discogs_handler(xml.sax.ContentHandler):
                                 self.prev = self.release
                                 print('%8d -- Rights Society (possible wrong value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 break
-                    if v.upper() in discogssmells.rights_societies_wrong_char:
-                        self.count += 1
-                        self.prev = self.release
-                        print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
+                    if self.config['check_rights_society']:
+                        if v.upper() in discogssmells.rights_societies_wrong_char:
+                            self.count += 1
+                            self.prev = self.release
+                            print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
                 elif not self.inother:
                     if self.config['check_rights_society']:
                         if '/' in v:
