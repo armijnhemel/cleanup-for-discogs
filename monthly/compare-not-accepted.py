@@ -6,7 +6,7 @@
 ##
 ## SPDX-License-Identifier: GPL-3.0
 ##
-## Copyright 2017 - Armijn Hemel
+## Copyright 2017-2019 - Armijn Hemel
 
 import os, sys
 
@@ -20,9 +20,9 @@ release_to_status1 = {}
 notacceptedfile1 = open(notaccepted1, 'r')
 
 for i in notacceptedfile1:
-	(release_id, status) = i.split('\t')
-	release = release_id.split('.')[0]
-	release_to_status1[release] = i[1].strip()
+    (release_id, status) = i.split('\t')
+    release = release_id.split('.')[0]
+    release_to_status1[release] = i[1].strip()
 
 notacceptedfile1.close()
 
@@ -31,9 +31,9 @@ release_to_status2 = {}
 notacceptedfile2 = open(notaccepted2, 'r')
 
 for i in notacceptedfile2:
-	(release_id, status) = i.split('\t')
-	release = release_id.split('.')[0]
-	release_to_status2[release] = i[1].strip()
+    (release_id, status) = i.split('\t')
+    release = release_id.split('.')[0]
+    release_to_status2[release] = i[1].strip()
 
 notacceptedfile2.close()
 
@@ -44,4 +44,4 @@ print("%d releases in not1 that are not in not2" % len(notkeys1.difference(notke
 print("%d releases in not2 that are not in not1" % len(notkeys2.difference(notkeys1)))
 
 for i in notkeys1.difference(notkeys2):
-	print(os.path.join(newdir, "%s.xml" % i), os.path.exists(os.path.join(newdir, "%s.xml" % i)))
+    print(os.path.join(newdir, "%s.xml" % i), os.path.exists(os.path.join(newdir, "%s.xml" % i)))

@@ -6,7 +6,7 @@
 ##
 ## SPDX-License-Identifier: GPL-3.0
 ##
-## Copyright 2017 - Armijn Hemel
+## Copyright 2017-2019 - Armijn Hemel
 
 import os, sys, collections
 
@@ -19,9 +19,9 @@ release_to_country = {}
 countriesfile = open(countryfilename, 'r')
 
 for i in countriesfile:
-	(release_id, country) = i.split('\t')
-	release = release_id.split('.')[0]
-	release_to_country[release] = i[1].strip()
+    (release_id, country) = i.split('\t')
+    release = release_id.split('.')[0]
+    release_to_country[release] = i[1].strip()
 
 countriesfile.close()
 
@@ -29,8 +29,8 @@ releases_set = set()
 
 releases_file = open(shafilename, 'r')
 for i in releases_file:
-	release_id = i.split('.',1)[0]
-	releases_set.add(release_id)
+    release_id = i.split('.',1)[0]
+    releases_set.add(release_id)
 
 releases_file.close()
 
