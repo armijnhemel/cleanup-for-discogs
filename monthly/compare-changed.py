@@ -6,7 +6,7 @@
 ##
 ## SPDX-License-Identifier: GPL-3.0
 ##
-## Copyright 2017 - Armijn Hemel
+## Copyright 2017-2019 - Armijn Hemel
 
 import os, sys, collections
 
@@ -38,10 +38,13 @@ shafile2.close()
 shakeys1 = set(release_to_sha1.keys())
 shakeys2 = set(release_to_sha2.keys())
 
-print("MONTH 1: %d" % len(shakeys1), "MONTH 2: %d" % len(shakeys2))
+printchanged = True
 
-print("%d releases in sha1 that are not in sha2" % len(shakeys1.difference(shakeys2)))
-print("%d releases in sha2 that are not in sha1" % len(shakeys2.difference(shakeys1)))
+if not printchanged:
+    print("MONTH 1: %d" % len(shakeys1), "MONTH 2: %d" % len(shakeys2))
+
+    print("%d releases in sha1 that are not in sha2" % len(shakeys1.difference(shakeys2)))
+    print("%d releases in sha2 that are not in sha1" % len(shakeys2.difference(shakeys1)))
 
 samecontent = 0
 differentcontent = 0
@@ -52,6 +55,9 @@ for i in release_to_sha2:
             samecontent += 1
         else:
             differentcontent += 1
+            if printchanged:
+                print(' -- https://www.discogs.com/release/%s' % i)
 
-print("SAME: %d" % samecontent)
-print("DIFFERENT: %d" % differentcontent)
+if not printchanged:
+    print("SAME: %d" % samecontent)
+    print("DIFFERENT: %d" % differentcontent)
