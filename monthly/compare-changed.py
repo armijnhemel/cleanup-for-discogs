@@ -10,17 +10,17 @@
 
 import os, sys, collections
 
-shafilename1 = '/gpl/tmp/out/sha256-201708'
-shafilename2 = '/gpl/tmp/out/sha256-201709'
+shafilename1 = '/home/armijn/tmp/sha256-201906'
+shafilename2 = '/home/armijn/tmp/sha256-201907'
 
 release_to_sha1 = {}
 
 shafile1 = open(shafilename1, 'r')
 
 for i in shafile1:
-	(release_id, sha) = i.split('\t')
-	release = release_id.split('.')[0]
-	release_to_sha1[release] = sha.strip()
+    (release_id, sha) = i.split('\t')
+    release = release_id.split('.')[0]
+    release_to_sha1[release] = sha.strip()
 
 shafile1.close()
 
@@ -29,9 +29,9 @@ release_to_sha2 = {}
 shafile2 = open(shafilename2, 'r')
 
 for i in shafile2:
-	(release_id, sha) = i.split('\t')
-	release = release_id.split('.')[0]
-	release_to_sha2[release] = sha.strip()
+    (release_id, sha) = i.split('\t')
+    release = release_id.split('.')[0]
+    release_to_sha2[release] = sha.strip()
 
 shafile2.close()
 
@@ -47,11 +47,11 @@ samecontent = 0
 differentcontent = 0
 
 for i in release_to_sha2:
-	if i in release_to_sha1:
-		if release_to_sha1[i] == release_to_sha2[i]:
-			samecontent += 1
-		else:
-			differentcontent += 1
+    if i in release_to_sha1:
+        if release_to_sha1[i] == release_to_sha2[i]:
+            samecontent += 1
+        else:
+            differentcontent += 1
 
 print("SAME: %d" % samecontent)
 print("DIFFERENT: %d" % differentcontent)
