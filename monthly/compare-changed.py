@@ -8,56 +8,90 @@
 ##
 ## Copyright 2017-2019 - Armijn Hemel
 
-import os, sys, collections
+import os
+import sys
+import argparse
 
-shafilename1 = '/home/armijn/tmp/sha256-201906'
-shafilename2 = '/home/armijn/tmp/sha256-201907'
 
-release_to_sha1 = {}
+def main():
+    parser = argparse.ArgumentParser()
 
-shafile1 = open(shafilename1, 'r')
+    # the following options are provided on the commandline
+    parser.add_argument("-f", "--first", action="store", dest="first",
+                        help="path to first file", metavar="FILE")
+    parser.add_argument("-s", "--second", action="store", dest="second",
+                        help="path to second file", metavar="FILE")
+    parser.add_argument("-p", "--printchanged", action="store_true", dest="printchanged",
+                        help="print changed entries instead of statistics")
+    args = parser.parse_args()
 
-for i in shafile1:
-    (release_id, sha) = i.split('\t')
-    release = release_id.split('.')[0]
-    release_to_sha1[release] = sha.strip()
+    # then some sanity checks for the data files
+    if args.first is None:
+        parser.error("Path to first file missing")
 
-shafile1.close()
+    if not os.path.exists(args.first):
+        parser.error("First file %s does not exist" % args.first)
 
-release_to_sha2 = {}
+    if args.second is None:
+        parser.error("Path to second file missing")
 
-shafile2 = open(shafilename2, 'r')
+    if not os.path.exists(args.second):
+        parser.error("Second file %s does not exist" % args.second)
 
-for i in shafile2:
-    (release_id, sha) = i.split('\t')
-    release = release_id.split('.')[0]
-    release_to_sha2[release] = sha.strip()
+    release_to_sha1 = {}
 
-shafile2.close()
+    try:
+        shafile1 = open(args.first, 'r')
+    except:
+        print("Could not open %s, exiting" % args.first, file=sys.stderr)
+        sys.exit(1)
 
-shakeys1 = set(release_to_sha1.keys())
-shakeys2 = set(release_to_sha2.keys())
+    for i in shafile1:
+        (release_id, sha) = i.split('\t')
+        release = release_id.split('.')[0]
+        release_to_sha1[release] = sha.strip()
 
-printchanged = True
+    shafile1.close()
 
-if not printchanged:
-    print("MONTH 1: %d" % len(shakeys1), "MONTH 2: %d" % len(shakeys2))
+    release_to_sha2 = {}
 
-    print("%d releases in sha1 that are not in sha2" % len(shakeys1.difference(shakeys2)))
-    print("%d releases in sha2 that are not in sha1" % len(shakeys2.difference(shakeys1)))
+    try:
+        shafile2 = open(args.second, 'r')
+    except:
+        print("Could not open %s, exiting" % args.second, file=sys.stderr)
+        sys.exit(1)
 
-samecontent = 0
-differentcontent = 0
+    for i in shafile2:
+        (release_id, sha) = i.split('\t')
+        release = release_id.split('.')[0]
+        release_to_sha2[release] = sha.strip()
 
-for i in release_to_sha2:
-    if i in release_to_sha1:
-        if release_to_sha1[i] == release_to_sha2[i]:
-            samecontent += 1
-        else:
-            differentcontent += 1
-            if printchanged:
-                print(' -- https://www.discogs.com/release/%s' % i)
+    shafile2.close()
 
-if not printchanged:
-    print("SAME: %d" % samecontent)
-    print("DIFFERENT: %d" % differentcontent)
+    shakeys1 = set(release_to_sha1.keys())
+    shakeys2 = set(release_to_sha2.keys())
+
+    if not args.printchanged:
+        print("MONTH 1: %d" % len(shakeys1), "MONTH 2: %d" % len(shakeys2))
+
+        print("%d releases in sha1 that are not in sha2" % len(shakeys1.difference(shakeys2)))
+        print("%d releases in sha2 that are not in sha1" % len(shakeys2.difference(shakeys1)))
+
+    samecontent = 0
+    differentcontent = 0
+
+    for i in release_to_sha2:
+        if i in release_to_sha1:
+            if release_to_sha1[i] == release_to_sha2[i]:
+                samecontent += 1
+            else:
+                differentcontent += 1
+                if args.printchanged:
+                    print(' -- https://www.discogs.com/release/%s' % i)
+
+    if not args.printchanged:
+        print("SAME: %d" % samecontent)
+        print("DIFFERENT: %d" % differentcontent)
+
+if __name__ == "__main__":
+    main()
