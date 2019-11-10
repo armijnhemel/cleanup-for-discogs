@@ -8,40 +8,86 @@
 ##
 ## Copyright 2017-2019 - Armijn Hemel
 
-import os, sys
+import os
+import sys
+import argparse
 
-notaccepted1 = '/gpl/tmp/out/notaccepted-201708'
-notaccepted2 = '/gpl/tmp/out/notaccepted-201709'
+def main():
+    parser = argparse.ArgumentParser()
 
-newdir = '/gpl/tmp/discogs/201709'
+    # the following options are provided on the commandline
+    parser.add_argument("-f", "--first", action="store", dest="first",
+                        help="path to first file", metavar="FILE")
+    parser.add_argument("-s", "--second", action="store", dest="second",
+                        help="path to second file", metavar="FILE")
+    parser.add_argument("-a", "--all", action="store", dest="all",
+                        help="path to all hashes (example: sha256-201909", metavar="FILE")
+    parser.add_argument("-p", "--printchanged", action="store_true", dest="printchanged",
+                        help="print changed entries instead of statistics")
+    args = parser.parse_args()
 
-release_to_status1 = {}
+    # then some sanity checks for the data files
+    if args.first is None:
+        parser.error("Path to first file missing")
 
-notacceptedfile1 = open(notaccepted1, 'r')
+    if not os.path.exists(args.first):
+        parser.error("First file %s does not exist" % args.first)
 
-for i in notacceptedfile1:
-    (release_id, status) = i.split('\t')
-    release = release_id.split('.')[0]
-    release_to_status1[release] = i[1].strip()
+    if args.second is None:
+        parser.error("Path to second file missing")
 
-notacceptedfile1.close()
+    if not os.path.exists(args.second):
+        parser.error("Second file %s does not exist" % args.second)
 
-release_to_status2 = {}
+    if args.all is None:
+        parser.error("Path to file with all hashes missing")
 
-notacceptedfile2 = open(notaccepted2, 'r')
+    if not os.path.exists(args.all):
+        parser.error("All hashes file %s does not exist" % args.all)
 
-for i in notacceptedfile2:
-    (release_id, status) = i.split('\t')
-    release = release_id.split('.')[0]
-    release_to_status2[release] = i[1].strip()
+    all_releases = set()
 
-notacceptedfile2.close()
+    try:
+        shafile1 = open(args.all, 'r')
+    except:
+        print("Could not open %s, exiting" % args.all, file=sys.stderr)
+        sys.exit(1)
 
-notkeys1 = set(release_to_status1.keys())
-notkeys2 = set(release_to_status2.keys())
+    for i in shafile1:
+        (release_id, sha) = i.split('\t')
+        release = release_id.split('.')[0]
+        all_releases.add(release)
 
-print("%d releases in not1 that are not in not2" % len(notkeys1.difference(notkeys2)))
-print("%d releases in not2 that are not in not1" % len(notkeys2.difference(notkeys1)))
+    release_to_status1 = {}
 
-for i in notkeys1.difference(notkeys2):
-    print(os.path.join(newdir, "%s.xml" % i), os.path.exists(os.path.join(newdir, "%s.xml" % i)))
+    notacceptedfile1 = open(args.first, 'r')
+
+    for i in notacceptedfile1:
+        (release_id, status) = i.split('\t')
+        release = release_id.split('.')[0]
+        release_to_status1[release] = i[1].strip()
+
+    notacceptedfile1.close()
+
+    release_to_status2 = {}
+
+    notacceptedfile2 = open(args.second, 'r')
+
+    for i in notacceptedfile2:
+        (release_id, status) = i.split('\t')
+        release = release_id.split('.')[0]
+        release_to_status2[release] = i[1].strip()
+
+    notacceptedfile2.close()
+
+    notkeys1 = set(release_to_status1.keys())
+    notkeys2 = set(release_to_status2.keys())
+
+    print("%d releases in not1 that are not in not2" % len(notkeys1.difference(notkeys2)))
+    print("%d releases in not2 that are not in not1" % len(notkeys2.difference(notkeys1)))
+
+    for i in sorted(notkeys1.difference(notkeys2)):
+        print(i, i in all_releases)
+
+if __name__ == "__main__":
+    main()
