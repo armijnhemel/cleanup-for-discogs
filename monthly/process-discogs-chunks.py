@@ -17,7 +17,6 @@
 import sys
 import os
 import hashlib
-import queue
 import multiprocessing
 import shutil
 import argparse
@@ -84,7 +83,8 @@ def processxml(scanqueue, reportqueue, chunkdir):
         scanqueue.task_done()
 
 
-def writeresults(reportqueue, chunkdir, filterconfig, totallen):
+def writeresults(reportqueue, filterconfig, totallen):
+    '''Write results extracted from entries to separate files'''
     sha256file = filterconfig['sha256file']
 
     # files to write data about status to for releases that are not 'Accepted'
@@ -119,18 +119,21 @@ def writeresults(reportqueue, chunkdir, filterconfig, totallen):
         reportqueue.task_done()
 
 
-def main(argv):
+def main():
     parser = argparse.ArgumentParser()
 
     # the following options are provided on the commandline
-    parser.add_argument("-c", "--config", action="store", dest="cfg", help="path to configuration file", metavar="FILE")
-    parser.add_argument("-m", "--month", action="store", dest="month", help="year + month of Discogs dump (example: 201708)", metavar="MONTH")
+    parser.add_argument("-c", "--config", action="store", dest="cfg",
+                        help="path to configuration file", metavar="FILE")
+    parser.add_argument("-m", "--month", action="store", dest="month",
+                        help="year + month of Discogs dump (example: 201708)",
+                        metavar="MONTH")
     args = parser.parse_args()
 
-    month = '201709'
+    month = '201906'
     #month = '201708'
-    chunkdir = '/gpl/tmp/discogs/%s' % month
-    outdir = '/gpl/tmp/out'
+    chunkdir = '/home/armijn/tmp/%s' % month
+    outdir = '/home/armijn/tmp/'
 
     if not os.path.isdir(chunkdir):
         print("'%s' is not valid" % chunkdir, file=sys.stderr)
@@ -169,7 +172,7 @@ def main(argv):
     notacceptedfile = open(os.path.join(outdir, 'notaccepted-%s' % month), 'w')
     filterconfig['notaccepted_file'] = notacceptedfile
 
-    r = multiprocessing.Process(target=writeresults, args=(reportqueue, chunkdir, filterconfig, totallen))
+    r = multiprocessing.Process(target=writeresults, args=(reportqueue, filterconfig, totallen))
     processpool.append(r)
 
     for p in processpool:
@@ -203,4 +206,4 @@ def main(argv):
         p.terminate()
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
