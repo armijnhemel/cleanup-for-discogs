@@ -8,32 +8,56 @@
 ##
 ## Copyright 2017-2019 - Armijn Hemel
 
-import os, sys, collections
+import os
+import sys
+import collections
+import argparse
 
-month = '201709'
-countryfilename = '/gpl/tmp/out/country-%s' % month
-shafilename = '/gpl/tmp/out/sha256-%s' % month
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--shafile", action="store", dest="shafile",
+                        help="path to file with SHA256/releases", metavar="FILE")
+    parser.add_argument("-c", "--countryfile", action="store", dest="countryfile",
+                        help="path to file with country names/releases", metavar="FILE")
 
-release_to_country = {}
+    # the following options are provided on the commandline
+    args = parser.parse_args()
 
-countriesfile = open(countryfilename, 'r')
+    if args.shafile is None:
+        parser.error("path to shafile missing")
 
-for i in countriesfile:
-    (release_id, country) = i.split('\t')
-    release = release_id.split('.')[0]
-    release_to_country[release] = i[1].strip()
+    if args.countryfile is None:
+        parser.error("path to countryfile missing")
 
-countriesfile.close()
+    release_to_country = {}
 
-releases_set = set()
+    countriesfile = open(args.countryfile, 'r')
 
-releases_file = open(shafilename, 'r')
-for i in releases_file:
-    release_id = i.split('.',1)[0]
-    releases_set.add(release_id)
+    for i in countriesfile:
+        try:
+            (release_id, country) = i.split('\t')
+            release = release_id.split('.')[0]
+            release_to_country[release] = i[1].strip()
+        except:
+            continue
 
-releases_file.close()
+    countriesfile.close()
 
-print(len(releases_set) - len(release_to_country))
+    releases_set = set()
 
-print(releases_set.difference(set(release_to_country.keys())))
+    releases_file = open(args.shafile, 'r')
+    for i in releases_file:
+        try:
+            release_id = i.split('.', 1)[0]
+            releases_set.add(release_id)
+        except:
+            continue
+
+    releases_file.close()
+
+    print(len(releases_set) - len(release_to_country))
+
+    print(releases_set.difference(set(release_to_country.keys())))
+
+if __name__ == "__main__":
+    main()
