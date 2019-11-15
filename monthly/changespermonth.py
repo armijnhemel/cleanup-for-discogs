@@ -51,8 +51,8 @@ def main():
 
     for i in shafile1:
         (release_id, sha) = i.split('\t')
-        release = release_id.split('.')[0]
-        release_to_sha1[release] = int(sha.strip())
+        release = int(release_id.split('.')[0])
+        release_to_sha1[release] = sha.strip()
 
     shafile1.close()
 
@@ -66,8 +66,8 @@ def main():
 
     for i in shafile2:
         (release_id, sha) = i.split('\t')
-        release = release_id.split('.')[0]
-        release_to_sha2[release] = int(sha.strip())
+        release = int(release_id.split('.')[0])
+        release_to_sha2[release] = sha.strip()
 
     shafile2.close()
 
@@ -81,12 +81,16 @@ def main():
         if i in release_to_sha1:
             if release_to_sha1[i] != release_to_sha2[i]:
                 firstfile = os.path.join(args.dir, "%d.xml" % i)
+                if not os.path.exists(firstfile):
+                    continue
                 secondfile = os.path.join(args.seconddir, "%d.xml" % i)
-                firstdata = open(firstfile, 'r').read()
+                if not os.path.exists(secondfile):
+                    continue
+                firstdata = open(firstfile, 'rb').read()
                 firsttlsh = tlsh.Tlsh()
                 firsttlsh.update(firstdata)
                 firsttlsh.final()
-                seconddata = open(secondfile, 'r').read()
+                seconddata = open(secondfile, 'rb').read()
                 secondtlsh = tlsh.Tlsh()
                 secondtlsh.update(seconddata)
                 secondtlsh.final()
