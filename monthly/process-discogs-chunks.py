@@ -26,7 +26,7 @@ import xml.dom.minidom
 # process each XML chunk:
 # * compute the SHA256 of the chunk
 # * extract some information from the XML DOM
-def processxml(scanqueue, reportqueue, chunkdir, rename, rename_only):
+def processxml(scanqueue, reportqueue, chunkdir, rename_only):
     while True:
         filename = scanqueue.get()
         xmlfile = open(os.path.join(chunkdir, filename), 'rb')
@@ -176,17 +176,17 @@ def main():
         p = multiprocessing.Process(target=processxml, args=(scanqueue, reportqueue, chunkdir, args.rename_only))
         processpool.append(p)
 
-    # open a few files
-    sha256file = open(os.path.join(outdir, 'sha256-%s' % month), 'w')
-    filterconfig['sha256file'] = sha256file
-
-    countryfile = open(os.path.join(outdir, 'country-%s' % month), 'w')
-    filterconfig['country_file'] = countryfile
-
-    notacceptedfile = open(os.path.join(outdir, 'notaccepted-%s' % month), 'w')
-    filterconfig['notaccepted_file'] = notacceptedfile
-
     if not args.rename_only:
+        # open a few files
+        sha256file = open(os.path.join(outdir, 'sha256-%s' % month), 'w')
+        filterconfig['sha256file'] = sha256file
+
+        countryfile = open(os.path.join(outdir, 'country-%s' % month), 'w')
+        filterconfig['country_file'] = countryfile
+
+        notacceptedfile = open(os.path.join(outdir, 'notaccepted-%s' % month), 'w')
+        filterconfig['notaccepted_file'] = notacceptedfile
+
         r = multiprocessing.Process(target=writeresults, args=(reportqueue, filterconfig, totallen))
         processpool.append(r)
 
@@ -207,15 +207,15 @@ def main():
     if not args.rename_only:
         reportqueue.join()
 
-    # final flushes for the files, then close them
-    sha256file.flush()
-    sha256file.close()
+        # final flushes for the files, then close them
+        sha256file.flush()
+        sha256file.close()
 
-    countryfile.flush()
-    countryfile.close()
+        countryfile.flush()
+        countryfile.close()
 
-    notacceptedfile.flush()
-    notacceptedfile.close()
+        notacceptedfile.flush()
+        notacceptedfile.close()
 
     # finally terminate all the processes
     for p in processpool:
