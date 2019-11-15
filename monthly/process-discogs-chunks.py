@@ -26,7 +26,7 @@ import xml.dom.minidom
 # process each XML chunk:
 # * compute the SHA256 of the chunk
 # * extract some information from the XML DOM
-def processxml(scanqueue, reportqueue, chunkdir):
+def processxml(scanqueue, reportqueue, chunkdir, rename, rename_only):
     while True:
         filename = scanqueue.get()
         xmlfile = open(os.path.join(chunkdir, filename), 'rb')
@@ -35,6 +35,7 @@ def processxml(scanqueue, reportqueue, chunkdir):
         h = hashlib.new('sha256')
         h.update(xmldata)
         filehash = h.hexdigest()
+
         # create a DOM for the XML snippet
         xmldom = xml.dom.minidom.parseString(xmldata)
 
@@ -45,41 +46,44 @@ def processxml(scanqueue, reportqueue, chunkdir):
             # No need to process the top level out-00.xml file that is
             # generated to help xml_merge
             # put a dummy value into the report queue
-            reportqueue.put({})
+            if not rename_only:
+                reportqueue.put({})
             scanqueue.task_done()
             continue
 
         # get the release id
         release_id = release_elem.getAttribute('id')
 
-        # get the status
-        release_status = release_elem.getAttribute('status')
+        if not rename_only:
+            # get the status
+            release_status = release_elem.getAttribute('status')
 
-        # place holder
-        country = ""
+            # place holder
+            country = ""
 
-        # get the country
-        try:
-            country_elem = xmldom.getElementsByTagName('country')[0]
-            country = country_elem.childNodes[0].data
-        except:
-            # no country defined
-            pass
+            # get the country
+            try:
+                country_elem = xmldom.getElementsByTagName('country')[0]
+                country = country_elem.childNodes[0].data
+            except:
+                # no country defined
+                pass
+
+            # get the format
+            # TODO
+
+            result = {}
+            result['filename'] = "%s.xml" % release_id
+            result['filehash'] = filehash
+            result['release_status'] = release_status
+            result['country'] = country
+            reportqueue.put(result)
 
         try:
             shutil.move(os.path.join(chunkdir, filename), os.path.join(chunkdir, "%s.xml" % release_id))
         except:
             pass
 
-        # get the format
-        # TODO
-
-        result = {}
-        result['filename'] = "%s.xml" % release_id
-        result['filehash'] = filehash
-        result['release_status'] = release_status
-        result['country'] = country
-        reportqueue.put(result)
         scanqueue.task_done()
 
 
@@ -123,17 +127,24 @@ def main():
     parser = argparse.ArgumentParser()
 
     # the following options are provided on the commandline
-    parser.add_argument("-c", "--config", action="store", dest="cfg",
-                        help="path to configuration file", metavar="FILE")
+    parser.add_argument("-c", "--chunkdir", action="store", dest="chunkdir",
+                        help="path to directory with XML chunks", metavar="DIR")
     parser.add_argument("-m", "--month", action="store", dest="month",
                         help="year + month of Discogs dump (example: 201708)",
                         metavar="MONTH")
+    parser.add_argument("-r", "--rename-only", action="store_true",
+                        dest="rename_only")
     args = parser.parse_args()
 
-    month = '201906'
-    #month = '201708'
-    chunkdir = '/home/armijn/tmp/%s' % month
-    outdir = '/home/armijn/tmp/'
+    if args.month is None:
+        parser.error("Month missing")
+
+    if args.chunkdir is None:
+        parser.error("chunk dir missing")
+
+    month = '201911'
+    chunkdir = '/home/armijn/tmp/discogs/%s' % month
+    outdir = '/home/armijn/tmp/discogs/'
 
     if not os.path.isdir(chunkdir):
         print("'%s' is not valid" % chunkdir, file=sys.stderr)
@@ -149,7 +160,10 @@ def main():
     # amount of processes to process entries, hardcode
     # to # CPUs -1 for now, as one process will be needed for
     # writing the results
-    amount_of_processes = multiprocessing.cpu_count() - 1
+    if args.rename_only:
+        amount_of_processes = multiprocessing.cpu_count() - 1
+    else:
+        amount_of_processes = multiprocessing.cpu_count() - 1
 
     scanmanager = multiprocessing.Manager()
 
@@ -159,7 +173,7 @@ def main():
     processpool = []
 
     for i in range(0, amount_of_processes):
-        p = multiprocessing.Process(target=processxml, args=(scanqueue, reportqueue, chunkdir))
+        p = multiprocessing.Process(target=processxml, args=(scanqueue, reportqueue, chunkdir, args.rename_only))
         processpool.append(p)
 
     # open a few files
@@ -172,8 +186,9 @@ def main():
     notacceptedfile = open(os.path.join(outdir, 'notaccepted-%s' % month), 'w')
     filterconfig['notaccepted_file'] = notacceptedfile
 
-    r = multiprocessing.Process(target=writeresults, args=(reportqueue, filterconfig, totallen))
-    processpool.append(r)
+    if not args.rename_only:
+        r = multiprocessing.Process(target=writeresults, args=(reportqueue, filterconfig, totallen))
+        processpool.append(r)
 
     for p in processpool:
         p.start()
@@ -189,7 +204,8 @@ def main():
     sys.stdout.flush()
 
     scanqueue.join()
-    reportqueue.join()
+    if not args.rename_only:
+        reportqueue.join()
 
     # final flushes for the files, then close them
     sha256file.flush()
