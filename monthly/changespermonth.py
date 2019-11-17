@@ -12,6 +12,7 @@ import os
 import sys
 import argparse
 import tlsh
+import collections
 
 
 def main():
@@ -56,7 +57,7 @@ def main():
 
     shafile1.close()
 
-    release_to_sha2 = {}
+    sha2_releases = set()
 
     try:
         shafile2 = open(args.second, 'r')
@@ -67,34 +68,41 @@ def main():
     for i in shafile2:
         (release_id, sha) = i.split('\t')
         release = int(release_id.split('.')[0])
-        release_to_sha2[release] = sha.strip()
+        if release in release_to_sha1:
+            sha2_release = sha.strip()
+            if release_to_sha1[release] != sha2_release:
+                sha2_releases.add(release)
 
     shafile2.close()
 
-    shakeys1 = set(release_to_sha1.keys())
-    shakeys2 = set(release_to_sha2.keys())
-
     samecontent = 0
     differentcontent = 0
+    release_to_tlsh_distance = {}
+    tlshcounter = collections.Counter()
 
-    for i in sorted(release_to_sha2):
-        if i in release_to_sha1:
-            if release_to_sha1[i] != release_to_sha2[i]:
-                firstfile = os.path.join(args.dir, "%d.xml" % i)
-                if not os.path.exists(firstfile):
-                    continue
-                secondfile = os.path.join(args.seconddir, "%d.xml" % i)
-                if not os.path.exists(secondfile):
-                    continue
-                firstdata = open(firstfile, 'rb').read()
-                firsttlsh = tlsh.Tlsh()
-                firsttlsh.update(firstdata)
-                firsttlsh.final()
-                seconddata = open(secondfile, 'rb').read()
-                secondtlsh = tlsh.Tlsh()
-                secondtlsh.update(seconddata)
-                secondtlsh.final()
-                print(i, tlsh.diff(firsttlsh, secondtlsh))
+    for i in sorted(sha2_releases):
+           firstfile = os.path.join(args.dir, "%d.xml" % i)
+           if not os.path.exists(firstfile):
+               continue
+           secondfile = os.path.join(args.seconddir, "%d.xml" % i)
+           if not os.path.exists(secondfile):
+               continue
+           firstdata = open(firstfile, 'rb').read()
+           firsttlsh = tlsh.Tlsh()
+           firsttlsh.update(firstdata)
+           firsttlsh.final()
+           seconddata = open(secondfile, 'rb').read()
+           secondtlsh = tlsh.Tlsh()
+           secondtlsh.update(seconddata)
+           secondtlsh.final()
+           distance = secondtlsh.diff(firsttlsh)
+           release_to_tlsh_distance[i] = distance
+           tlshcounter.update([distance])
+
+    pos = 1
+    for i in tlshcounter.most_common():
+        print("%d:" % pos, "distance: %d, # %d" % i)
+        pos+=1
 
 if __name__ == "__main__":
     main()
