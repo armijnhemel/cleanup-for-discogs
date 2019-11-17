@@ -142,7 +142,7 @@ def main():
     if args.chunkdir is None:
         parser.error("chunk dir missing")
 
-    month = '201911'
+    month = '201910'
     chunkdir = '/home/armijn/tmp/discogs/%s' % month
     outdir = '/home/armijn/tmp/discogs/'
 
