@@ -753,6 +753,7 @@ class discogs_handler(xml.sax.ContentHandler):
                             if 'O' in v:
                                 print('%8d -- Spelling error (in Label Code): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 sys.stdout.flush()
+                                return
                         if discogssmells.labelcodere.match(v.lower().strip()) is None:
                             self.count += 1
                             self.prev = self.release
@@ -1022,14 +1023,17 @@ class discogs_handler(xml.sax.ContentHandler):
                                         self.count += 1
                                         self.prev = self.release
                                         print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+                                        return
                                     elif depositoyear > currentyear:
                                         self.count += 1
                                         self.prev = self.release
                                         print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+                                        return
                                     elif self.year < depositoyear:
                                         self.count += 1
                                         self.prev = self.release
                                         print("%8d -- Depósito Legal (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
+                                        return
                                 else:
                                     self.count += 1
                                     self.prev = self.release
@@ -1569,7 +1573,7 @@ def main(argv):
     dumpfileparser.setContentHandler(discogs_handler(config_settings))
     try:
         dumpfile = gzip.open(args.datadump, "rb")
-    except Exception:
+    except:
         print("Cannot open dump file", file=sys.stderr)
         sys.exit(1)
     dumpfileparser.parse(dumpfile)
