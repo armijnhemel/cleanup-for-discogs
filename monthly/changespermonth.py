@@ -11,8 +11,9 @@
 import os
 import sys
 import argparse
-import tlsh
 import collections
+import defusedxml.minidom
+import tlsh
 
 
 def main():
@@ -81,28 +82,29 @@ def main():
     tlshcounter = collections.Counter()
 
     for i in sorted(sha2_releases):
-           firstfile = os.path.join(args.dir, "%d.xml" % i)
-           if not os.path.exists(firstfile):
-               continue
-           secondfile = os.path.join(args.seconddir, "%d.xml" % i)
-           if not os.path.exists(secondfile):
-               continue
-           firstdata = open(firstfile, 'rb').read()
-           firsttlsh = tlsh.Tlsh()
-           firsttlsh.update(firstdata)
-           firsttlsh.final()
-           seconddata = open(secondfile, 'rb').read()
-           secondtlsh = tlsh.Tlsh()
-           secondtlsh.update(seconddata)
-           secondtlsh.final()
-           distance = secondtlsh.diff(firsttlsh)
-           release_to_tlsh_distance[i] = distance
-           tlshcounter.update([distance])
+        firstfile = os.path.join(args.dir, "%d.xml" % i)
+        if not os.path.exists(firstfile):
+            continue
+        secondfile = os.path.join(args.seconddir, "%d.xml" % i)
+        if not os.path.exists(secondfile):
+            continue
+        firstdata = open(firstfile, 'rb').read()
+        firsttlsh = tlsh.Tlsh()
+        firsttlsh.update(firstdata)
+        firsttlsh.final()
+        seconddata = open(secondfile, 'rb').read()
+        secondtlsh = tlsh.Tlsh()
+        secondtlsh.update(seconddata)
+        secondtlsh.final()
+        distance = secondtlsh.diff(firsttlsh)
+        release_to_tlsh_distance[i] = distance
+        tlshcounter.update([distance])
 
     pos = 1
+    print("Processed %d releases" % len(sha2_releases))
     for i in tlshcounter.most_common():
         print("%d:" % pos, "distance: %d, # %d" % i)
-        pos+=1
+        pos += 1
 
 if __name__ == "__main__":
     main()
