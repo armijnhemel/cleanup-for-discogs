@@ -43,6 +43,12 @@ def main():
     if not os.path.exists(args.second):
         parser.error("Second file %s does not exist" % args.second)
 
+    if args.dir is None:
+        parser.error("Path to first directory missing")
+
+    if args.seconddir is None:
+        parser.error("Path to second directory missing")
+
     release_to_sha1 = {}
 
     try:
