@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 ## hackish script to process results of process-discogs-chunks.py
 ##
@@ -6,7 +6,7 @@
 ##
 ## SPDX-License-Identifier: GPL-3.0
 ##
-## Copyright 2017-2019 - Armijn Hemel
+## Copyright 2017-2020 - Armijn Hemel
 
 import os
 import sys
