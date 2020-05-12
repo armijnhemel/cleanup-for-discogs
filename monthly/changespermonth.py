@@ -72,6 +72,10 @@ def main():
         print("Could not open %s, exiting" % args.second, file=sys.stderr)
         sys.exit(1)
 
+    samecontent = 0
+
+    # keep track of releases that are different and exist in
+    # the first data set: new releases are ignored.
     for i in shafile2:
         (release_id, sha) = i.split('\t')
         release = int(release_id.split('.')[0])
@@ -79,15 +83,19 @@ def main():
             sha2_release = sha.strip()
             if release_to_sha1[release] != sha2_release:
                 sha2_releases.add(release)
+            else:
+                samecontent += 1
 
     shafile2.close()
 
-    samecontent = 0
     differentcontent = 0
+
+    # store the TLSH distance in separate data structures
     release_to_tlsh_distance = {}
     tlshcounter = collections.Counter()
 
-    for i in sorted(sha2_releases):
+    # for each file compute the TLSH distance
+    for i in sha2_releases:
         firstfile = os.path.join(args.dir, "%d.xml" % i)
         if not os.path.exists(firstfile):
             continue
