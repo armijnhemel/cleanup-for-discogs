@@ -88,13 +88,17 @@ def main():
 
     shafile2.close()
 
-    differentcontent = 0
+    no_differences = set()
 
     # store the TLSH distance in separate data structures
     release_to_tlsh_distance = {}
     tlshcounter = collections.Counter()
+    differencecounter = collections.Counter()
 
-    # for each file compute the TLSH distance
+    # for each file see if the nodes are equal. Because Python's
+    # DOM implementation doesn't implement DOM Level 3 this
+    # is a bit of a hack. If DOM Level 3 were supported this
+    # could be done by isEqualNode.
     for i in sha2_releases:
         firstfile = os.path.join(args.dir, "%d.xml" % i)
         if not os.path.exists(firstfile):
@@ -103,6 +107,55 @@ def main():
         if not os.path.exists(secondfile):
             continue
         firstdata = open(firstfile, 'rb').read()
+
+        firstxmldom = defusedxml.minidom.parseString(firstdata)
+        seconddata = open(secondfile, 'rb').read()
+        secondxmldom = defusedxml.minidom.parseString(seconddata)
+
+        firstrelease = firstxmldom.getElementsByTagName('release')[0]
+        secondrelease = secondxmldom.getElementsByTagName('release')[0]
+        firstchilds = firstrelease.childNodes
+        secondchilds = secondrelease.childNodes
+
+        # store all differences found
+        differences = []
+
+        # check if any nodes were added or removed
+        firstchildnames = set()
+        secondchildnames = set()
+        for ch in firstchilds:
+            if ch.nodeName == 'videos':
+                continue
+            firstchildnames.add(ch.nodeName)
+        for ch in secondchilds:
+            if ch.nodeName == 'videos':
+                continue
+            secondchildnames.add(ch.nodeName)
+        for n in firstchildnames - secondchildnames:
+            differences.append(('removed', n))
+        for n in secondchildnames - firstchildnames:
+            differences.append(('added', n))
+
+        # see if any nodes were changed by pretty printing
+        # to XML first and then comparing the XML *shudder*
+        for ch in firstchilds:
+            if ch.nodeName == 'videos':
+                continue
+            for s in secondchilds:
+                if ch.nodeName != s.nodeName:
+                    continue
+                chxml = ch.toxml()
+                sxml = s.toxml()
+                if chxml != sxml:
+                    differences.append(('changed', ch.nodeName))
+                break
+        if differences != []:
+            differencecounter.update(differences)
+        else:
+            no_differences.add(i)
+
+        continue
+
         firsttlsh = tlsh.Tlsh()
         firsttlsh.update(firstdata)
         firsttlsh.final()
@@ -118,6 +171,11 @@ def main():
     print("Processed %d releases" % len(sha2_releases))
     for i in tlshcounter.most_common():
         print("%d:" % pos, "distance: %d, # %d" % i)
+        pos += 1
+
+    pos = 1
+    for i in differencecounter.most_common():
+        print("%d:" % pos, "change: %s, element %s" % i[0], "#: %d"% i[1])
         pos += 1
 
 if __name__ == "__main__":
