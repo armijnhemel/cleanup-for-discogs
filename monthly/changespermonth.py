@@ -11,10 +11,79 @@
 import os
 import sys
 import argparse
+import multiprocessing
 import collections
 import defusedxml.minidom
 import tlsh
 
+def process_release(firstdir, seconddir, releasenr):
+    firstfile = os.path.join(firstdir, "%d.xml" % releasenr)
+    if not os.path.exists(firstfile):
+        return
+    secondfile = os.path.join(seconddir, "%d.xml" % releasenr)
+    if not os.path.exists(secondfile):
+        return
+    firstdata = open(firstfile, 'rb').read()
+
+    firstxmldom = defusedxml.minidom.parseString(firstdata)
+    seconddata = open(secondfile, 'rb').read()
+    secondxmldom = defusedxml.minidom.parseString(seconddata)
+
+    firstrelease = firstxmldom.getElementsByTagName('release')[0]
+    secondrelease = secondxmldom.getElementsByTagName('release')[0]
+    firstchilds = firstrelease.childNodes
+    secondchilds = secondrelease.childNodes
+
+    # store all differences found
+    differences = []
+
+    # check if any nodes were added or removed
+    firstchildnames = set()
+    secondchildnames = set()
+    for ch in firstchilds:
+        if ch.nodeName == 'videos':
+            continue
+        firstchildnames.add(ch.nodeName)
+    for ch in secondchilds:
+        if ch.nodeName == 'videos':
+            continue
+        secondchildnames.add(ch.nodeName)
+    for n in firstchildnames - secondchildnames:
+        differences.append(('removed', n))
+    for n in secondchildnames - firstchildnames:
+        differences.append(('added', n))
+
+    # store the total TLSH score
+    total_tlsh = 0
+
+    # see if any nodes were changed by pretty printing
+    # to XML first and then comparing the XML *shudder*
+    for ch in firstchilds:
+        if ch.nodeName == 'videos':
+            continue
+        for s in secondchilds:
+            if ch.nodeName != s.nodeName:
+                continue
+            chxml = ch.toxml()
+            sxml = s.toxml()
+            if chxml != sxml:
+                differences.append(('changed', ch.nodeName))
+                firsttlsh = tlsh.Tlsh()
+                firsttlsh.update(chxml.encode())
+                try:
+                    firsttlsh.final()
+                except:
+                    break
+                secondtlsh = tlsh.Tlsh()
+                secondtlsh.update(sxml.encode())
+                try:
+                    secondtlsh.final()
+                except:
+                    break
+                distance = secondtlsh.diff(firsttlsh)
+                total_tlsh += distance
+            break
+    return (differences, total_tlsh, releasenr)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -99,78 +168,17 @@ def main():
     # DOM implementation doesn't implement DOM Level 3 this
     # is a bit of a hack. If DOM Level 3 were supported this
     # could be done by isEqualNode.
-    for i in sha2_releases:
-        firstfile = os.path.join(args.dir, "%d.xml" % i)
-        if not os.path.exists(firstfile):
+    pool = multiprocessing.Pool()
+    res = pool.starmap(process_release, map(lambda x: (args.dir, args.seconddir, x), sha2_releases))
+    for r in res:
+        if r is None:
             continue
-        secondfile = os.path.join(args.seconddir, "%d.xml" % i)
-        if not os.path.exists(secondfile):
-            continue
-        firstdata = open(firstfile, 'rb').read()
-
-        firstxmldom = defusedxml.minidom.parseString(firstdata)
-        seconddata = open(secondfile, 'rb').read()
-        secondxmldom = defusedxml.minidom.parseString(seconddata)
-
-        firstrelease = firstxmldom.getElementsByTagName('release')[0]
-        secondrelease = secondxmldom.getElementsByTagName('release')[0]
-        firstchilds = firstrelease.childNodes
-        secondchilds = secondrelease.childNodes
-
-        # store all differences found
-        differences = []
-
-        # check if any nodes were added or removed
-        firstchildnames = set()
-        secondchildnames = set()
-        for ch in firstchilds:
-            if ch.nodeName == 'videos':
-                continue
-            firstchildnames.add(ch.nodeName)
-        for ch in secondchilds:
-            if ch.nodeName == 'videos':
-                continue
-            secondchildnames.add(ch.nodeName)
-        for n in firstchildnames - secondchildnames:
-            differences.append(('removed', n))
-        for n in secondchildnames - firstchildnames:
-            differences.append(('added', n))
-
-        # store the total TLSH score
-        total_tlsh = 0
-
-        # see if any nodes were changed by pretty printing
-        # to XML first and then comparing the XML *shudder*
-        for ch in firstchilds:
-            if ch.nodeName == 'videos':
-                continue
-            for s in secondchilds:
-                if ch.nodeName != s.nodeName:
-                    continue
-                chxml = ch.toxml()
-                sxml = s.toxml()
-                if chxml != sxml:
-                    differences.append(('changed', ch.nodeName))
-                    firsttlsh = tlsh.Tlsh()
-                    firsttlsh.update(chxml.encode())
-                    try:
-                        firsttlsh.final()
-                    except:
-                        break
-                    secondtlsh = tlsh.Tlsh()
-                    secondtlsh.update(sxml.encode())
-                    try:
-                        secondtlsh.final()
-                    except:
-                        break
-                    distance = secondtlsh.diff(firsttlsh)
-                    total_tlsh += distance
-                break
+        (differences, total_tlsh, releasenr) = r
         if differences != []:
             differencecounter.update(differences)
             tlshcounter.update([total_tlsh])
         else:
-            no_differences.add(i)
+            no_differences.add(releasenr)
 
     pos = 1
     print("Processed %d releases" % len(sha2_releases))
