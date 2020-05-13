@@ -136,6 +136,9 @@ def main():
         for n in secondchildnames - firstchildnames:
             differences.append(('added', n))
 
+        # store the total TLSH score
+        total_tlsh = 0
+
         # see if any nodes were changed by pretty printing
         # to XML first and then comparing the XML *shudder*
         for ch in firstchilds:
@@ -148,35 +151,40 @@ def main():
                 sxml = s.toxml()
                 if chxml != sxml:
                     differences.append(('changed', ch.nodeName))
+                    firsttlsh = tlsh.Tlsh()
+                    firsttlsh.update(chxml.encode())
+                    try:
+                        firsttlsh.final()
+                    except:
+                        break
+                    secondtlsh = tlsh.Tlsh()
+                    secondtlsh.update(sxml.encode())
+                    try:
+                        secondtlsh.final()
+                    except:
+                        break
+                    distance = secondtlsh.diff(firsttlsh)
+                    total_tlsh += distance
                 break
         if differences != []:
             differencecounter.update(differences)
+            tlshcounter.update([total_tlsh])
         else:
             no_differences.add(i)
-
-        continue
-
-        firsttlsh = tlsh.Tlsh()
-        firsttlsh.update(firstdata)
-        firsttlsh.final()
-        seconddata = open(secondfile, 'rb').read()
-        secondtlsh = tlsh.Tlsh()
-        secondtlsh.update(seconddata)
-        secondtlsh.final()
-        distance = secondtlsh.diff(firsttlsh)
-        release_to_tlsh_distance[i] = distance
-        tlshcounter.update([distance])
 
     pos = 1
     print("Processed %d releases" % len(sha2_releases))
     for i in tlshcounter.most_common():
-        print("%d:" % pos, "distance: %d, # %d" % i)
+        print("%d:" % pos, "TLSH distance: %d, # %d" % i)
         pos += 1
 
     pos = 1
     for i in differencecounter.most_common():
         print("%d:" % pos, "change: %s, element %s" % i[0], "#: %d"% i[1])
         pos += 1
+
+    print()
+    print("No differences: %d" % len(no_differences))
 
 if __name__ == "__main__":
     main()
