@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Tool that grabs output files from cleanup-discogs.py and generates bar charts
 # Used for creating bar charts for blog at https://vinylanddata.blogspot.com/
@@ -9,11 +9,12 @@
 #
 # Copyright 2017-2019 - Armijn Hemel
 
+import argparse
+import collections
+import math
 import os
 import sys
-import collections
-import argparse
-import math
+
 from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPM
