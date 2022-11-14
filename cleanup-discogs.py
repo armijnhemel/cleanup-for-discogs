@@ -44,16 +44,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2019 - Armijn Hemel
+# Copyright 2017-2022 - Armijn Hemel
 
-import xml.sax
-import sys
-import os
-import gzip
-import re
-import datetime
 import argparse
 import configparser
+import datetime
+import gzip
+import os
+import re
+import xml.sax
+import sys
+
 import discogssmells
 
 # grab the current year. Make sure to set the clock of your machine
@@ -102,6 +103,7 @@ class discogs_handler(xml.sax.ContentHandler):
         self.isdraft = False
         self.isdeleted = False
         self.depositofound = False
+        self.labels = []
         self.config = config_settings
         self.contentbuffer = ''
         if self.config['check_credits']:
@@ -117,6 +119,7 @@ class discogs_handler(xml.sax.ContentHandler):
             self.genres.add(self.contentbuffer)
         if self.incountry:
             self.country = self.contentbuffer
+            #print(str(self.release), self.country, self.labels)
         if self.config['check_spelling_cs']:
             if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
                 # People use 0x115 instead of 0x11B, which look very similar
@@ -380,7 +383,7 @@ class discogs_handler(xml.sax.ContentHandler):
             '''
             # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
             if 'Vinyl' in self.formattexts:
-                if self.year != None:
+                if self.year is not None:
                     if self.year < 1948:
                         self.count += 1
                         print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
@@ -452,6 +455,7 @@ class discogs_handler(xml.sax.ContentHandler):
             self.ingenre = False
             self.formattexts = set([])
             self.artists = set([])
+            self.labels = []
             self.formatmaxqty = 0
             self.genres = set([])
             self.tracklistpositions = set()
@@ -494,6 +498,7 @@ class discogs_handler(xml.sax.ContentHandler):
         elif name == 'label':
             for (k, v) in attrs.items():
                 if k == 'name':
+                    labelname = v
                     if self.config['check_label_name']:
                         if v == 'London':
                             self.count += 1
@@ -504,7 +509,7 @@ class discogs_handler(xml.sax.ContentHandler):
                     catno = v.lower()
                     if self.config['check_label_code']:
                         if catno.startswith('lc'):
-                            if discogssmells.labelcodere.match(catno) != None:
+                            if discogssmells.labelcodere.match(catno) is not None:
                                 self.count += 1
                                 self.prev = self.release
                                 print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -516,7 +521,7 @@ class discogs_handler(xml.sax.ContentHandler):
                             result = d.search(catno)
                             if result is not None:
                                 for depositovalre in discogssmells.depositovalres:
-                                    if depositovalre.search(catno) != None:
+                                    if depositovalre.search(catno) is not None:
                                         dlfound = True
                                         break
 
@@ -525,6 +530,7 @@ class discogs_handler(xml.sax.ContentHandler):
                             self.prev = self.release
                             print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
+            self.labels.append((labelname, catno))
         elif name == 'genre':
             self.ingenre = True
         elif name == 'tracklist':
@@ -564,7 +570,7 @@ class discogs_handler(xml.sax.ContentHandler):
                                 return
                         if self.config['check_label_code']:
                             if v.lower().startswith('lc'):
-                                if discogssmells.labelcodere.match(v.lower()) != None:
+                                if discogssmells.labelcodere.match(v.lower()) is not None:
                                     self.count += 1
                                     self.prev = self.release
                                     print('%8d -- Possible Label Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -762,7 +768,7 @@ class discogs_handler(xml.sax.ContentHandler):
                 if self.inrightssociety:
                     if self.config['check_label_code']:
                         if v.lower().startswith('lc'):
-                            if discogssmells.labelcodere.match(v.lower()) != None:
+                            if discogssmells.labelcodere.match(v.lower()) is not None:
                                 self.count += 1
                                 self.prev = self.release
                                 print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -800,7 +806,7 @@ class discogs_handler(xml.sax.ContentHandler):
                 if self.inbarcode:
                     if self.config['check_label_code']:
                         if v.lower().startswith('lc'):
-                            if discogssmells.labelcodere.match(v.lower()) != None:
+                            if discogssmells.labelcodere.match(v.lower()) is not None:
                                 self.count += 1
                                 self.prev = self.release
                                 print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -808,7 +814,7 @@ class discogs_handler(xml.sax.ContentHandler):
                     if self.country == 'Spain':
                         if self.config['check_deposito'] and not self.depositofound:
                             for depositovalre in discogssmells.depositovalres:
-                                if depositovalre.match(v.lower()) != None:
+                                if depositovalre.match(v.lower()) is not None:
                                     self.count += 1
                                     self.prev = self.release
                                     print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
