@@ -181,7 +181,9 @@ rights_societies_ftf = set(['(right societies)', '(rights society',
                             'france rights society', 'rights societies.',
                             "\"rights societies\"", 'nordisk copyright bureau',
                             'nordic copyright bureau', 'mechanical right',
-                            'mechan. copyright', 'rights societies, on cd'])
+                            'mechan. copyright', 'rights societies, on cd',
+                            'rights associations', 'rights association',
+                            'original rights', 'rights info'])
 
 # several possible misspellings of rights societies
 # Not all of these are wrong all the time: STEMPRA has been used
