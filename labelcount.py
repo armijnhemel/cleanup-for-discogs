@@ -1,4 +1,4 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
 
 # Licensed under the terms of the General Public License version 3
 #
