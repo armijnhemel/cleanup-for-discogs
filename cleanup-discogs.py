@@ -861,6 +861,11 @@ class discogs_handler(xml.sax.ContentHandler):
                             isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
                         if isrc_tmp.startswith('CODE'):
                             isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
+
+                        # Chinese ISRC, see https://www.discogs.com/forum/thread/799845
+                        if '/A.J6' in isrc_tmp:
+                            isrc_tmp = isrc_tmp.rsplit('/', 1)[0].strip()
+
                         # replace a few characters
                         isrc_tmp = isrc_tmp.replace('-', '')
                         isrc_tmp = isrc_tmp.replace(' ', '')
