@@ -46,7 +46,6 @@
 #
 # Copyright 2017-2022 - Armijn Hemel
 
-import argparse
 import configparser
 import datetime
 import gzip
@@ -55,6 +54,7 @@ import re
 import xml.sax
 import sys
 
+import click
 import discogssmells
 
 # grab the current year. Make sure to set the clock of your machine
@@ -1296,39 +1296,14 @@ class discogs_handler(xml.sax.ContentHandler):
         self.contentbuffer += content
 
 
-def main(argv):
-    parser = argparse.ArgumentParser()
-
-    # the following options are provided on the commandline
-    parser.add_argument("-c", "--config", action="store", dest="cfg",
-                        help="path to configuration file", metavar="FILE")
-    parser.add_argument("-d", "--datadump", action="store", dest="datadump",
-                        help="path to discogs data dump", metavar="DATA")
-    args = parser.parse_args()
-
-    # first some sanity checks for the gzip compressed releases file
-    if args.datadump is None:
-        parser.error("Data dump file missing")
-
-    if not os.path.exists(args.datadump):
-        parser.error("Data dump file does not exist")
-
-    if not os.path.isfile(args.datadump):
-        parser.error("Data dump file is not a file")
-
-    # then some checks for the configuration file
-    if args.cfg is None:
-        parser.error("Configuration file missing")
-
-    if not os.path.exists(args.cfg):
-        parser.error("Configuration file does not exist")
-
+@click.command(short_help='process BANG result files and output ELF graphs')
+@click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
+@click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
+def main(cfg, datadump):
     config = configparser.ConfigParser()
 
-    configfile = open(args.cfg, 'r')
-
     try:
-        config.read_file(configfile)
+        config.read_file(cfg)
     except Exception:
         print("Cannot read configuration file", file=sys.stderr)
         sys.exit(1)
@@ -1577,13 +1552,11 @@ def main(argv):
             except Exception:
                 config_settings['check_creative_commons'] = False
 
-    configfile.close()
-
     # create a SAX parser and feed the gzip compressed file to it
     dumpfileparser = xml.sax.make_parser()
     dumpfileparser.setContentHandler(discogs_handler(config_settings))
     try:
-        dumpfile = gzip.open(args.datadump, "rb")
+        dumpfile = gzip.open(datadump, "rb")
     except:
         print("Cannot open dump file", file=sys.stderr)
         sys.exit(1)
@@ -1592,4 +1565,4 @@ def main(argv):
     dumpfile.close()
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
