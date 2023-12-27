@@ -44,15 +44,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2022 - Armijn Hemel
+# Copyright 2017-2023 - Armijn Hemel
 
 import configparser
 import datetime
 import gzip
 import os
 import re
-import xml.sax
 import sys
+import xml.sax
 
 import click
 import discogssmells
@@ -60,7 +60,6 @@ import discogssmells
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
 currentyear = datetime.datetime.utcnow().year
-
 
 # a class with a handler for the SAX parser
 class discogs_handler(xml.sax.ContentHandler):
@@ -924,7 +923,7 @@ class discogs_handler(xml.sax.ContentHandler):
                         if res is None:
                             self.count += 1
                             self.prev = self.release
-                            print('%8d -- Mould SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
+                            print(f'{self.count:8} -- Mould SID Code (value): https://www.discogs.com/release/{self.release}')
                             return
                         if mould_sid_strict:
                             mould_split = mould_tmp.split('ifpi', 1)[-1]
