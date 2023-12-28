@@ -14,12 +14,12 @@
 #
 # Copyright 2017 - Armijn Hemel
 
-import sys
-import os
+import argparse
 import hashlib
 import multiprocessing
+import os
 import shutil
-import argparse
+import sys
 import xml.dom.minidom
 
 
@@ -142,7 +142,7 @@ def main():
     if args.chunkdir is None:
         parser.error("chunk dir missing")
 
-    month = '201910'
+    month = '202006'
     chunkdir = '/home/armijn/tmp/discogs/%s' % month
     outdir = '/home/armijn/tmp/discogs/'
 

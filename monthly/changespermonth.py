@@ -6,21 +6,22 @@
 ##
 ## SPDX-License-Identifier: GPL-3.0
 ##
-## Copyright 2017-2020 - Armijn Hemel
+## Copyright 2017-2023 - Armijn Hemel
 
+import argparse
+import collections
+import multiprocessing
 import os
 import sys
-import argparse
-import multiprocessing
-import collections
+
 import defusedxml.minidom
 import tlsh
 
 def process_release(firstdir, seconddir, releasenr):
-    firstfile = os.path.join(firstdir, "%d.xml" % releasenr)
+    firstfile = os.path.join(firstdir, f"{releasenr}.xml")
     if not os.path.exists(firstfile):
         return
-    secondfile = os.path.join(seconddir, "%d.xml" % releasenr)
+    secondfile = os.path.join(seconddir, f"{releasenr}.xml")
     if not os.path.exists(secondfile):
         return
     firstdata = open(firstfile, 'rb').read()
@@ -123,7 +124,7 @@ def main():
     try:
         shafile1 = open(args.first, 'r')
     except:
-        print("Could not open %s, exiting" % args.first, file=sys.stderr)
+        print(f"Could not open {args.first}, exiting", file=sys.stderr)
         sys.exit(1)
 
     for i in shafile1:
@@ -138,7 +139,7 @@ def main():
     try:
         shafile2 = open(args.second, 'r')
     except:
-        print("Could not open %s, exiting" % args.second, file=sys.stderr)
+        print(f"Could not open {args.second}, exiting", file=sys.stderr)
         sys.exit(1)
 
     samecontent = 0
@@ -181,7 +182,7 @@ def main():
             no_differences.add(releasenr)
 
     pos = 1
-    print("Processed %d releases" % len(sha2_releases))
+    print(f"Processed {len(sha2_releases)} releases")
     for i in tlshcounter.most_common():
         print("%d:" % pos, "TLSH distance: %d, # %d" % i)
         pos += 1
@@ -192,7 +193,14 @@ def main():
         pos += 1
 
     print()
-    print("No differences: %d" % len(no_differences))
+    print(f"No differences: {len(no_differences)}")
+
+    if no_differences != ():
+        print()
+        print("No difference releases:")
+        #for i in sorted(no_differences):
+        for i in sorted(sha2_releases - no_differences):
+            print(i)
 
 if __name__ == "__main__":
     main()
