@@ -53,7 +53,6 @@ import os
 import pathlib
 import re
 import sys
-import xml.sax
 
 from dataclasses import dataclass
 
@@ -68,7 +67,7 @@ import discogssmells
 currentyear = datetime.datetime.utcnow().year
 
 @dataclass
-class Cleanup_Config:
+class CleanupConfig:
     '''Default cleanup configuration'''
     artist: bool = True
     asin: bool = True
@@ -98,7 +97,7 @@ class Cleanup_Config:
     year_valid: bool = False
 
 # a class with a handler for the SAX parser
-class discogs_handler(xml.sax.ContentHandler):
+class discogs_handler():
     def __init__(self, config_settings):
         # many default settings
         self.inrole = False
@@ -866,77 +865,6 @@ class discogs_handler(xml.sax.ContentHandler):
                                 self.prev = self.release
                                 print('%8d -- Mastering SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
-                if not self.indeposito:
-                    if self.country == 'Spain':
-                        if self.config['check_deposito']:
-                            if v.startswith("Depósito"):
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                            elif v.startswith("D.L."):
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                else:
-                    if self.country == 'Spain':
-                        if self.config['check_deposito']:
-                            if v.endswith('.'):
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                            if self.year is not None:
-                                # now try to find the year
-                                depositoyear = None
-                                if v.strip().endswith('℗'):
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Depósito Legal (formatting, has ℗): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    # ugly hack, remove ℗ to make at least be able to do some sort of check
-                                    v = v.strip().rsplit('℗', 1)[0]
-                                # several separators, including some Unicode ones
-                                for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
-                                    try:
-                                        depositoyeartext = v.strip().rsplit(sep, 1)[-1]
-                                        if sep == '.' and len(depositoyeartext) == 3:
-                                            continue
-                                        if '.' in depositoyeartext:
-                                            depositoyeartext = depositoyeartext.replace('.', '')
-                                        depositoyear = int(depositoyeartext)
-                                        if depositoyear < 100:
-                                            # correct the year. This won't work correctly after 2099.
-                                            if depositoyear <= currentyear - 2000:
-                                                depositoyear += 2000
-                                            else:
-                                                depositoyear += 1900
-                                        break
-                                    except:
-                                        pass
-
-                                # TODO, also allow (year), example: https://www.discogs.com/release/265497
-                                if depositoyear is not None:
-                                    if depositoyear < 1900:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        return
-                                    elif depositoyear > currentyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        return
-                                    elif self.year < depositoyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Depósito Legal (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        return
-                                else:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print("%8d -- Depósito Legal (year not found): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                sys.stdout.flush()
                 if self.country == 'India':
                     if self.config['check_pkd']:
                         if 'pkd' in v.lower() or "production date" in v.lower():
@@ -1200,91 +1128,79 @@ def main(cfg, datadump):
 
     # process the configuration file and store settings.
     # Most of the defaults (but not all!) are set to 'True'
-    config_settings = Cleanup_Config()
+    config_settings = CleanupConfig()
 
     for section in config.sections():
         if section == 'cleanup':
             # store settings for depósito legal checks
             try:
-                if config.get(section, 'deposito') != 'yes':
-                    config_settings.deposito_legal = False
-            except Exception:
+                config_settings.deposito_legal = config.getboolean(section, 'deposito')
+            except:
                 pass
 
             # store settings for rights society checks
             try:
-                if config.get(section, 'rights_society') != 'yes':
-                    config_settings.rights_society = False
-            except Exception:
+                config_settings.rights_society = config.getboolean(section, 'rights_society')
+            except:
                 pass
 
             # store settings for label code checks
             try:
-                if config.get(section, 'label_code') != 'yes':
-                    config_settings.label_code = False
-            except Exception:
+                config_settings.label_code = config.getboolean(section, 'label_code')
+            except:
                 pass
 
             # store settings for label name checks
             try:
-                if config.get(section, 'label_name') != 'yes':
-                    config_settings.label_name = False
-            except Exception:
+                config_settings.label_name = config.getboolean(section, 'label_name')
+            except:
                 pass
 
             # store settings for ISRC checks
             try:
-                if config.get(section, 'isrc') != 'yes':
-                    config_settings.isrc = False
-            except Exception:
+                config_settings.isrc = config.getboolean(section, 'isrc')
+            except:
                 pass
 
             # store settings for ASIN checks
             try:
-                if config.get(section, 'asin') != 'yes':
-                    config_settings.asin = False
-            except Exception:
+                config_settings.asin = config.getboolean(section, 'asin')
+            except:
                 pass
 
             # store settings for mastering SID checks
             try:
-                if config.get(section, 'mastering_sid') != 'yes':
-                    config_settings.mastering_sid = False
-            except Exception:
+                config_settings.mastering_sid = config.getboolean(section, 'mastering_sid')
+            except:
                 pass
 
             # store settings for mould SID checks
             try:
-                if config.get(section, 'mould_sid') != 'yes':
-                    config_settings.mould_sid = False
-            except Exception:
+                config_settings.mould_sid = config.getboolean(section, 'mould_sid')
+            except:
                 pass
 
             # store settings for SPARS Code checks
             try:
-                if config.get(section, 'spars') != 'yes':
-                    config_settings.spars = False
-            except Exception:
+                config_settings.spars = config.getboolean(section, 'spars')
+            except:
                 pass
 
             # store settings for Indian PKD checks
             try:
-                if config.get(section, 'pkd') != 'yes':
-                    config_settings.indian_pkd = False
-            except Exception:
+                config_settings.indian_pkd = config.getboolean(section, 'pkd')
+            except:
                 pass
 
             # store settings for Greek license number checks
             try:
-                if config.get(section, 'greek_license_number') != 'yes':
-                    config_settings.greek_license = False
-            except Exception:
+                config_settings.greek_license = config.getboolean(section, 'greek_license_number')
+            except:
                 pass
 
             # store settings for CD+G checks
             try:
-                if config.get(section, 'cdg') != 'yes':
-                    config_settings.cd_plus_g = False
+                config_settings.cd_plus_g = config.getboolean(section, 'cdg')
             except Exception:
                 pass
 
@@ -1396,7 +1312,6 @@ def main(cfg, datadump):
     # item belongs where
     identifier_mapping = {'barcode', 'Barcode'}
 
-    # create a SAX parser and feed the gzip compressed file to it
     try:
         with gzip.open(datadump, "rb") as dumpfile:
             counter = 1
@@ -1413,6 +1328,7 @@ def main(cfg, datadump):
                     # then store various things about the release
                     country = ""
                     deposito_found = False
+                    year = None
 
                     for child in element:
                         if child.tag == 'country':
@@ -1423,14 +1339,74 @@ def main(cfg, datadump):
                             # in the 'correct' field (example: rights society
                             # in a 'Rights Society' field) and then in all the
                             # other fields as well.
+                            #
+                            # The checks in the 'correct' field tend to be more
+                            # thorough, as the chances that this is indeed the
+                            # correct field are high.
                             for identifier in child:
                                 identifier_type = identifier.get('type')
 
-                                # Depósito Legal
+                                # Depósito Legal, only for Spain
                                 if config_settings.deposito_legal:
-                                    pass
-                                else:
-                                    pass
+                                    if identifier_type == 'Depósito Legal':
+                                        if country == 'Spain':
+                                            value = identifier.get('value')
+                                            if value.endswith('.'):
+                                                print_error(counter, "Depósito Legal (formatting)", release_id)
+                                                counter += 1
+
+                                            if year is not None:
+                                                # now try to find the year
+                                                deposito_year = None
+                                                year_value = value.strip()
+                                                if year_value.endswith('℗'):
+                                                    print_error(counter, "Depósito Legal (formatting, has ℗)", release_id)
+                                                    counter += 1
+                                                    # ugly hack, remove ℗ to make at least be able to do some sort of check
+                                                    year_value = year_value.rsplit('℗', 1)[0].strip()
+
+                                                # several separators seen in the DL codes,
+                                                # including some Unicode ones.
+                                                # TODO: rewrite/improve
+                                                for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
+                                                    try:
+                                                        deposito_year_text = year_value.rsplit(sep, 1)[-1]
+                                                        if sep == '.' and len(deposito_year_text) == 3:
+                                                            continue
+                                                        if '.' in deposito_year_text:
+                                                            deposito_year_text = deposito_year_text.replace('.', '')
+                                                        deposito_year = int(deposito_year_text)
+                                                        if deposito_year < 100:
+                                                            # correct the year. This won't work correctly after 2099.
+                                                            if deposito_year <= currentyear - 2000:
+                                                                deposito_year += 2000
+                                                            else:
+                                                                deposito_year += 1900
+                                                        break
+                                                    except:
+                                                        pass
+
+                                                # TODO, also allow (year), example: https://www.discogs.com/release/265497
+                                                if deposito_year is not None:
+                                                    if deposito_year < 1900:
+                                                        print_error(counter, "Depósito Legal (impossible year)", release_id)
+                                                        counter += 1
+                                                    elif deposito_year > currentyear:
+                                                        print_error(counter, "Depósito Legal (impossible year)", release_id)
+                                                        counter += 1
+                                                    elif year < deposito_year:
+                                                        print_error(counter, "Depósito Legal (release date earlier)", release_id)
+                                                        counter += 1
+                                                else:
+                                                    print_error(counter, "Depósito Legal (year not found)", release_id)
+                                                    counter += 1
+                                    else:
+                                        if country == 'Spain':
+                                            value = identifier.get('value')
+                                            for dls in ['D.L.', 'Depósito']:
+                                                if value.startswith(dls):
+                                                    print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
+                                                    counter += 1
 
                                 # Label Code
                                 if config_settings.label_code:
@@ -1468,7 +1444,6 @@ def main(cfg, datadump):
                                                 print_error(counter, f"Rights Society (in {identifier_type})", release_id)
                                                 counter += 1
                                                 break
-                                        pass
                                 else:
                                     pass
                                     #print(identifier.items())
@@ -1520,6 +1495,7 @@ def main(cfg, datadump):
                                     elif month_nr > 12:
                                         print_error(counter, f"Month impossible {month_nr}", release_id)
                                         counter += 1
+
                             if child.text != '':
                                 try:
                                     year = int(child.text.split('-', 1)[0])
