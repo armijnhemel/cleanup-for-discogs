@@ -8,14 +8,12 @@
 
 
 import collections
-import sys
-import os
 import re
 
 labelfilename = "label.txt"
 
 labelregex = []
-rx0 = re.compile('(?:lc)[\s/\-]*(\d{4,6})')
+rx0 = re.compile(r'(?:lc)[\s/\-]*(\d{4,6})')
 
 labelregex.append(rx0)
 
@@ -27,7 +25,7 @@ ignored = 0
 
 for i in open(labelfilename, 'r'):
     if not i.startswith('LABEL CODE'):
-       continue
+        continue
     total += 1
     labelcomponent = i.strip()[10:].strip().lower()
     labelcodefound = False
@@ -47,12 +45,12 @@ for i in open(labelfilename, 'r'):
     else:
         ignored += 1
 
-print("TOTAL: %d" % total)
-print("VALID: %d" % valid)
-print("IGNORED: %d" % ignored)
-print("Labels: %d" % len(labelcounter))
+print(f"TOTAL: {total}")
+print(f"VALID: {valid}")
+print(f"IGNORED: {ignored}")
+print(f"Labels: {len(labelcounter)}")
 
 counter = 1
-for i in labelcounter.most_common():
-    print(counter, "LC %s: %d" % i)
+for label, amount in labelcounter.most_common():
+    print(f"{counter} LC {label}: {amount}")
     counter += 1
