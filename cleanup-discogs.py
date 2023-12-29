@@ -21,10 +21,9 @@
 #   label code, but since then there is a dedicated field called
 #   "Label Code". There are still many entries that haven't been changed
 #   though.
-# * SPARS code :: until recently "Other" was used to specify the
-#   SPARS code, but since then there is a dedicated field called
-#   "SPARS Code". There are still many entries that haven't been changed
-#   though.
+# * SPARS code :: in the past "Other" was used to specify the SPARS code, but
+#   at some point a dedicated field called "SPARS Code" was introduced.
+#   There are still many entries that haven't been changed though.
 # * rights society :: until a few years ago "Other" was used to specify
 #   the rights society, but since then there is a dedicated field called
 #   "Rights Society". There are still many entries that haven't been changed
@@ -61,6 +60,9 @@ import defusedxml.ElementTree as et
 import click
 import discogssmells
 
+SPARS_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None, '·': None,
+                                 '∙': None, '᛫': None, '[': None, ']': None,
+                                 '-': None, '|': None, '/': None, '\\': None})
 
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
@@ -101,7 +103,6 @@ class DiscogsHandler():
     def __init__(self, config_settings):
         # many default settings
         self.inrole = False
-        self.inspars = False
         self.inother = False
         self.indeposito = False
         self.inbarcode = False
@@ -378,7 +379,6 @@ class DiscogsHandler():
         # now reset some values
         self.incountry = False
         self.inrole = False
-        self.inspars = False
         self.inother = False
         self.inbarcode = False
         self.inasin = False
@@ -499,9 +499,7 @@ class DiscogsHandler():
             attritems = dict(attrs.items())
             if 'type' in attritems:
                 v = attritems['type']
-                if v == 'SPARS Code':
-                    self.inspars = True
-                elif v == 'Depósito Legal':
+                if v == 'Depósito Legal':
                     self.indeposito = True
                     self.depositofound = True
                 elif v == 'Barcode':
@@ -582,56 +580,6 @@ class DiscogsHandler():
                                         self.prev = self.release
                                         print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, pallasyear, str(self.release)))
 
-                if self.inspars:
-                    if self.config['check_spars_code']:
-                        if v == "none":
-                            return
-                        # Sony format codes
-                        # https://www.discogs.com/forum/thread/339244
-                        # https://www.discogs.com/forum/thread/358285
-                        if v == 'CDC' or v == 'CDM':
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Sony Format Code in SPARS: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        wrongspars = False
-                        sparstocheck = []
-                        tmpspars = v.lower().strip()
-                        for s in ['.', ' ', '•', '·', '∙', '᛫', '[', ']', '-', '|', '/']:
-                            tmpspars = tmpspars.replace(s, '')
-                        if len(tmpspars) != 3:
-                            sparssplit = False
-                            for s in ['|', '/', ',', ' ', '&', '-', '+', '•']:
-                                if s in v.lower().strip():
-                                    splitspars = list(map(lambda x: x.strip(), v.lower().strip().split(s)))
-                                    if len(list(filter(lambda x: len(x) == 3, splitspars))) != len(splitspars):
-                                        continue
-                                    sparssplit = True
-                                    break
-                            if not sparssplit:
-                                sparstocheck.append(tmpspars)
-                        else:
-                            sparstocheck.append(tmpspars)
-                        for sparscheck in sparstocheck:
-                            if sparscheck not in discogssmells.validsparscodes:
-                                wrongspars = True
-                            for s in sparscheck:
-                                if ord(s) > 256:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- SPARS Code (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
-
-                            if wrongspars:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                        if self.year is not None:
-                            if self.year < 1984:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- SPARS Code (impossible year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
                 elif not self.inother:
                     if self.config['check_spars_code']:
                         if v.lower() in discogssmells.validsparscodes:
@@ -1070,8 +1018,31 @@ class DiscogsHandler():
         self.contentbuffer += content
 
 def print_error(counter, reason, release_id):
+    '''Helper method for printing errors'''
     print(f'{counter: 8} -- {reason}: https://www.discogs.com/release/{release_id}')
     sys.stdout.flush()
+
+def check_spars(value, year):
+    '''Helper method for checking SPARS codes'''
+    wrong_spars = False
+    errors = []
+
+    # check if the code is valid
+    if value not in discogssmells.validsparscodes:
+        wrong_spars = True
+        errors.append(f'Invalid SPARS: {value}')
+
+    for s in value:
+        if ord(s) > 256:
+            wrong_spars = True
+            errors.append(f'wrong character set: {value}')
+            break
+
+    if not wrong_spars:
+        if year is not None:
+            if year < 1984:
+                errors.append(f"impossible year: {year}")
+    return errors
 
 @click.command(short_help='process BANG result files and output ELF graphs')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
@@ -1331,14 +1302,18 @@ def main(cfg, datadump):
                             # The checks in the 'correct' field tend to be more
                             # thorough, as the chances that this is indeed the
                             # correct field are high.
+                            #
+                            # Sometimes the "description" attribute needs to be
+                            # checked as well as people tend to hide information
+                            # there too.
                             for identifier in child:
                                 identifier_type = identifier.get('type')
 
                                 # Depósito Legal, only for Spain
-                                if config_settings.deposito_legal:
-                                    if identifier_type == 'Depósito Legal':
-                                        deposito_found = True
-                                        if country == 'Spain':
+                                if country == 'Spain':
+                                    if config_settings.deposito_legal:
+                                        if identifier_type == 'Depósito Legal':
+                                            deposito_found = True
                                             value = identifier.get('value')
                                             if value.endswith('.'):
                                                 print_error(counter, "Depósito Legal (formatting)", release_id)
@@ -1389,13 +1364,14 @@ def main(cfg, datadump):
                                                 else:
                                                     print_error(counter, "Depósito Legal (year not found)", release_id)
                                                     counter += 1
-                                    else:
-                                        if country == 'Spain':
+                                        else:
                                             value = identifier.get('value')
                                             for dls in ['D.L.', 'Depósito']:
                                                 if value.startswith(dls):
                                                     print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
                                                     counter += 1
+
+                                        # check for a DL in the description field
 
                                 # Label Code
                                 if config_settings.label_code:
@@ -1421,11 +1397,11 @@ def main(cfg, datadump):
                                     if identifier_type == 'Rights Society':
                                         for r in discogssmells.rights_societies_wrong:
                                             if r in value:
-                                                print_error(counter, "Rights Society (possible wrong value)", release_id)
+                                                print_error(counter, f"Rights Society (possible wrong value: {r})", release_id)
                                                 counter += 1
                                                 break
                                         if value in discogssmells.rights_societies_wrong_char:
-                                            print_error(counter, f"Rights Society (wrong character set, {value})", release_id)
+                                            print_error(counter, f"Rights Society (wrong character set: {value})", release_id)
                                             counter += 1
                                     else:
                                         for r in discogssmells.rights_societies:
@@ -1433,9 +1409,51 @@ def main(cfg, datadump):
                                                 print_error(counter, f"Rights Society (in {identifier_type})", release_id)
                                                 counter += 1
                                                 break
-                                else:
-                                    pass
-                                    #print(identifier.items())
+                                # SPARS
+                                if config_settings.rights_society:
+                                    if identifier_type == 'SPARS Code':
+                                        value = identifier.get('value')
+                                        if value != 'none':
+                                            # Sony format codes
+                                            # https://www.discogs.com/forum/thread/339244
+                                            # https://www.discogs.com/forum/thread/358285
+                                            if value in ['CDC', 'CDM']:
+                                                print_error(counter, f"Sony Format Code in SPARS ({value})", release_id)
+                                                counter += 1
+                                            else:
+                                                # temporary list to store SPARS values to check
+                                                spars_to_check = []
+
+                                                value_lower = value.lower().strip()
+                                                tmp_spars = value_lower
+
+                                                # replace any delimiter that people might have used
+                                                tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
+
+                                                spars_is_split = False
+
+                                                if len(tmp_spars) == 3:
+                                                    spars_to_check.append(tmp_spars)
+                                                else:
+                                                    # instead of one SPARS code there might be multiple
+                                                    for s in ['|', '/', ',', ' ', '&', '-', '+', '•']:
+                                                        if s in value_lower:
+                                                            split_spars = list(map(lambda x: x.strip(), value_lower.split(s)))
+                                                            # check if every code has three characters
+                                                            if len(list(filter(lambda x: len(x) == 3, split_spars))) != len(split_spars):
+                                                                continue
+                                                            spars_is_split = True
+                                                            spars_to_check = split_spars
+                                                            break
+
+                                                    if not spars_is_split:
+                                                        spars_to_check.append(tmp_spars)
+
+                                                for sparscheck in spars_to_check:
+                                                    errors = check_spars(sparscheck, year)
+                                                    for error in errors:
+                                                        print_error(counter, f"SPARS Code ({error})", release_id)
+                                                        counter += 1
                         elif child.tag == 'notes':
                             #if '카지노' in child.text:
                             #    # Korean casino spam that used to pop up
