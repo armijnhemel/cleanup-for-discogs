@@ -1309,7 +1309,7 @@ def main(cfg, datadump):
                             for identifier in child:
                                 identifier_type = identifier.get('type')
 
-                                # Depósito Legal, only for Spain
+                                # Depósito Legal, only check for releases from Spain
                                 if country == 'Spain':
                                     if config_settings.deposito_legal:
                                         if identifier_type == 'Depósito Legal':
@@ -1353,10 +1353,10 @@ def main(cfg, datadump):
                                                 # TODO, also allow (year), example: https://www.discogs.com/release/265497
                                                 if deposito_year is not None:
                                                     if deposito_year < 1900:
-                                                        print_error(counter, "Depósito Legal (impossible year)", release_id)
+                                                        print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
                                                         counter += 1
                                                     elif deposito_year > currentyear:
-                                                        print_error(counter, "Depósito Legal (impossible year)", release_id)
+                                                        print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
                                                         counter += 1
                                                     elif year < deposito_year:
                                                         print_error(counter, "Depósito Legal (release date earlier)", release_id)
@@ -1409,10 +1409,10 @@ def main(cfg, datadump):
                                                 print_error(counter, f"Rights Society (in {identifier_type})", release_id)
                                                 counter += 1
                                                 break
-                                # SPARS
-                                if config_settings.rights_society:
+                                # SPARS Code
+                                if config_settings.spars:
+                                    value = identifier.get('value')
                                     if identifier_type == 'SPARS Code':
-                                        value = identifier.get('value')
                                         if value != 'none':
                                             # Sony format codes
                                             # https://www.discogs.com/forum/thread/339244
@@ -1454,6 +1454,10 @@ def main(cfg, datadump):
                                                     for error in errors:
                                                         print_error(counter, f"SPARS Code ({error})", release_id)
                                                         counter += 1
+                                    else:
+                                        if value.lower() in discogssmells.validsparscodes:
+                                            print_error(counter, f"SPARS Code ({value}, in {identifier_type})", release_id)
+                                            counter += 1
                         elif child.tag == 'notes':
                             #if '카지노' in child.text:
                             #    # Korean casino spam that used to pop up
