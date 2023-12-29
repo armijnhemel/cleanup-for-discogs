@@ -97,7 +97,7 @@ class CleanupConfig:
     year_valid: bool = False
 
 # a class with a handler for the SAX parser
-class discogs_handler():
+class DiscogsHandler():
     def __init__(self, config_settings):
         # many default settings
         self.inrole = False
@@ -126,7 +126,7 @@ class discogs_handler():
         self.debugcount = 0
         self.count = 0
         self.prev = None
-        self.formattexts = set([])
+        self.formattexts = set()
         self.iscd = False
         self.depositofound = False
         self.labels = []
@@ -412,11 +412,11 @@ class discogs_handler():
             self.inartistid = False
             self.noartist = False
             self.ingenre = False
-            self.formattexts = set([])
-            self.artists = set([])
+            self.formattexts = set()
+            self.artists = set()
             self.labels = []
             self.formatmaxqty = 0
-            self.genres = set([])
+            self.genres = set()
             self.tracklistpositions = set()
             self.isrcpositions = set()
             self.isrcseen = set()
@@ -492,47 +492,6 @@ class discogs_handler():
             self.intitle = True
         elif name == 'position':
             self.inposition = True
-        elif name == 'format':
-            curformat = None
-            for (k, v) in attrs.items():
-                if k == 'name':
-                    if v == 'CD':
-                        self.iscd = True
-                    self.formattexts.add(v)
-                    curformat = v
-                elif k == 'qty':
-                    if self.formatmaxqty == 0:
-                        self.formatmaxqty = max(self.formatmaxqty, int(v))
-                    else:
-                        self.formatmaxqty += int(v)
-                elif k == 'text':
-                    if v != '':
-                        if self.config['check_spars_code']:
-                            tmpspars = v.lower().strip()
-                            for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
-                                tmpspars = tmpspars.replace(s, '')
-                            if tmpspars in discogssmells.validsparscodes:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Possible SPARS Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                        if self.config['check_label_code']:
-                            if v.lower().startswith('lc'):
-                                if discogssmells.labelcodere.match(v.lower()) is not None:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Possible Label Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    return
-                        if self.config['check_cdg']:
-                            if v.lower().strip() == 'cd+g':
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- CD+G (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                        if v == 'DMM':
-                            if curformat != 'Vinyl':
-                                print('%8d -- DMM (%s, in Format): https://www.discogs.com/release/%s' % (self.count, curformat, str(self.release)))
-
         elif name == 'description':
             self.indescription = True
         elif name == 'identifier':
@@ -1201,57 +1160,50 @@ def main(cfg, datadump):
             # store settings for CD+G checks
             try:
                 config_settings.cd_plus_g = config.getboolean(section, 'cdg')
-            except Exception:
+            except:
                 pass
 
             # store settings for Matrix checks
             try:
-                if config.get(section, 'matrix') != 'yes':
-                    config_settings.matrix = False
-            except Exception:
+                config_settings.matrix = config.getboolean(section, 'matrix')
+            except:
                 pass
 
             # store settings for label checks
             try:
-                if config.get(section, 'labels') != 'yes':
-                    config_settings.labels = False
-            except Exception:
+                config_settings.labels = config.getboolean(section, 'labels')
+            except:
                 pass
 
             # store settings for manufacturing plant checks
             try:
-                if config.get(section, 'plants') != 'yes':
-                    config_settings.manufacturing_plants = False
-            except Exception:
+                config_settings.manufacturing_plants = config.getboolean(section, 'plants')
+            except:
                 pass
 
             # check for Czechoslovak manufacturing dates
             try:
-                if config.get(section, 'manufacturing_date_cs') != 'yes':
-                    config_settings.czechoslovak_dates = False
-            except Exception:
+                config_settings.czechoslovak_dates = config.getboolean(section, 'manufacturing_date_cs')
+            except:
                 pass
 
             # check for Czechoslovak and Czech spelling
             # (0x115 used instead of 0x11B)
             try:
-                if config.get(section, 'spelling_cs') != 'yes':
-                    config_settings.czechoslovak_spelling = False
-            except Exception:
+                config_settings.czechoslovak_spelling = config.getboolean(section, 'spelling_cs')
+            except:
                 pass
 
             # store settings for tracklisting checks, default True
             try:
-                if config.get(section, 'tracklisting') != 'yes':
-                    config_settings.tracklisting = False
-            except Exception:
+                config_settings.tracklisting = config.getboolean(section, 'tracklisting')
+            except:
                 pass
 
             # store settings for artists, default True
             try:
-                if config.get(section, 'artist') != 'yes':
-                    config_settings.artist = False
-            except Exception:
+                config_settings.artist = config.getboolean(section, 'artist')
+            except:
                 pass
 
             # store settings for credits list checks
@@ -1263,49 +1215,43 @@ def main(cfg, datadump):
                         # TODO: fix
                         config_settings.creditsfile = creditsfile
                         config_settings.credits = True
-            except Exception:
+            except:
                 pass
 
             # store settings for URLs in Notes checks
             try:
-                if config.get(section, 'html') != 'yes':
-                    config_settings.url_in_html = False
-            except Exception:
+                config_settings.url_in_html = config.getboolean(section, 'html')
+            except:
                 pass
 
             # month is 00 check: default is False
             try:
-                if config.get(section, 'month') == 'yes':
-                    config_settings.month_valid = True
-            except Exception:
+                config_settings.month_valid = config.getboolean(section, 'month')
+            except:
                 pass
 
             # year is wrong check: default is False
             try:
-                if config.get(section, 'year') == 'yes':
-                    config_settings.year_valid = True
-            except Exception:
+                config_settings.year_valid = config.getboolean(section, 'year')
+            except:
                 pass
 
             # reporting all: default is False
             try:
-                if config.get(section, 'reportall') == 'yes':
-                    config_settings.report_all = True
-            except Exception:
+                config_settings.report_all = config.getboolean(section, 'reportall')
+            except:
                 pass
 
             # debug: default is False
             try:
-                if config.get(section, 'debug') == 'yes':
-                    config_settings.debug = True
-            except Exception:
+                config_settings.debug = config.getboolean(section, 'debug')
+            except:
                 pass
 
             # report creative commons references: default is False
             try:
-                if config.get(section, 'creative_commons') == 'yes':
-                    config_settings.creative_commons = True
-            except Exception:
+                config_settings.creative_commons = config.getboolean(section, 'creative_commons')
+            except:
                 pass
 
     # keep a mapping for the 'identifiers' item, detailing which
@@ -1320,7 +1266,7 @@ def main(cfg, datadump):
                     # first see if a release is worth looking at
                     status = element.get('status')
                     if status in ['Deleted', 'Draft', 'Rejected']:
-                        break
+                        continue
 
                     # store the release id
                     release_id = element.get('id')
@@ -1329,10 +1275,52 @@ def main(cfg, datadump):
                     country = ""
                     deposito_found = False
                     year = None
+                    formats = set()
+                    num_formats = 0
+                    is_cd = False
 
+                    # and process the different elements
                     for child in element:
                         if child.tag == 'country':
                             country = child.text
+                        elif child.tag == 'formats':
+                            for release_format in child:
+                                current_format = None
+                                for (key, value) in release_format.items():
+                                    if key == 'name':
+                                        if value == 'CD':
+                                            is_cd = True
+                                        formats.add(value)
+                                        current_format = value
+                                    elif key == 'qty':
+                                        if num_formats == 0:
+                                            num_formats = max(num_formats, int(value))
+                                        else:
+                                            num_formats += int(value)
+                                    elif key == 'text':
+                                        if value != '':
+                                            value_lower = value.lower().strip()
+                                            if config_settings.spars:
+                                                tmpspars = value_lower
+                                                for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
+                                                    tmpspars = tmpspars.replace(s, '')
+                                                if tmpspars in discogssmells.validsparscodes:
+                                                    print_error(counter, "Possible SPARS Code (in Format)", release_id)
+                                                    counter += 1
+                                            if config_settings.label_code:
+                                                if value_lower.startswith('lc'):
+                                                    if discogssmells.labelcodere.match(value_lower) is not None:
+                                                        print_error(counter, "Possible Label Code (in Format)", release_id)
+                                                        counter += 1
+                                            if config_settings.cd_plus_g:
+                                                if value_lower == 'cd+g':
+                                                    print_error(counter, f'CD+G (in Format)', release_id)
+                                                    counter += 1
+                                            if value_lower == 'DMM':
+                                                if current_format != 'Vinyl':
+                                                    print_error(f'DMM ({current_format}, in Format)', release_id)
+                                                    counter += 1
+
                         elif child.tag == 'identifiers':
                             # Here things get very hairy, as every check
                             # potentially has to be done multiple times: once
@@ -1349,6 +1337,7 @@ def main(cfg, datadump):
                                 # Depósito Legal, only for Spain
                                 if config_settings.deposito_legal:
                                     if identifier_type == 'Depósito Legal':
+                                        deposito_found = True
                                         if country == 'Spain':
                                             value = identifier.get('value')
                                             if value.endswith('.'):
@@ -1383,7 +1372,7 @@ def main(cfg, datadump):
                                                             else:
                                                                 deposito_year += 1900
                                                         break
-                                                    except:
+                                                    except ValueError:
                                                         pass
 
                                                 # TODO, also allow (year), example: https://www.discogs.com/release/265497
@@ -1448,10 +1437,15 @@ def main(cfg, datadump):
                                     pass
                                     #print(identifier.items())
                         elif child.tag == 'notes':
+                            #if '카지노' in child.text:
+                            #    # Korean casino spam that used to pop up
+                            #    # every once in a while.
+                            #    print_error(counter, "Korean casino spam", release_id)
+                            #    counter += 1
                             if country == 'Spain':
                                 if config_settings.deposito_legal and not deposito_found:
                                     # sometimes "deposito legal" can be found
-                                    # in the "notes" section
+                                    # in the "notes" section.
                                     content_lower = child.text.lower()
                                     for d in discogssmells.depositores:
                                         result = d.search(content_lower)
@@ -1466,10 +1460,6 @@ def main(cfg, datadump):
                                 if '&lt;a href="http://www.discogs.com/release/' not in child.text:
                                     print_error(counter, "old link (Notes)", release_id)
                                     counter += 1
-                            if '카지노' in child.text:
-                                # Korean casino spam that pops up every once in a while
-                                print_error(counter, "Korean casino spam", release_id)
-                                counter += 1
                             if config_settings.creative_commons:
                                 cc_found = False
                                 for cc in discogssmells.creativecommons:
@@ -1499,7 +1489,7 @@ def main(cfg, datadump):
                             if child.text != '':
                                 try:
                                     year = int(child.text.split('-', 1)[0])
-                                except:
+                                except ValueError:
                                     if config_settings.year_valid:
                                         print_error(counter, f"Year {child.text} invalid", release_id)
                                         counter += 1
