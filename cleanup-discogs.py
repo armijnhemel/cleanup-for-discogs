@@ -65,21 +65,39 @@ RIGHTS_SOCIETY_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None})
 # some values that are not the actual data, but are metadata describing
 # something about the SID codes (readable, missing, and so on) or about
 # actions that need to be taken.
-SID_IGNORE = set(['none', '(none)', '[none]', '<none>', 'non', 'nond', 'none or hidden',
-                  'not present', '(not present)', '[not present]',
-                  'missing', '(missing)', '[missing]', '(missing info)', '[missing data]',
-                  '[not available]', 'unknown', '(unknown)', '[unknown]', 'unk',
-                  'not visible', 'none visible', 'non visible', 'none seen', 'none entered',
-                  'not entered', '[not entered]', '(not entered)', '(not entered))',
-                  '[nothing entered]', '[to be entered]', 'to be confirmed', '[?]', '[? ?]',
-                  '?', '???????', 'no', 'not recorded', '[not recorded]', 'not supplied',
-                  '[not supplied]', 'unreadable', '[unreadable]', '(unreadable)', '[not given]',
-                  'not added', 'none cited', 'not provided', 'not stated', '[not stated]',
+SID_IGNORE = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<none>', 'non',
+                  'nond', 'none found', 'none or hidden', 'not', 'not present', '(not present)',
+                  '[not present]', '<not present>', 'not present or not entered',
+                  '[not yet identified]', 'nothing', 'none / [missing]', 'missing', '(missing)',
+                  '[missing]', '(missing info)', '[missing data]', 'not available',
+                  '(not available)', '[not available]', 'not found', '(not found)', '[not found]',
+                  '(not found on cd)', 'missing / not found', '[indecipherable]',
+                  'not known', 'unknown', '(unknown)', '[unknown]', 'unk', 'not on disc',
+                  'not visible', '(not visible)', '[not visible]', 'none or not visible',
+                  'not visible on both cds', 'not visible (black cd)', 'not visable',
+                  'none visible', '[none visible]', 'non visible', 'none seen', '[none seen]',
+                  '[not seen]', 'not registered', 'none entered', 'not entered', '[not entered]',
+                  '(not entered', '(not entered)', '[nothing entered]', 'none or not entered',
+                  '(none or not entered)', 'not entered / none', '[not entered/none]',
+                  '... not entered ...', '[to be entered]', 'not entered or not present',
+                  'need to be entered', 'to be confirmed', '[?]', '[? ?]', '?', '??', '????', '???????',
+                  '(???)', 'no', 'not recorded', '[not recorded]', 'not supplied', '(not supplied'),
+                  '[not supplied]', 'unreadable', '[unreadable]', '(unreadable)',
+                  'unreadable/too small', 'not given',
+                  '(not given)', '[not given]', 'not inserted', '(not inserted)', '[not inserted]',
+                  'not added', '(not added)', '[not added]', '(to be added by another user)',
+                  'none cited', 'not provided', '(not provided)', 'not stated', '[not stated]',
                   'not submitted', '[not submitted]', '(not apparent)', '[not apparent]',
-                  'none apparent', 'illegible', 'no sid', 'no sid code', 'no sid codes',
-                  'not detectable', '[not discernable]', 'not readable', 'not clearly readable',
-                  '[not reported]', 'no code', '[no code]', '[empty]', 'cannot locate',
-                  'to be completed', 'obscured', 'invisible'])
+                  'none apparent', 'not legible', '[not legible]', 'illegible', '[illegible]',
+                  'no sid', 'no sid code', 'no sid codes', 'no mastering sid code',
+                  'not detectable', 'none or not detectable', '[not discernable]', 'not readable',
+                  '(not readable)', '[not readable]', '[none/not readable]', '[none / not readable]',
+                  'not readable (to small)', 'not clearly readable', 'can not read',
+                  '[not reported]', 'no code', '[no code]', '(empty)', '[empty]', 'cannot locate',
+                  'to be completed', 'obscured', 'invisible', '[not yet identified]',
+                  'unidentified', 'not specified', 'not included', 'not noted',
+                  '[not provided by user]', 'not shown', 'still missing', 'none stated', 'absent',
+                   'n/a', 'undetermined', '(doesnt have one)', 'non-existend'])
 
 SID_INVALID_FORMATS = set(['Vinyl', 'Cassette', 'Shellac', 'File',
                            'VHS', 'DCC', 'Memory Stick', 'Edison Disc'])
@@ -89,10 +107,11 @@ SPARS_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None, '·': None,
                                  '-': None, '|': None, '/': None, '\\': None})
 
 # Translation table for mastering SID codes
-# some people insist on using ƒ instead of f
-# or ρ instead of p
+# some people insist on using ƒ/⨍ instead of f
+# or ρ/ƥ instead of p
 MASTERING_SID_TRANSLATE = str.maketrans({' ': None, '-': None,
-                                        'ƒ': 'f', 'ρ': 'p'})
+                                        '⨍': 'f', 'ƒ': 'f',
+                                        'ρ': 'p', 'ƥ': 'p'})
 
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
