@@ -3,39 +3,6 @@
 # Tool to discover 'smells' in the Discogs data dump. It prints a list of URLs
 # of releases that need to be fixed.
 #
-# Why this happens:
-#
-# https://www.well.com/~doctorow/metacrap.htm
-#
-# Currently the following smells can be discovered:
-#
-# * depósito legal :: until recently the "depósito legal" data (for Spanish
-#   releases) was essentially free text in the "Barcode and Other Identifiers"
-#   section.
-#   Since the August 2017 dump there is a separate field for it (and it has
-#   effectively become a first class citizen in BaOI), but there are still many
-#   releases where this information has not been changed and is in an "Other"
-#   field in BaOI.
-#   Also, there are many misspellings, making it more difficult to find.
-# * label code :: until recently "Other" was used to specify the
-#   label code, but since then there is a dedicated field called
-#   "Label Code". There are still many entries that haven't been changed
-#   though.
-# * SPARS code :: in the past "Other" was used to specify the SPARS code, but
-#   at some point a dedicated field called "SPARS Code" was introduced.
-#   There are still many entries that haven't been changed though.
-# * rights society :: until a few years ago "Other" was used to specify
-#   the rights society, but since then there is a dedicated field called
-#   "Rights Society". There are still many entries that haven't been changed
-#   though.
-# * month as 00 :: in older releases it was allowed to have the month as 00
-#   but this is no longer allowed. When editing an entry that has 00 as the
-#   month Discogs will throw an error.
-# * hyperlinks :: in older releases it was OK to have normal HTML hyperlinks
-#   but these have been replaced by markup:
-#   https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
-#   There are still many releases where old hyperlinks are used.
-#
 # The results that are printed by this script are
 # by no means complete or accurate
 #
@@ -115,6 +82,9 @@ SID_IGNORE = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<n
 SID_INVALID_FORMATS = set(['Vinyl', 'Cassette', 'Shellac', 'File',
                            'VHS', 'DCC', 'Memory Stick', 'Edison Disc'])
 
+# SID descriptions (either Mastering or Mould)
+SID_DESCRIPTIONS = ['source identification code', 'sid', 'sid code', 'sid-code']
+
 SPARS_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None, '·': None,
                                  '∙': None, '᛫': None, '[': None, ']': None,
                                  '-': None, '|': None, '/': None, '\\': None})
@@ -169,7 +139,6 @@ class DiscogsHandler():
         self.inbarcode = False
         self.inasin = False
         self.inisrc = False
-        self.inmouldsid = False
         self.inmatrix = False
         self.intracklist = False
         self.invideos = False
@@ -443,7 +412,6 @@ class DiscogsHandler():
         self.inbarcode = False
         self.inasin = False
         self.inisrc = False
-        self.inmouldsid = False
         self.inmatrix = False
         self.indeposito = False
         self.indescription = False
@@ -1033,6 +1001,9 @@ def check_spars(value, year):
                 errors.append(f"impossible year: {year}")
     return errors
 
+def check_rights_society(value):
+    pass
+
 @click.command(short_help='process BANG result files and output ELF graphs')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
 @click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
@@ -1456,7 +1427,7 @@ def main(cfg, datadump):
                                                 counter += 1
                                                 reported = True
 
-                                            # TODO: fix this
+                                            # TODO: fix this, possibly multiple rights societies
                                             if not reported and False:
                                                 print_error(counter, f"Rights Society (bogus value: {value})", release_id)
                                                 counter += 1

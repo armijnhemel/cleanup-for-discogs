@@ -11,7 +11,11 @@ More background information about these scripts available on my blog:
 
 <https://vinylanddata.blogspot.com/>
 
-## cleanup-for-discogs.py
+Why this happens is well explained here:
+
+<https://www.well.com/~doctorow/metacrap.htm>
+
+## cleanup-discogs.py
 
 Python script to find known "smells" in Discogs database dump files. Prints out
 URLs of releases to be fixed.
@@ -63,3 +67,62 @@ for example:
 ```console
 $ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz
 ```
+
+# List of checks
+
+Below is a list of checks implemented in `cleanup-discogs.py`.
+
+## Depósito Legal
+
+Until August 2017 the "depósito legal" data (mostly used on Spanish releases,
+but also on some releases from South America) was essentially free text in the
+"Barcode and Other Identifiers" (BaOI) section.
+
+Since July 2017 XML there is a separate field for it and it has become a first
+class citizen in BaOI), but there are still many releases where this field has
+not yet been used and where the information is in another field instead, such
+as "Matrix/Runout", "Label Code" or "Other", with a hint in the "description"
+subfield. There are many spellings and misspellings in the "description"
+subfield, so the depósito legal isn't always easy to find.
+
+## Label Code
+
+In early Discogs day "Other" was used to specify the label code, but at some
+point a dedicated field called "Label Code" was introduced. There are still
+many entries that haven't been changed. There are also many users that do not
+know what the field "Label Code" means and will put any data found on a label
+of a release in this field (instead of the actual label code as specified in
+the Discogs guidelines).
+
+## SPARS Code
+
+Like with other fields in the past "Other" was used to specify the SPARS code,
+but at some point a dedicated field called "SPARS Code" was introduced. There
+are still many entries that haven't been changed though. There are also users
+who put the SPARS Code in other places, such as the free text subfield of
+"Format", mostly for classical CDs.
+
+## Rights Society
+
+Before a proper "Rights Society" field was created the "Other" field was used to
+record the rights society. There are also errors where the Rights Society is
+put into other fields such as "ISRC" (due to them being next to each other in
+the drop down box to pick the field name when entering data). There are also
+many misspellings of the names of rights societies and all kinds of encoding
+issues.
+
+## Month checks
+
+In the past it was mandatory to record the month as 00 if it wasn't known
+but this is no longer allowed. When saving an entry that has 00 as the
+number of the month Discogs will throw an error.
+
+## Regular HTML hyperlinks URLs instead of using markup
+
+In the past it was OK to have normal HTML hyperlinks (in fact it was the only
+way to record links), but using regular HTML hyperlinks has been discouraged
+and have been replaced by markup:
+
+<https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text->
+
+There are still many releases where old hyperlinks are used.
