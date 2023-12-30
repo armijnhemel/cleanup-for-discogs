@@ -27,6 +27,9 @@ import defusedxml.ElementTree as et
 import click
 import discogssmells
 
+ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
+                                ':': None, '–': None,})
+
 RIGHTS_SOCIETY_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None})
 
 # some values that are not the actual data, but are metadata describing
@@ -87,7 +90,8 @@ SID_DESCRIPTIONS = ['source identification code', 'sid', 'sid code', 'sid-code']
 
 SPARS_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None, '·': None,
                                  '∙': None, '᛫': None, '[': None, ']': None,
-                                 '-': None, '|': None, '/': None, '\\': None})
+                                 '-': None, '|': None, '︱': None, '/': None,
+                                 '\\': None})
 
 # Translation table for SID codes as some people
 # insist on using ƒ/⨍ instead of f or ρ/ƥ instead of p
@@ -616,8 +620,7 @@ class DiscogsHandler():
                             return
                         if 'd' in v.lower():
                             tmpspars = v.lower().strip()
-                            for s in ['.', ' ', '•', '∙', '·', '᛫', '[', ']', '-', '|', '/', '︱']:
-                                tmpspars = tmpspars.replace(s, '')
+                            tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
 
                             # just check a few other possibilities of
                             # possible SPARS codes
@@ -687,11 +690,7 @@ class DiscogsHandler():
                             isrc_tmp = isrc_tmp.rsplit('/', 1)[0].strip()
 
                         # replace a few characters
-                        isrc_tmp = isrc_tmp.replace('-', '')
-                        isrc_tmp = isrc_tmp.replace(' ', '')
-                        isrc_tmp = isrc_tmp.replace('.', '')
-                        isrc_tmp = isrc_tmp.replace(':', '')
-                        isrc_tmp = isrc_tmp.replace('–', '')
+                        isrc_tmp = isrc_tmp.translate(ISRC_TRANSLATE)
                         if len(isrc_tmp) != 12:
                             self.count += 1
                             self.prev = self.release
@@ -841,7 +840,7 @@ class DiscogsHandler():
                         self.isrcpositions.add(self.description.strip())
                 if self.config['check_mastering_sid']:
                     if not self.inmasteringsid:
-                        if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
+                        if self.description.strip() in SID_DESCRIPTIONS:
                             self.count += 1
                             self.prev = self.release
                             print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -858,7 +857,7 @@ class DiscogsHandler():
                             return
                 if self.config['check_mould_sid']:
                     if not self.inmouldsid:
-                        if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
+                        if self.description.strip() in SID_DESCRIPTIONS:
                             self.count += 1
                             self.prev = self.release
                             print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
@@ -1232,16 +1231,15 @@ def main(cfg, datadump):
                                         if value != '':
                                             value_lower = value.lower().strip()
                                             if config_settings.spars:
-                                                tmpspars = value_lower
-                                                for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
-                                                    tmpspars = tmpspars.replace(s, '')
-                                                if tmpspars in discogssmells.validsparscodes:
-                                                    print_error(counter, "Possible SPARS Code (in Format)", release_id)
+                                                tmp_spars = value_lower
+                                                tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
+                                                if tmp_spars in discogssmells.validsparscodes:
+                                                    print_error(counter, f"Possible SPARS Code ({value}, in Format)", release_id)
                                                     counter += 1
                                             if config_settings.label_code:
                                                 if value_lower.startswith('lc'):
                                                     if discogssmells.labelcodere.match(value_lower) is not None:
-                                                        print_error(counter, "Possible Label Code (in Format)", release_id)
+                                                        print_error(counter, f"Possible Label Code ({value}, in Format)", release_id)
                                                         counter += 1
                                             if config_settings.cd_plus_g:
                                                 if value_lower == 'cd+g':
@@ -1361,7 +1359,7 @@ def main(cfg, datadump):
                                             master_sid_tmp = value_lower.translate(SID_TRANSLATE)
                                             res = discogssmells.masteringsidre.match(master_sid_tmp)
                                             if res is None:
-                                                print_error(counter, f'Mastering SID Code (value: {value})', release_id)
+                                                print_error(counter, f'Mastering SID Code (illegal value: {value})', release_id)
                                                 counter += 1
                                             else:
                                                 # rough check to find SID codes for formats
@@ -1388,7 +1386,7 @@ def main(cfg, datadump):
                                             mould_sid_tmp = value_lower.translate(SID_TRANSLATE)
                                             res = discogssmells.mouldsidre.match(mould_sid_tmp)
                                             if res is None:
-                                                print_error(counter, f'Mould SID Code (value: {value})', release_id)
+                                                print_error(counter, f'Mould SID Code (illegal value: {value})', release_id)
                                                 counter += 1
                                             else:
                                                 if mould_sid_strict:
@@ -1433,7 +1431,7 @@ def main(cfg, datadump):
                                                 counter += 1
                                     else:
                                         if value_upper in discogssmells.rights_societies:
-                                            print_error(counter, f"Rights Society ('{value}' in {identifier_type})", release_id)
+                                            print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
                                             counter += 1
                                 # SPARS Code
                                 if config_settings.spars:
