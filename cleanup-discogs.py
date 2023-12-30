@@ -60,9 +60,18 @@ import defusedxml.ElementTree as et
 import click
 import discogssmells
 
+RIGHTS_SOCIETY_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None})
+SID_INVALID_FORMATS = set(['Vinyl', 'Cassette', 'Shellac', 'File',
+                           'VHS', 'DCC', 'Memory Stick', 'Edison Disc'])
+
 SPARS_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None, '·': None,
                                  '∙': None, '᛫': None, '[': None, ']': None,
                                  '-': None, '|': None, '/': None, '\\': None})
+
+# Translation table for mastering SID codes
+# some people insist on using ƒ instead of f
+MASTERING_SID_TRANSLATE = str.maketrans({' ': None, '-': None,
+                                        'ƒ': 'f'})
 
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
@@ -108,7 +117,6 @@ class DiscogsHandler():
         self.inbarcode = False
         self.inasin = False
         self.inisrc = False
-        self.inmasteringsid = False
         self.inmouldsid = False
         self.inmatrix = False
         self.intracklist = False
@@ -383,7 +391,6 @@ class DiscogsHandler():
         self.inbarcode = False
         self.inasin = False
         self.inisrc = False
-        self.inmasteringsid = False
         self.inmouldsid = False
         self.inmatrix = False
         self.indeposito = False
@@ -730,7 +737,7 @@ class DiscogsHandler():
                         # rough check to find SID codes for formats
                         # other than CD/CD-like
                         if len(self.formattexts) == 1:
-                            for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
+                            for fmt in SID_INVALID_FORMATS:
                                 if fmt in self.formattexts:
                                     self.count += 1
                                     self.prev = self.release
@@ -741,36 +748,6 @@ class DiscogsHandler():
                                 self.count += 1
                                 self.prev = self.release
                                 print('%8d -- Mould SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                if self.inmasteringsid:
-                    if self.config['check_mastering_sid']:
-                        if v.strip() == 'none':
-                            return
-                        # cleanup first for not so heavy formatting booboos
-                        master_tmp = v.strip().lower().replace(' ', '')
-                        master_tmp = master_tmp.replace('-', '')
-                        # some people insist on using ƒ instead of f
-                        master_tmp = master_tmp.replace('ƒ', 'f')
-                        res = discogssmells.masteringsidre.match(master_tmp)
-                        if res is None:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        # rough check to find SID codes for formats
-                        # other than CD/CD-like
-                        if len(self.formattexts) == 1:
-                            for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
-                                if fmt in self.formattexts:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Mastering SID Code (Wrong Format: %s): https://www.discogs.com/release/%s' % (self.count, fmt, str(self.release)))
-                                    return
-                        if self.year is not None:
-                            if self.year < 1993:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Mastering SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                 if self.country == 'India':
                     if self.config['check_pkd']:
@@ -1285,7 +1262,7 @@ def main(cfg, datadump):
                                                         counter += 1
                                             if config_settings.cd_plus_g:
                                                 if value_lower == 'cd+g':
-                                                    print_error(counter, f'CD+G (in Format)', release_id)
+                                                    print_error(counter, 'CD+G (in Format)', release_id)
                                                     counter += 1
                                             if value_lower == 'DMM':
                                                 if current_format != 'Vinyl':
@@ -1391,24 +1368,58 @@ def main(cfg, datadump):
                                                 print_error(counter, f"Label Code (in {identifier_type})", release_id)
                                                 counter += 1
 
+                                # Mastering SID Code
+                                if config_settings.mastering_sid:
+                                    if identifier_type == 'Mastering SID Code':
+                                        value = identifier.get('value').strip()
+                                        value_lower = identifier.get('value').lower().strip()
+                                        if value_lower != 'none':
+                                            # cleanup first for not so heavy formatting booboos
+                                            master_tmp = value_lower.translate(MASTERING_SID_TRANSLATE)
+                                            res = discogssmells.masteringsidre.match(master_tmp)
+                                            if res is None:
+                                                print_error(counter, f'Mastering SID Code (value: {value})', release_id)
+                                                counter += 1
+                                            else:
+                                                # rough check to find SID codes for formats
+                                                # other than CD/CD-like
+                                                if len(formats) == 1:
+                                                    for fmt in SID_INVALID_FORMATS:
+                                                        if fmt in formats:
+                                                            print_error(counter, f'Mastering SID Code (Wrong Format: {fmt})', release_id)
+                                                            counter += 1
+                                                if year is not None:
+                                                    if year < 1993:
+                                                        print_error(counter, f'Mastering SID Code (wrong year: {year})', release_id)
+                                                        counter += 1
+
                                 # Rights Society
                                 if config_settings.rights_society:
-                                    value = identifier.get('value').upper()
+                                    value = identifier.get('value')
+                                    value_upper = value.upper().translate(RIGHTS_SOCIETY_TRANSLATE)
                                     if identifier_type == 'Rights Society':
-                                        for r in discogssmells.rights_societies_wrong:
-                                            if r in value:
-                                                print_error(counter, f"Rights Society (possible wrong value: {r})", release_id)
+                                        if value_upper not in discogssmells.rights_societies:
+                                            reported = False
+                                            for r in discogssmells.rights_societies_wrong:
+                                                if r in value_upper:
+                                                    print_error(counter, f"Rights Society (possible wrong value: {r})", release_id)
+                                                    counter += 1
+                                                    reported = True
+                                                    break
+
+                                            if value_upper in discogssmells.rights_societies_wrong_char:
+                                                print_error(counter, f"Rights Society (wrong character set: {value_upper})", release_id)
                                                 counter += 1
-                                                break
-                                        if value in discogssmells.rights_societies_wrong_char:
-                                            print_error(counter, f"Rights Society (wrong character set: {value})", release_id)
-                                            counter += 1
+                                                reported = True
+
+                                            # TODO: fix this
+                                            if not reported and False:
+                                                print_error(counter, f"Rights Society (bogus value: {value})", release_id)
+                                                counter += 1
                                     else:
-                                        for r in discogssmells.rights_societies:
-                                            if value.replace('.', '') == r or value.replace(' ', '') == r:
-                                                print_error(counter, f"Rights Society (in {identifier_type})", release_id)
-                                                counter += 1
-                                                break
+                                        if value_upper in discogssmells.rights_societies:
+                                            print_error(counter, f"Rights Society ('{value}' in {identifier_type})", release_id)
+                                            counter += 1
                                 # SPARS Code
                                 if config_settings.spars:
                                     value = identifier.get('value')
