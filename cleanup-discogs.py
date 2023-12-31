@@ -30,7 +30,11 @@ import discogssmells
 ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
                                 ':': None, '–': None,})
 
-RIGHTS_SOCIETY_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None})
+# a quick and dirty translation table to see if rights society values
+# are correct. This is just for the first big sweep.
+RIGHTS_SOCIETY_TRANSLATE_QND = str.maketrans({'.': None, ' ': None, '•': None,
+                                              '[': None, ']': None, '(': None,
+                                              ')': None})
 
 # some values that are not the actual data, but are metadata describing
 # something about the SID codes (readable, missing, and so on) or about
@@ -1001,7 +1005,16 @@ def check_spars(value, year):
     return errors
 
 def check_rights_society(value):
-    pass
+    errors = []
+    value = value.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
+    if value in discogssmells.rights_societies_wrong:
+        errors.append(f"possible wrong value: {value}")
+        reported = True
+
+    if value in discogssmells.rights_societies_wrong_char:
+        errors.append(f"wrong character set: {value}")
+
+    return errors
 
 @click.command(short_help='process BANG result files and output ELF graphs')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
@@ -1409,26 +1422,55 @@ def main(cfg, datadump):
                                 # Rights Society
                                 if config_settings.rights_society:
                                     value = identifier.get('value')
-                                    value_upper = value.upper().translate(RIGHTS_SOCIETY_TRANSLATE)
-                                    if identifier_type == 'Rights Society':
-                                        if value_upper not in discogssmells.rights_societies:
-                                            reported = False
-                                            for r in discogssmells.rights_societies_wrong:
-                                                if r in value_upper:
-                                                    print_error(counter, f"Rights Society (possible wrong value: {r})", release_id)
-                                                    counter += 1
-                                                    reported = True
-                                                    break
+                                    value_upper = value.upper().strip()
+                                    value_upper_translated = value_upper.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
 
-                                            if value_upper in discogssmells.rights_societies_wrong_char:
-                                                print_error(counter, f"Rights Society (wrong character set: {value_upper})", release_id)
+                                    if identifier_type == 'Rights Society':
+                                        if not (value_upper in discogssmells.rights_societies or value_upper_translated in discogssmells.rights_societies or value_upper == 'NONE'):
+
+                                            # There are a few known errors for the Rights Society
+                                            # field so check those first before moving on to the
+                                            # combined fields or the bogus values.
+                                            reported = False
+                                            errors = check_rights_society(value_upper)
+                                            for error in errors:
+                                                print_error(counter, f"Rights Society ({error})", release_id)
                                                 counter += 1
                                                 reported = True
 
-                                            # TODO: fix this, possibly multiple rights societies
-                                            if not reported and False:
-                                                print_error(counter, f"Rights Society (bogus value: {value})", release_id)
-                                                counter += 1
+                                            # The field either contains multiple rights societies
+                                            # or contains bogus values.
+                                            if not reported:
+                                                # temporary list to store Rights Society values to check
+                                                rights_society_to_check = []
+
+                                                # known delimiters used, sorted in the most useful order
+                                                # This is not necessarily the best order or the best split.
+                                                # TODO: rework.
+                                                split_rs = []
+                                                for s in ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']:
+                                                    if s in value_upper:
+                                                        split_rs = list(map(lambda x: x.strip(), value_upper.split(s)))
+                                                        rights_society_to_check = split_rs
+                                                        break
+
+                                                rs_determined = 0
+                                                for value_rs in rights_society_to_check:
+                                                    if value_rs not in discogssmells.rights_societies:
+                                                        errors = check_rights_society(value_rs)
+                                                        if errors:
+                                                            rs_determined += 1
+                                                            for error in errors:
+                                                                print_error(counter, f"Rights Society ({error})", release_id)
+                                                                counter += 1
+                                                                reported = True
+                                                    else:
+                                                        rs_determined += 1
+
+                                                if rs_determined != len(split_rs) and False:
+                                                    # TODO: rework, many false positives here
+                                                    print_error(counter, f"Rights Society (bogus value: {value})", release_id)
+                                                    counter += 1
                                     else:
                                         if value_upper in discogssmells.rights_societies:
                                             print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
