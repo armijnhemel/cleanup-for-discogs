@@ -113,7 +113,7 @@ isrc_ftf = set(['international standard recording code',
                 'icrs', 'international recording standard code', "isr code"])
 
 # a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
-rights_societies = set(["BEL BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
+rights_societies = set(["BEL BIEM", "BEL/BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
                         "ΑΕΠΙ", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR",
                         "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA",
                         "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA",
@@ -122,15 +122,15 @@ rights_societies = set(["BEL BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "A
                         "GESAP", "GRAMO", "GVL", "HDS", "HFA", "IMRO", "IPRS",
                         "JASRAC", "KCI", "KODA", "KOMCA", "LATGA-A", "MACP",
                         "MECOLICO", "MCPS", "MCSC", "MCSK", "MESAM",
-                        "MUSICAUTOR", "MUST", "NCB", "n©b", "N©B", "N(C)B",
+                        "MUSICAUTOR", "MUST", "NCB", "N©B", "N(C)B",
                         "OSA", "PAMRA", "PPL", "PROCAN", "PRS", "RAO", "SABAM",
-                        "SACEM", "SACEM Luxembourg", "SACM", "SACVEN",
+                        "SACEM", "SACEM LUXEMBOURG", "SACM", "SACVEN",
                         "SADAIC", "SAKOJ", "SAMI", "SAMRO", "SAYCO", "SAZAS",
                         "SBACEM", "SCPP", "SCD", "SDRM", "SEDRIM", "SENA",
                         "SESAC", "SGA", "SGAE", "SIAE", "SIMIM", "SOCAN",
                         "SODRAC", "SOKOJ", "SOZA", "SPA", "STEF", "STEMRA",
                         "STIM", "SUISA", "TEOSTO", "TONO", "UACRR", "UBC",
-                        "UCMR-ADA", "ZAIKS", "ZPAV"])
+                        "UCMR-ADA", "ZAIKS", "ZPAV", "SACEM", "SACD", "SDRM", "SGDL"])
 
 rights_societies_ftf = set(['(right societies)', '(rights society',
                             '(rights society)', 'collection society',
