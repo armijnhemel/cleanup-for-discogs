@@ -199,7 +199,7 @@ rights_societies_ftf = set(['(right societies)', '(rights society',
 #
 # There are a few wrong values, but currently they are also triggered
 # by correct values, so they are ignored for now.
-#rights_societies_wrong = set(['BIE', 'TEMRA'])
+#rights_societies_wrong = set(['BIE', 'TEMRA', 'STEMR'])
 rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'BIEAM', 'BIEEM', 'BIELM', 'BIEL', 'BIEMA',
                               'BIETM', 'BIRM', 'BIER', 'BIERM', 'BIE,', 'BIEW',
@@ -207,13 +207,13 @@ rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'BUMDA', 'BUMRA', 'ETEMRA', 'SEMRA', 'SEMTRA',
                               'STAMRA', 'STEAMRA', 'STREMA', 'STREMRA',
                               'STERMA', 'STERMRA', 'STEMA', 'STERA', 'STETMRA',
-                              'STEMPRA', 'STEMCA', 'STEMPA', 'STEMBRA',
-                              'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA',
-                              'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA',
+                              'STERNA', 'STEMPRA', 'STEMCA', 'STEMPA', 'STEMBRA',
+                              'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRAA',
+                              'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'STEMEA',
                               'STENRA', 'SREMRA', 'JAIRAC', 'JAJSRAC',
                               'JAMRAC', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC',
                               'JASNAC', 'JASRACK', 'JASREC', 'JASTAC',
-                              'JASTRAC', 'JASRAK', 'JASRC', 'JASRAQ',
+                              'JASTRAC', 'JASRAK', 'JASRC', 'JASRAQ', 'ASRAC',
                               'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'JSRAC',
                               'JASHAC', 'RJASRAC', 'YASRAC', 'GMA', 'GENA',
                               'GAMA', 'GE;A', 'GAME', 'GEMRA', 'GGEMA',
@@ -221,7 +221,10 @@ rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'GEME', 'GEMM', 'GEMS', 'GMEA', 'SSABAM', 'SBAM',
                               'SABBAM', 'SABEM', 'SABAN', 'SABM', 'SABIAM',
                               'SABMA', 'SABAAM', 'SAAM', 'SABNAM', 'SEBAM',
-                              'SGEA', 'SGSE', 'MPCS', 'MCPA'])
+                              'SGEA', 'SGSE', 'MPCS', 'MCPA', 'ACAP', 'ACSAP',
+                              'ACSCAP', 'ACASP', 'ASAP', 'ASCA[', 'ASCAF',
+                              'ASCA', 'ASCAP_', 'ASCAP,', 'ASCAPE', 'ASCSAP',
+                              'ASCVAP', 'ASCASP', 'ASXP', 'ASRTISJUS'])
 
 # a set of rights society names with characters from the wrong character set
 rights_societies_wrong_char = set(['ΒΙΕΜ', 'BΙEM', 'BΙΕΜ', 'BIEΜ', 'AEΠΙ',
