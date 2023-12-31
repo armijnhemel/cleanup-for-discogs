@@ -113,7 +113,8 @@ isrc_ftf = set(['international standard recording code',
                 'icrs', 'international recording standard code', "isr code"])
 
 # a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
-rights_societies = set(["BEL BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
+# as well as the place holder value "none"
+rights_societies = set(["NONE", "BEL BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
                         "ΑΕΠΙ", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR",
                         "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA",
                         "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA",
@@ -224,7 +225,7 @@ rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'SGEA', 'SGSE', 'MPCS', 'MCPA', 'ACAP', 'ACSAP',
                               'ACSCAP', 'ACASP', 'ASAP', 'ASCA[', 'ASCAF',
                               'ASCA', 'ASCAP_', 'ASCAP,', 'ASCAPE', 'ASCSAP',
-                              'ASCVAP', 'ASCASP', 'ASXP', 'ASRTISJUS'])
+                              'ASCVAP', 'ASCASP', 'ASACP', 'ASXP', 'ASRTISJUS'])
 
 # a set of rights society names with characters from the wrong character set
 rights_societies_wrong_char = set(['ΒΙΕΜ', 'BΙEM', 'BΙΕΜ', 'BIEΜ', 'AEΠΙ',
