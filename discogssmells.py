@@ -113,7 +113,7 @@ isrc_ftf = set(['international standard recording code',
                 'icrs', 'international recording standard code', "isr code"])
 
 # a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
-rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
+rights_societies = set(["BEL BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
                         "ΑΕΠΙ", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR",
                         "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA",
                         "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA",
@@ -185,13 +185,18 @@ rights_societies_ftf = set(['(right societies)', '(rights society',
                             'original rights', 'rights info'])
 
 # several possible misspellings of rights societies
-# Not all of these are wrong all the time: STEMPRA has been used
-# on actual releases:
+# Not all of these are necessarily Discogs user errors.
+#
+# As an example STEMPRA has been used on actual releases:
+#
 # https://www.discogs.com/release/8578592
 # https://www.discogs.com/release/629916
+#
 # STEMA:
+#
 # https://www.discogs.com/release/1511006
 # https://www.discogs.com/release/529700
+#
 # There are a few wrong values, but currently they are also triggered
 # by correct values, so they are ignored for now.
 #rights_societies_wrong = set(['BIE', 'TEMRA'])
