@@ -141,26 +141,6 @@ class CleanupConfig:
 class DiscogsHandler():
     def __init__(self, config_settings):
         # many default settings
-        self.inrole = False
-        self.inother = False
-        self.indeposito = False
-        self.inbarcode = False
-        self.inasin = False
-        self.inisrc = False
-        self.inmatrix = False
-        self.intracklist = False
-        self.invideos = False
-        self.incompany = False
-        self.incompanyid = False
-        self.inartistid = False
-        self.noartist = False
-        self.release = None
-        self.country = None
-        self.role = None
-        self.indescription = False
-        self.indescriptions = False
-        self.ingenre = False
-        self.inartist = False
         self.debugcount = 0
         self.count = 0
         self.prev = None
@@ -212,7 +192,6 @@ class DiscogsHandler():
                             if role not in self.credits:
                                 self.count += 1
                                 print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-                                sys.stdout.flush()
                     else:
                         # sometimes there is an additional description
                         # in the role in between [ and ]
@@ -234,7 +213,6 @@ class DiscogsHandler():
                                     if role not in self.credits:
                                         self.count += 1
                                         print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-                                        sys.stdout.flush()
                                         continue
         elif self.indescription:
             if self.indescriptions:
@@ -245,7 +223,6 @@ class DiscogsHandler():
                 if self.contentbuffer == '0':
                     self.count += 1
                     print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                    sys.stdout.flush()
                     self.noartist = True
                 else:
                     self.noartist = False
@@ -411,44 +388,14 @@ class DiscogsHandler():
                                 print('%8d -- Tracklisting reuse (%s, %s): https://www.discogs.com/release/%s' % (self.count, list(self.formattexts)[0], self.contentbuffer, str(self.release)))
                                 return
                             self.tracklistpositions.add(self.contentbuffer)
-        sys.stdout.flush()
 
         # now reset some values
-        self.incountry = False
-        self.inrole = False
-        self.inother = False
-        self.inbarcode = False
-        self.inasin = False
-        self.inisrc = False
-        self.inmatrix = False
-        self.indeposito = False
-        self.indescription = False
-        self.intitle = False
-        self.ingenre = False
-        self.inposition = False
         self.contentbuffer = ''
         if not self.incompany:
             self.incompanyid = False
         self.inartistid = False
         if name == "release":
             # new release entry, so reset many fields
-            self.depositofound = False
-            self.seentracklist = False
-            self.debugcount += 1
-            self.iscd = False
-            self.tracklistcorrect = True
-            self.year = None
-            self.role = None
-            self.country = None
-            self.intracklist = False
-            self.invideos = False
-            self.incompany = False
-            self.incompanyid = False
-            self.inartistid = False
-            self.noartist = False
-            self.ingenre = False
-            self.formattexts = set()
-            self.artists = set()
             self.labels = []
             self.formatmaxqty = 0
             self.genres = set()
@@ -541,8 +488,6 @@ class DiscogsHandler():
                     self.inbarcode = True
                 elif v == 'ASIN':
                     self.inasin = True
-                elif v == 'ISRC':
-                    self.inisrc = True
                 elif v == 'Mastering SID Code':
                     self.inmasteringsid = True
                 elif v == 'Mould SID Code':
@@ -617,11 +562,6 @@ class DiscogsHandler():
 
                 elif not self.inother:
                     if self.config['check_spars_code']:
-                        if v.lower() in discogssmells.validsparscodes:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
                         if 'd' in v.lower():
                             tmpspars = v.lower().strip()
                             tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
@@ -672,66 +612,7 @@ class DiscogsHandler():
                             self.count += 1
                             self.prev = self.release
                             print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            sys.stdout.flush()
                             return
-                if self.inisrc:
-                    if self.config['check_isrc']:
-                        # Check the length of ISRC fields. According to the
-                        # specifications these should be 12 in length. Some
-                        # ISRC identifiers that have been recorded in the
-                        # database cover a range of tracks. These will be
-                        # reported as wrong ISRC codes. It is unclear what
-                        # needs to be done with those.
-                        # first get rid of cruft
-                        isrc_tmp = v.strip().upper()
-                        if isrc_tmp.startswith('ISRC'):
-                            isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
-                        if isrc_tmp.startswith('CODE'):
-                            isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
-
-                        # Chinese ISRC, see https://www.discogs.com/forum/thread/799845
-                        if '/A.J6' in isrc_tmp:
-                            isrc_tmp = isrc_tmp.rsplit('/', 1)[0].strip()
-
-                        # replace a few characters
-                        isrc_tmp = isrc_tmp.translate(ISRC_TRANSLATE)
-                        if len(isrc_tmp) != 12:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            sys.stdout.flush()
-                            return
-                        else:
-                            if isrc_tmp in self.isrcseen:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- ISRC (duplicate %s): https://www.discogs.com/release/%s' % (self.count, isrc_tmp, str(self.release)))
-                                sys.stdout.flush()
-                            self.isrcseen.add(isrc_tmp)
-                            isrcres = re.match("\w{5}(\d{2})\d{5}", isrc_tmp)
-                            if isrcres is None:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- ISRC (wrong format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                sys.stdout.flush()
-                                return
-                            if self.year is not None:
-                                isrcyear = int(isrcres.groups()[0])
-                                if isrcyear < 100:
-                                    # correct the year. This won't work
-                                    # correctly after 2099.
-                                    if isrcyear <= currentyear - 2000:
-                                        isrcyear += 2000
-                                    else:
-                                        isrcyear += 1900
-                                if isrcyear > currentyear:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print("%8d -- ISRC (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                elif self.year < isrcyear:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print("%8d -- ISRC (date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                 if self.country == 'India':
                     if self.config['check_pkd']:
                         if 'pkd' in v.lower() or "production date" in v.lower():
@@ -972,7 +853,6 @@ class DiscogsHandler():
                 # Useful to find misspellings of various fields
                 if self.config['debug']:
                     print(self.description, self.release)
-                sys.stdout.flush()
 
     def characters(self, content):
         self.contentbuffer += content
@@ -1221,6 +1101,7 @@ def main(cfg, datadump):
                     formats = set()
                     num_formats = 0
                     is_cd = False
+                    isrcs_seen = set()
 
                     # and process the different elements
                     for child in element:
@@ -1344,6 +1225,61 @@ def main(cfg, datadump):
 
                                         # check for a DL in the description field
 
+                                # ISRC
+                                if config_settings.isrc:
+                                    if identifier_type == 'ISRC':
+                                        # Check the length of ISRC fields. According to the
+                                        # specifications these should be 12 in length. Some
+                                        # ISRC identifiers that have been recorded in the
+                                        # database cover a range of tracks. These will be
+                                        # reported as wrong ISRC codes. It is unclear what
+                                        # needs to be done with those.
+                                        # first get rid of cruft
+                                        value_upper = identifier.get('value').strip().upper()
+                                        isrc_tmp = value_upper
+                                        if isrc_tmp.startswith('ISRC'):
+                                            isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
+                                        if isrc_tmp.startswith('CODE'):
+                                            isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
+
+                                        # Chinese ISRC, see https://www.discogs.com/forum/thread/799845
+                                        if '/A.J6' in isrc_tmp:
+                                            isrc_tmp = isrc_tmp.rsplit('/', 1)[0].strip()
+
+                                        # replace a few characters
+                                        isrc_tmp = isrc_tmp.translate(ISRC_TRANSLATE)
+                                        if len(isrc_tmp) != 12:
+                                            print_error(counter, 'ISRC (wrong length)', release_id)
+                                            counter += 1
+                                        else:
+                                            valid_isrc = True
+                                            if isrc_tmp in isrcs_seen:
+                                                print_error(counter, f'ISRC (duplicate {isrc_tmp})', release_id)
+                                                counter += 1
+                                            else:
+                                                isrcs_seen.add(isrc_tmp)
+
+                                            isrcres = re.match(r"\w{5}(\d{2})\d{5}", isrc_tmp)
+                                            if isrcres is None:
+                                                print_error(counter, 'ISRC (wrong format)', release_id)
+                                                counter += 1
+                                                valid_isrc = False
+
+                                            if year is not None and valid_isrc:
+                                                isrcyear = int(isrcres.groups()[0])
+                                                if isrcyear < 100:
+                                                    # correct the year. This won't work
+                                                    # correctly after 2099.
+                                                    if isrcyear <= currentyear - 2000:
+                                                        isrcyear += 2000
+                                                    else:
+                                                        isrcyear += 1900
+                                                if isrcyear > currentyear:
+                                                    print_error(counter, f'ISRC (impossible year: {isrcyear})', release_id)
+                                                    counter += 1
+                                                elif year < isrcyear:
+                                                    print_error(counter, f'ISRC (date earlier: {isrcyear})', release_id)
+                                                    counter += 1
                                 # Label Code
                                 if config_settings.label_code:
                                     value = identifier.get('value').lower()
@@ -1472,7 +1408,7 @@ def main(cfg, datadump):
                                                     print_error(counter, f"Rights Society (bogus value: {value})", release_id)
                                                     counter += 1
                                     else:
-                                        if value_upper in discogssmells.rights_societies:
+                                        if value_upper_translated in discogssmells.rights_societies:
                                             print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
                                             counter += 1
                                 # SPARS Code
