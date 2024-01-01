@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2023 - Armijn Hemel
+# Copyright 2017-2024 - Armijn Hemel
 
 import re
 
@@ -113,6 +113,7 @@ isrc_ftf = set(['international standard recording code',
                 'icrs', 'international recording standard code', "isr code"])
 
 # a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
+# These are all uppercased.
 rights_societies = set(["BEL BIEM", "BEL/BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
                         "ΑΕΠΙ", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR",
                         "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA",
@@ -184,7 +185,7 @@ rights_societies_ftf = set(['(right societies)', '(rights society',
                             'rights associations', 'rights association',
                             'original rights', 'rights info'])
 
-# several possible misspellings of rights societies
+# several possible misspellings of rights societies, all uppercased
 # Not all of these are necessarily Discogs user errors.
 #
 # As an example STEMPRA has been used on actual releases:
@@ -336,6 +337,10 @@ mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code',
                  'mould s.i.d.', 'mould s.i.d. code', 'moulds.i.d. code',
                  's.i.d. mould code', 's.i.d. moulding code',
                  'modul sid code (both discs)'])
+
+possible_mastering_sid = set(['sid code matrix', 'sid code - matrix', 'sid code (matrix)',
+                              'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)',
+                              'sid code, matrix ring', 'sid code: matrix ring'])
 
 # a list of creative commons identifiers
 creativecommons = ['CC-BY-NC-ND', 'CC-BY-ND', 'CC-BY-SA', 'ShareAlike']

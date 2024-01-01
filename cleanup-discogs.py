@@ -483,8 +483,6 @@ class DiscogsHandler():
                     self.inbarcode = True
                 elif v == 'ASIN':
                     self.inasin = True
-                elif v == 'Mastering SID Code':
-                    self.inmasteringsid = True
                 elif v == 'Mould SID Code':
                     self.inmouldsid = True
                 elif v == 'Matrix / Runout':
@@ -670,16 +668,6 @@ class DiscogsHandler():
                         self.count += 1
                         print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                         return
-                if self.config['check_mastering_sid']:
-                    if not self.inmasteringsid:
-                        if self.description.strip() in discogssmells.masteringsids:
-                            self.count += 1
-                            print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if self.description.strip() in ['sid code matrix', 'sid code - matrix', 'sid code (matrix)', 'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)', 'sid code, matrix ring', 'sid code: matrix ring']:
-                            self.count += 1
-                            print('%8d -- Possible Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
                 if self.config['check_mould_sid']:
                     if not self.inmouldsid:
                         if self.description.strip() in discogssmells.mouldsids:
@@ -1278,6 +1266,13 @@ def main(cfg, datadump):
                                                     if year < 1993:
                                                         print_error(counter, f'Mastering SID Code (wrong year: {year})', release_id)
                                                         counter += 1
+                                    else:
+                                        if description_lower in discogssmells.masteringsids:
+                                            print_error(counter, 'Mastering SID Code', release_id)
+                                            counter += 1
+                                        elif description_lower in discogssmells.possible_mastering_sid:
+                                            print_error(counter, 'Possible Mastering SID Code', release_id)
+                                            counter += 1
 
                                 # Mould SID Code
                                 # temporary hack, move to own configuration option
