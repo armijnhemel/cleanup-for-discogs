@@ -45,20 +45,20 @@ SID_IGNORE = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<n
                   'not present or not entered', '[not yet identified]', 'nothing',
                   'none / [missing]', 'missing', '(missing)', '?missing?', '"missing"',
                   '[missing]', '(missing info)', '[missing data]', '[missing or not entered]',
-                  'missing entry', 'not available', '(not available)', '[not available]', 'not found',
-                  '(not found)', '[not found]', '(not found on cd)', 'missing / not found',
-                  '[indecipherable]', '(indistinguishable)', 'not known', 'unknown', '(unknown)',
-                  '[unknown]', 'unk', 'not on disc', 'not visible', '(not visible)', '(not visble)',
-                  '[not visible]', 'not visible/present', 'none or not visible',
-                  'not visible on both cds', 'not visible (black cd)', 'not visable',
-                  'none visible', '[none visible]', 'non visible', '[no code visible]',
-                  '[none recorded]', '[none or missing]', 'none seen', '[none seen]', '[not seen]',
-                  'not registered', 'none detected', 'none entered', 'not entered',
-                  '[not entered]', '(not entered', '(not entered)', '[nothing entered]', 'not enterd',
-                  'none or not entered', '(none or not entered)', '[none or not entered]',
-                  'not entered / none', 'not entered or none', '(not entered or none)',
-                  '[not entered/none]', '... not entered ...', '[to be entered]',
-                  'not entered or not present', 'need to be entered',
+                  'missing entry', 'not available', '(not available)', '[not available]',
+                  'not found', '(not found)', '[not found]', '(not found on cd)',
+                  'missing / not found', '[indecipherable]', '(indistinguishable)', 'not known',
+                  'unknown', '(unknown)', '[unknown]', 'unk', 'not on disc', 'not visible',
+                  '(not visible)', '(not visble)', '[not visible]', 'not visible/present',
+                  'none or not visible', 'not visible on both cds', 'not visible (black cd)',
+                  'not visable', 'none visible', '[none visible]', 'non visible',
+                  '[no code visible]', '[none recorded]', '[none or missing]', 'none seen',
+                  '[none seen]', '[not seen]', 'not registered', 'none detected', 'none entered',
+                  'not entered', '[not entered]', '(not entered', '(not entered)',
+                  '[nothing entered]', 'not enterd', 'none or not entered', '(none or not entered)',
+                  '[none or not entered]', 'not entered / none', 'not entered or none',
+                  '(not entered or none)', '[not entered/none]', '... not entered ...',
+                  '[to be entered]', 'not entered or not present', 'need to be entered',
                   'to be confirmed', '[?]', '[? ?]', '?', '??', '???', '????', '???????',
                   '(???)', 'no', 'not recorded', '[not recorded]', 'not supplied', '(not supplied)',
                   '[not supplied]', 'none supplied', 'unreadable', '[unreadable]', '(unreadable)',
@@ -71,19 +71,20 @@ SID_IGNORE = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<n
                   'none apparent', 'apparently none', 'not legible', '[not legible]', 'illegible',
                   '[illegible]', 'no sid', 'no sid code', 'no sid codes', 'no mastering sid code',
                   'not detectable', 'none or not detectable', '[not discernable]', 'not readable',
-                  '(not readable)', '[not readable]', '[none/not readable]', '[none / not readable]',
-                  'not readable (to small)', 'not clearly readable', 'can not read',
-                  '[not reported]', 'no code', '[no code]', '(empty)', '[empty]', 'cannot locate',
-                  'to be completed', 'obscured', 'invisible', '[not yet identified]',
-                  'unidentified', 'not specified', 'no specified', 'not included', 'not noted',
-                  '[not provided by user]', 'not shown', 'still missing', 'none stated', 'absent',
-                  '[absent]', 'n/a', 'undetermined', '(doesnt have one)', 'non-existend',
-                  'no mould', 'no mould sid', 'no mould sid code', '(no mould sid code)',
-                  '[no mould sid code]', '"no mould sid code"', 'no mould sid-code',
-                  'no mould code', '(no mould code)', 'no ifpi', 'no ifpi code', 'unstated',
-                  '[blank]', 'unable to read', 'can\'t find', 'can\'t find it',
-                  'no code discernible', 'vacant', '[none observed]', 'indistinct',
-                  'information missing', 'no information', '(too faint to see)', 'without sid',
+                  '(not readable)', '[not readable]', '[none/not readable]',
+                  '[none / not readable]', 'not readable (to small)', 'not clearly readable',
+                  'can not read', '[not reported]', 'no code', '[no code]', '(empty)', '[empty]',
+                  'cannot locate', 'to be completed', 'obscured', 'invisible',
+                  '[not yet identified]', 'unidentified', 'not specified', 'no specified',
+                  'not included', 'not noted', '[not provided by user]', 'not shown',
+                  'still missing', 'none stated', 'absent', '[absent]', 'n/a', 'undetermined',
+                  '(doesnt have one)', 'non-existend', 'no mould', 'no mould sid',
+                  'no mould sid code', '(no mould sid code)', '[no mould sid code]',
+                  '"no mould sid code"', 'no mould sid-code', 'no mould code', '(no mould code)',
+                  'no ifpi', 'no ifpi code', 'unstated', '[blank]', 'unable to read',
+                  'can\'t find', 'can\'t find it', 'no code discernible', 'vacant',
+                  '[none observed]', 'indistinct', 'information missing', 'no information',
+                  '(too faint to see)', 'without sid',
                   'There is something on the innermost edge but it is unreadable'])
 
 SID_INVALID_FORMATS = set(['Vinyl', 'Cassette', 'Shellac', 'File',
@@ -141,7 +142,6 @@ class CleanupConfig:
 class DiscogsHandler():
     def __init__(self, config_settings):
         # many default settings
-        self.debugcount = 0
         self.count = 0
         self.prev = None
         self.formattexts = set()
@@ -400,8 +400,6 @@ class DiscogsHandler():
             self.formatmaxqty = 0
             self.genres = set()
             self.tracklistpositions = set()
-            self.isrcpositions = set()
-            self.isrcseen = set()
             for (k, v) in attrs.items():
                 if k == 'id':
                     self.release = v
@@ -432,7 +430,6 @@ class DiscogsHandler():
                     if self.config['check_label_name']:
                         if v == 'London':
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Wrong label (London): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
                 elif k == 'catno':
@@ -441,7 +438,6 @@ class DiscogsHandler():
                         if catno.startswith('lc'):
                             if discogssmells.labelcodere.match(catno) is not None:
                                 self.count += 1
-                                self.prev = self.release
                                 print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                     if self.config['check_deposito']:
@@ -457,7 +453,6 @@ class DiscogsHandler():
 
                         if dlfound:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
             self.labels.append((labelname, catno))
@@ -503,19 +498,15 @@ class DiscogsHandler():
                         return
                 if 'MADE IN USA BY PDMC' in v:
                     self.count += 1
-                    self.prev = self.release
                     print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                 elif 'MADE IN GERMANY BY PDMC' in v:
                     self.count += 1
-                    self.prev = self.release
                     print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                 elif 'MADE IN FRANCE BY PDMC' in v:
                     self.count += 1
-                    self.prev = self.release
                     print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                 elif 'PDMC FRANCE' in v:
                     self.count += 1
-                    self.prev = self.release
                     print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                 if self.config['check_creative_commons']:
                     if 'creative commons' in v.lower():
@@ -525,7 +516,7 @@ class DiscogsHandler():
                     if self.inmatrix:
                         if self.year is not None:
                             if 'MFG BY CINRAM' in v and '#' in v and 'USA' not in v:
-                                cinramres = re.search('#(\d{2})', v)
+                                cinramres = re.search(r'#(\d{2})', v)
                                 if cinramres is not None:
                                     cinramyear = int(cinramres.groups()[0])
                                     # correct the year. This won't work correctly after 2099.
@@ -535,15 +526,13 @@ class DiscogsHandler():
                                         cinramyear += 1900
                                     if cinramyear > currentyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     elif self.year < cinramyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, cinramyear, str(self.release)))
                             elif 'P+O' in v:
                                 # https://www.discogs.com/label/277449-PO-Pallas
-                                pallasres = re.search('P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', v)
+                                pallasres = re.search(r'P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', v)
                                 if pallasres is not None:
                                     pallasyear = int(pallasres.groups()[0])
                                     # correct the year. This won't work correctly after 2099.
@@ -553,11 +542,9 @@ class DiscogsHandler():
                                         pallasyear += 1900
                                     if pallasyear > currentyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     elif self.year < pallasyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, pallasyear, str(self.release)))
 
                 elif not self.inother:
@@ -570,7 +557,6 @@ class DiscogsHandler():
                             # possible SPARS codes
                             if tmpspars in discogssmells.validsparscodes:
                                 self.count += 1
-                                self.prev = self.release
                                 print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                 elif not self.inother:
@@ -581,14 +567,12 @@ class DiscogsHandler():
                                 for r in discogssmells.rights_societies:
                                     if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r:
                                         self.count += 1
-                                        self.prev = self.release
                                         print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                         break
                         else:
                             for r in discogssmells.rights_societies:
                                 if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
                                     self.count += 1
-                                    self.prev = self.release
                                     print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                     break
                 if self.inbarcode:
@@ -597,7 +581,6 @@ class DiscogsHandler():
                             for depositovalre in discogssmells.depositovalres:
                                 if depositovalre.match(v.lower()) is not None:
                                     self.count += 1
-                                    self.prev = self.release
                                     print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                     return
                 if self.inasin:
@@ -610,7 +593,6 @@ class DiscogsHandler():
                             tmpasin = v
                         if not len(tmpasin.split(':')[-1].strip()) == 10:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
                 if self.country == 'India':
@@ -618,7 +600,7 @@ class DiscogsHandler():
                         if 'pkd' in v.lower() or "production date" in v.lower():
                             if self.year is not None:
                                 # try a few variants
-                                pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", v)
+                                pkdres = re.search(r"\d{1,2}/((?:19|20)?\d{2})", v)
                                 if pkdres is not None:
                                     pkdyear = int(pkdres.groups()[0])
                                     if pkdyear < 100:
@@ -629,19 +611,15 @@ class DiscogsHandler():
                                             pkdyear += 1900
                                     if pkdyear < 1900:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     elif pkdyear > currentyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     elif self.year < pkdyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                             else:
                                 self.count += 1
-                                self.prev = self.release
                                 print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
             if 'description' in attritems:
@@ -664,92 +642,48 @@ class DiscogsHandler():
                         self.count += 1
                         print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                 # squash repeated spaces
-                self.description = re.sub('\s+', ' ', self.description)
+                self.description = re.sub(r'\s+', ' ', self.description)
                 if self.config['check_rights_society']:
                     if not self.inrightssociety:
                         if self.description in discogssmells.rights_societies_ftf:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             for rs in discogssmells.rights_societies_wrong_char:
                                 if rs in attrvalue:
                                     self.count += 1
-                                    self.prev = self.release
                                     print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
                             return
                 if self.config['check_label_code'] and not self.inlabelcode:
                     if self.description in discogssmells.label_code_ftf:
                         self.count += 1
-                        self.prev = self.release
                         print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                         return
                 if self.config['check_spars_code']:
                     if not self.inspars:
-                        sparsfound = False
                         for spars in discogssmells.spars_ftf:
                             if spars in self.description:
-                                sparsfound = True
                                 self.count += 1
-                                self.prev = self.release
                                 print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                 if self.config['check_asin']:
                     if not self.inasin and self.description.startswith('asin'):
                         self.count += 1
-                        self.prev = self.release
                         print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                         return
-                if self.config['check_isrc']:
-                    if not self.inisrc:
-                        if self.description.startswith('isrc'):
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if self.description.startswith('issrc'):
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        for isrc in discogssmells.isrc_ftf:
-                            if isrc in self.description:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                    else:
-                        if self.description.strip() in self.isrcpositions:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC Code (description reuse %s): https://www.discogs.com/release/%s' % (self.count, self.description.strip(), str(self.release)))
-                        self.isrcpositions.add(self.description.strip())
                 if self.config['check_mastering_sid']:
                     if not self.inmasteringsid:
-                        if self.description.strip() in SID_DESCRIPTIONS:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
                         if self.description.strip() in discogssmells.masteringsids:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
                         if self.description.strip() in ['sid code matrix', 'sid code - matrix', 'sid code (matrix)', 'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)', 'sid code, matrix ring', 'sid code: matrix ring']:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Possible Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
                 if self.config['check_mould_sid']:
                     if not self.inmouldsid:
-                        if self.description.strip() in SID_DESCRIPTIONS:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
                         if self.description.strip() in discogssmells.mouldsids:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
                 if self.country == 'Spain':
@@ -772,7 +706,6 @@ class DiscogsHandler():
 
                         if found:
                             self.count += 1
-                            self.prev = self.release
                             print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
                     else:
@@ -784,7 +717,7 @@ class DiscogsHandler():
                         if 'pkd' in self.description or "production date" in self.description:
                             if self.year is not None:
                                 # try a few variants
-                                pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", attrvalue)
+                                pkdres = re.search(r"\d{1,2}/((?:19|20)?\d{2})", attrvalue)
                                 if pkdres is not None:
                                     pkdyear = int(pkdres.groups()[0])
                                     if pkdyear < 100:
@@ -795,19 +728,15 @@ class DiscogsHandler():
                                             pkdyear += 1900
                                     if pkdyear < 1900:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     elif pkdyear > currentyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     elif self.year < pkdyear:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                             else:
                                 self.count += 1
-                                self.prev = self.release
                                 print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                 return
                 elif self.country == 'Czechoslovakia':
@@ -816,19 +745,17 @@ class DiscogsHandler():
                         strict_cs = False
                         if 'date' in self.description:
                             if self.year is not None:
-                                manufacturing_date_res = re.search("(\d{2})\s+\d$", attrvalue.rstrip())
+                                manufacturing_date_res = re.search(r"(\d{2})\s+\d$", attrvalue.rstrip())
                                 if manufacturing_date_res is not None:
                                     manufacturing_year = int(manufacturing_date_res.groups()[0])
                                     if manufacturing_year < 100:
                                         manufacturing_year += 1900
                                         if manufacturing_year > self.year:
                                             self.count += 1
-                                            self.prev = self.release
                                             print("%8d -- Czechoslovak manufacturing date (release year wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                         # possibly this check makes sense, but not always
                                         elif manufacturing_year < self.year and strict_cs:
                                             self.count += 1
-                                            self.prev = self.release
                                             print("%8d -- Czechoslovak manufacturing date (release year possibly wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 
                 elif self.country == 'Greece':
@@ -844,7 +771,6 @@ class DiscogsHandler():
                                         license_year += 1900
                                     if license_year > self.year:
                                         self.count += 1
-                                        self.prev = self.release
                                         print("%8d -- Greek license year wrong: https://www.discogs.com/release/%s" % (self.count, str(self.release)))
                                     licenseyearfound = True
                                 except:
@@ -1096,12 +1022,16 @@ def main(cfg, datadump):
 
                     # then store various things about the release
                     country = ""
-                    deposito_found = False
+                    deposito_found_in_notes = False
                     year = None
                     formats = set()
                     num_formats = 0
                     is_cd = False
+
+                    # data structures specific for detecting reuse of
+                    # ISRC codes and descriptions.
                     isrcs_seen = set()
+                    isrc_descriptions_seen = set()
 
                     # and process the different elements
                     for child in element:
@@ -1165,7 +1095,10 @@ def main(cfg, datadump):
                                 if country == 'Spain':
                                     if config_settings.deposito_legal:
                                         if identifier_type == 'Depósito Legal':
-                                            deposito_found = True
+                                            #deposito_found = True
+                                            if release_id == '34153':
+                                                print('BLAAT')
+                                                sys.exit(0)
                                             value = identifier.get('value')
                                             if value.endswith('.'):
                                                 print_error(counter, "Depósito Legal (formatting)", release_id)
@@ -1227,6 +1160,8 @@ def main(cfg, datadump):
 
                                 # ISRC
                                 if config_settings.isrc:
+                                    description = identifier.get('description', '').strip()
+                                    description_lower = description.lower()
                                     if identifier_type == 'ISRC':
                                         # Check the length of ISRC fields. According to the
                                         # specifications these should be 12 in length. Some
@@ -1280,6 +1215,27 @@ def main(cfg, datadump):
                                                 elif year < isrcyear:
                                                     print_error(counter, f'ISRC (date earlier: {isrcyear})', release_id)
                                                     counter += 1
+
+                                            # check the descriptions
+                                            # TODO: match with the actual track list
+                                            if description_lower in isrc_descriptions_seen:
+                                                print_error(counter, f'ISRC code (description reuse: {description}', release_id)
+                                                counter += 1
+                                            isrc_descriptions_seen.add(description_lower)
+                                    else:
+                                        # specifically check the description
+                                        if description_lower.startswith('isrc'):
+                                            print_error(counter, f'ISRC Code (in {identifier})', release_id)
+                                            counter += 1
+                                        elif description_lower.startswith('issrc'):
+                                            print_error(counter, f'ISRC Code (in {identifier})', release_id)
+                                            counter += 1
+                                        else:
+                                            for isrc in discogssmells.isrc_ftf:
+                                                if isrc in description_lower:
+                                                    print_error(counter, f'ISRC Code (in {identifier})', release_id)
+                                                    counter += 1
+                                                    break
                                 # Label Code
                                 if config_settings.label_code:
                                     value = identifier.get('value').lower()
@@ -1355,6 +1311,15 @@ def main(cfg, datadump):
                                                     if year < 1993:
                                                         print_error(counter, f'Mould SID Code (wrong year: {year})', release_id)
                                                         counter += 1
+
+                                # Mastering SID and Mould SID descriptions
+                                if config_settings.mastering_sid or config_settings.mould_sid:
+                                    description = identifier.get('description', '').strip()
+                                    description_lower = description.lower()
+                                    if description_lower in SID_DESCRIPTIONS:
+                                        print_error(counter, 'Unspecified SID Code', release_id)
+                                        counter += 1
+
                                 # Rights Society
                                 if config_settings.rights_society:
                                     value = identifier.get('value')
@@ -1411,6 +1376,7 @@ def main(cfg, datadump):
                                         if value_upper_translated in discogssmells.rights_societies:
                                             print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
                                             counter += 1
+
                                 # SPARS Code
                                 if config_settings.spars:
                                     value = identifier.get('value')
@@ -1467,16 +1433,18 @@ def main(cfg, datadump):
                             #    print_error(counter, "Korean casino spam", release_id)
                             #    counter += 1
                             if country == 'Spain':
-                                if config_settings.deposito_legal and not deposito_found:
+                                if release_id == '34153':
+                                    print(deposito_found_in_notes)
+                                if config_settings.deposito_legal:
                                     # sometimes "deposito legal" can be found
                                     # in the "notes" section.
                                     content_lower = child.text.lower()
                                     for d in discogssmells.depositores:
                                         result = d.search(content_lower)
                                         if result is not None:
+                                            deposito_found_in_notes = True
                                             print_error(counter, "Depósito Legal (Notes)", release_id)
                                             counter += 1
-                                            found = True
                                             break
 
                             # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
@@ -1486,9 +1454,9 @@ def main(cfg, datadump):
                                     counter += 1
                             if config_settings.creative_commons:
                                 cc_found = False
-                                for cc in discogssmells.creativecommons:
-                                    if cc in child.text:
-                                        print_error(counter, f"Creative Commons reference ({cc})", release_id)
+                                for cc_ref in discogssmells.creativecommons:
+                                    if cc_ref in child.text:
+                                        print_error(counter, f"Creative Commons reference ({cc_ref})", release_id)
                                         counter += 1
                                         cc_found = True
                                         break
