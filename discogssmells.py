@@ -390,7 +390,7 @@ sid_ignore = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<n
                   'no ifpi', 'no ifpi code', 'unstated', '[blank]', 'unable to read',
                   'can\'t find', 'can\'t find it', 'no code discernible', 'vacant',
                   '[none observed]', 'indistinct', 'information missing', 'no information',
-                  '(too faint to see)', 'without sid',
+                  '(too faint to see)', 'without sid', 'present, but digits cannot be identified',
                   'There is something on the innermost edge but it is unreadable'])
 
 # a list of creative commons identifiers

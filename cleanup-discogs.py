@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2023 - Armijn Hemel
+# Copyright 2017-2024 - Armijn Hemel
 
 import configparser
 import datetime
@@ -75,11 +75,12 @@ class CleanupConfig:
     label_code: bool = True
     label_name: bool = True
     labels: bool = True
-    manufacturing_plants: bool = True
     mastering_sid: bool = True
     matrix: bool = True
     month_valid: bool = False
     mould_sid: bool = True
+    mould_sid_strict: bool = False
+    pressing_plants: bool = True
     report_all: bool = False
     rights_society: bool = True
     spars: bool = True
@@ -169,88 +170,6 @@ class DiscogsHandler():
                 #        print(self.genres)
                 #        sys.exit(0)
                 self.artists.add(self.contentbuffer)
-        elif self.incompanyid:
-            if self.config['check_labels']:
-                if self.year is not None:
-                    # check for:
-                    # https://www.discogs.com/label/205-Fontana
-                    # https://www.discogs.com/label/7704-Philips
-                    if self.contentbuffer == '205':
-                        if self.year < 1957:
-                            self.count += 1
-                            print('%8d -- Label (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '7704':
-                        if self.year < 1950:
-                            self.count += 1
-                            print('%8d -- Label (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-            if self.config['check_plants']:
-                if self.year is not None:
-                    # check for:
-                    # https://www.discogs.com/label/358102-PDO-USA
-                    # https://www.discogs.com/label/360848-PMDC-USA
-                    # https://www.discogs.com/label/266782-UML
-                    # https://www.discogs.com/label/381697-EDC-USA
-                    if self.contentbuffer == '358102':
-                        if self.year < 1986:
-                            self.count += 1
-                            print('%8d -- Pressing plant PDO, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '360848':
-                        if self.year < 1992:
-                            self.count += 1
-                            print('%8d -- Pressing plant PMDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '266782':
-                        if self.year < 1999:
-                            self.count += 1
-                            print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '381697':
-                        if self.year < 2005:
-                            self.count += 1
-                            print('%8d -- Pressing plant EDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-                    # check for
-                    # https://www.discogs.com/label/358025-PDO-Germany
-                    # https://www.discogs.com/label/342158-PMDC-Germany
-                    # https://www.discogs.com/label/331548-Universal-M-L-Germany
-                    # https://www.discogs.com/label/384133-EDC-Germany
-                    if self.contentbuffer == '358025':
-                        if self.year < 1986:
-                            self.count += 1
-                            print('%8d -- Pressing plant PDO, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '342158':
-                        if self.year < 1993:
-                            self.count += 1
-                            print('%8d -- Pressing plant PMDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '331548':
-                        if self.year < 1999:
-                            self.count += 1
-                            print('%8d -- Pressing plant Universal, M & L, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '384133':
-                        if self.year < 2005:
-                            self.count += 1
-                            print('%8d -- Pressing plant EDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-                    # https://www.discogs.com/label/265455-PMDC
-                    if self.contentbuffer == '265455':
-                        if self.year < 1992:
-                            self.count += 1
-                            print('%8d -- Pressing plant PMDC, France (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-                    '''
-                    ## https://www.discogs.com/label/34825-Sony-DADC
-                    if self.contentbuffer == '34825':
-                        if self.year < 2000:
-                            self.count += 1
-                            print('%8d -- Pressing plant Sony DADC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    '''
-
-                    for pl in discogssmells.plants_compact_disc:
-                        if self.contentbuffer == pl[0]:
-                            if 'CD' in self.formattexts:
-                                if self.year < pl[1]:
-                                    self.count += 1
-                                    print('%8d -- Pressing plant %s (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, pl[2], self.year, str(self.release)))
-                                    break
-
         if self.intracklist and self.inposition:
             '''
             # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
@@ -282,8 +201,6 @@ class DiscogsHandler():
 
         # now reset some values
         self.contentbuffer = ''
-        if not self.incompany:
-            self.incompanyid = False
         self.inartistid = False
         if name == 'descriptions':
             self.indescriptions = True
@@ -292,14 +209,10 @@ class DiscogsHandler():
 
         if name == 'artist':
             self.inartist = True
-            self.incompany = False
             self.noartist = False
         if name == 'company':
-            self.incompany = True
             self.inartist = False
         if name == 'id':
-            if self.incompany:
-                self.incompanyid = True
             if self.inartist:
                 self.inartistid = True
                 self.noartist = False
@@ -432,33 +345,6 @@ class DiscogsHandler():
                             self.count += 1
                             print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
-                elif self.country == 'India':
-                    if self.config['check_pkd']:
-                        if 'pkd' in self.description or "production date" in self.description:
-                            if self.year is not None:
-                                # try a few variants
-                                pkdres = re.search(r"\d{1,2}/((?:19|20)?\d{2})", attrvalue)
-                                if pkdres is not None:
-                                    pkdyear = int(pkdres.groups()[0])
-                                    if pkdyear < 100:
-                                        # correct the year. This won't work correctly after 2099.
-                                        if pkdyear <= currentyear - 2000:
-                                            pkdyear += 2000
-                                        else:
-                                            pkdyear += 1900
-                                    if pkdyear < 1900:
-                                        self.count += 1
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif pkdyear > currentyear:
-                                        self.count += 1
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < pkdyear:
-                                        self.count += 1
-                                        print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                            else:
-                                self.count += 1
-                                print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
                 elif self.country == 'Czechoslovakia':
                     if self.config['check_manufacturing_date_cs']:
                         # config hack, needs to be in its own configuration option
@@ -478,23 +364,6 @@ class DiscogsHandler():
                                             self.count += 1
                                             print("%8d -- Czechoslovak manufacturing date (release year possibly wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 
-                elif self.country == 'Greece':
-                    if self.config['check_greek_license_number']:
-                        if "license" in self.description.strip() and self.year is not None:
-                            licenseyearfound = False
-                            for sep in ['/', ' ', '-', ')', '\'', '.']:
-                                if licenseyearfound:
-                                    break
-                                try:
-                                    license_year = int(attrvalue.strip().rsplit(sep, 1)[1])
-                                    if license_year < 100:
-                                        license_year += 1900
-                                    if license_year > self.year:
-                                        self.count += 1
-                                        print("%8d -- Greek license year wrong: https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    licenseyearfound = True
-                                except:
-                                    pass
                 # debug code to print descriptions that were skipped.
                 # Useful to find misspellings of various fields
                 if self.config['debug']:
@@ -606,6 +475,12 @@ def main(cfg, datadump, release_nr):
             except:
                 pass
 
+            # store settings for mould SID strict checks
+            try:
+                config_settings.mould_sid_strict = config.getboolean(section, 'mould_sid_strict')
+            except:
+                pass
+
             # store settings for SPARS Code checks
             try:
                 config_settings.spars = config.getboolean(section, 'spars')
@@ -644,7 +519,7 @@ def main(cfg, datadump, release_nr):
 
             # store settings for manufacturing plant checks
             try:
-                config_settings.manufacturing_plants = config.getboolean(section, 'plants')
+                config_settings.pressing_plants = config.getboolean(section, 'plants')
             except:
                 pass
 
@@ -654,8 +529,7 @@ def main(cfg, datadump, release_nr):
             except:
                 pass
 
-            # check for Czechoslovak and Czech spelling
-            # (0x115 used instead of 0x11B)
+            # check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
             try:
                 config_settings.czechoslovak_spelling = config.getboolean(section, 'spelling_cs')
             except:
@@ -730,6 +604,8 @@ def main(cfg, datadump, release_nr):
                 if element.tag == 'release':
                     # store the release id
                     release_id = int(element.get('id'))
+
+                    # skip the release if -r was passed on the command line
                     if release_nr is not None:
                         if release_nr != release_id:
                             continue
@@ -781,7 +657,50 @@ def main(cfg, datadump, release_nr):
                                         if czech_error_found:
                                             break
 
-                        if child.tag == 'country':
+                        if child.tag == 'companies':
+                            for companies in child:
+                                for company in companies:
+                                    if company.tag == 'id':
+                                        company_nr = int(company.text)
+                                        if config_settings.labels:
+                                            if year is not None:
+                                                # check for:
+                                                # https://www.discogs.com/label/205-Fontana
+                                                # https://www.discogs.com/label/7704-Philips
+                                                if company_nr == 205:
+                                                    if year < 1957:
+                                                        print_error(counter, f'Label (wrong year {year})', release_id)
+                                                        counter += 1
+                                                elif company_nr == 7704:
+                                                    if year < 1950:
+                                                        print_error(counter, f'Label (wrong year {year})', release_id)
+                                                        counter += 1
+                                        if config_settings.pressing_plants:
+                                            if year is not None:
+                                                '''
+                                                ## https://www.discogs.com/label/34825-Sony-DADC
+                                                if company_nr == 34825:
+                                                    if year < 2000:
+                                                        print_error(counter, f'Pressing Plant Sony DADC (wrong year {year})', release_id)
+                                                        counter += 1
+                                                '''
+
+                                                for pl in discogssmells.plants:
+                                                    if company_nr == pl[0]:
+                                                        if year < pl[1]:
+                                                            print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
+                                                            counter += 1
+                                                            break
+
+                                                for pl in discogssmells.plants_compact_disc:
+                                                    if company_nr == pl[0]:
+                                                        if 'CD' in formats:
+                                                            if year < pl[1]:
+                                                                print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
+                                                                counter += 1
+                                                                break
+
+                        elif child.tag == 'country':
                             country = child.text
                         elif child.tag == 'formats':
                             for release_format in child:
@@ -929,6 +848,24 @@ def main(cfg, datadump, release_nr):
 
                                         # check for a DL in the description field
 
+                                # Greek license numbers
+                                if country == 'Greece':
+                                    if config_settings.greek_license:
+                                        description = identifier.get('description', '').strip().lower()
+                                        value = identifier.get('value', '').strip()
+                                        if "license" in description.strip() and year is not None:
+                                            for sep in ['/', ' ', '-', ')', '\'', '.']:
+                                                try:
+                                                    license_year = int(value.rsplit(sep, 1)[1])
+                                                    if license_year < 100:
+                                                        license_year += 1900
+                                                    if license_year > year:
+                                                        print_error(counter, f'Greek license year wrong', release_id)
+                                                        counter += 1
+                                                    break
+                                                except:
+                                                    pass
+
                                 # India PKD
                                 if country == 'India':
                                     if config_settings.indian_pkd:
@@ -945,10 +882,7 @@ def main(cfg, datadump, release_nr):
                                                             pkdyear += 2000
                                                         else:
                                                             pkdyear += 1900
-                                                    if pkdyear < 1900:
-                                                        print_error(counter, 'Indian PKD (impossible year)', release_id)
-                                                        counter += 1
-                                                    elif pkdyear > currentyear:
+                                                    if pkdyear < 1900 or pkdyear > currentyear:
                                                         print_error(counter, 'Indian PKD (impossible year)', release_id)
                                                         counter += 1
                                                     elif year < pkdyear:
@@ -1124,8 +1058,6 @@ def main(cfg, datadump, release_nr):
                                             counter += 1
 
                                 # Mould SID Code
-                                # temporary hack, move to own configuration option
-                                mould_sid_strict = False
                                 if config_settings.mould_sid:
                                     description = identifier.get('description', '').strip()
                                     description_lower = description.lower()
@@ -1140,11 +1072,11 @@ def main(cfg, datadump, release_nr):
                                                 print_error(counter, f'Mould SID Code (illegal value: {value})', release_id)
                                                 counter += 1
                                             else:
-                                                if mould_sid_strict:
+                                                if config_settings.mould_sid_strict:
                                                     mould_split = mould_sid_tmp.split('ifpi', 1)[-1]
                                                     for ch in ['i', 'o', 's', 'q']:
                                                         if ch in mould_split[-2:]:
-                                                            print_error(counter, 'Mould SID Code (strict value)', release_id)
+                                                            print_error(counter, f'Mould SID Code (strict value check: {mould_split})', release_id)
                                                             counter += 1
                                                             break
                                                 # rough check to find SID codes for formats
