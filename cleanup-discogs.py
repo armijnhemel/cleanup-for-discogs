@@ -92,7 +92,6 @@ class DiscogsHandler():
     def __init__(self, config_settings):
         # many default settings
         self.count = 0
-        self.prev = None
         self.formattexts = set()
         self.iscd = False
         self.depositofound = False
@@ -434,9 +433,6 @@ class DiscogsHandler():
                     self.inother = True
             if 'value' in attritems:
                 v = attritems['value']
-                if not self.config['reportall']:
-                    if self.prev == self.release:
-                        return
                 if 'MADE IN USA BY PDMC' in v:
                     self.count += 1
                     print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
@@ -499,9 +495,6 @@ class DiscogsHandler():
             if 'description' in attritems:
                 v = attritems['description']
                 attrvalue = attritems['value']
-                if not self.config['reportall']:
-                    if self.prev == self.release:
-                        return
                 self.description = v.lower()
                 if self.config['check_spelling_cs']:
                     # People use 0x115 instead of 0x11B, which look very
@@ -857,6 +850,8 @@ def main(cfg, datadump, release_nr):
     try:
         with gzip.open(datadump, "rb") as dumpfile:
             counter = 1
+            prev_counter = 1
+            last_release_checked = 0
             for event, element in et.iterparse(dumpfile):
                 if element.tag == 'release':
                     # store the release id
@@ -886,6 +881,10 @@ def main(cfg, datadump, release_nr):
 
                     # and process the different elements
                     for child in element:
+                        if config_settings.report_all:
+                            if release_nr == last_release_checked:
+                                break
+
                         if child.tag == 'country':
                             country = child.text
                         elif child.tag == 'formats':
@@ -1219,6 +1218,7 @@ def main(cfg, datadump, release_nr):
                                                         if ch in mould_split[-2:]:
                                                             print_error(counter, 'Mould SID Code (strict value)', release_id)
                                                             counter += 1
+                                                            break
                                                 # rough check to find SID codes for formats
                                                 # other than CD/CD-like
                                                 if len(formats) == 1:
@@ -1411,6 +1411,10 @@ def main(cfg, datadump, release_nr):
                                     if config_settings.year_valid:
                                         print_error(counter, f"Year {child.text} invalid", release_id)
                                         counter += 1
+
+                        if prev_counter != counter:
+                            last_release_checked = release_id
+                            prev_counter = counter
 
                     # report DLs found in notes if no other DL was found
                     if not deposito_found and deposito_found_in_notes:
