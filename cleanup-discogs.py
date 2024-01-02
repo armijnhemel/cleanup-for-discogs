@@ -841,10 +841,6 @@ def main(cfg, datadump, release_nr):
             except:
                 pass
 
-    # keep a mapping for the 'identifiers' item, detailing which
-    # item belongs where
-    identifier_mapping = {'barcode', 'Barcode'}
-
     try:
         with gzip.open(datadump, "rb") as dumpfile:
             counter = 1
