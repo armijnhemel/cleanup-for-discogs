@@ -342,6 +342,57 @@ possible_mastering_sid = set(['sid code matrix', 'sid code - matrix', 'sid code 
                               'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)',
                               'sid code, matrix ring', 'sid code: matrix ring'])
 
+# some values that are not the actual data, but are metadata describing
+# something about the SID codes (readable, missing, and so on) or about
+# actions that need to be taken.
+sid_ignore = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<none>', '\'none\'',
+                  'none.', 'non', 'nond', 'none found', 'none or hidden', 'none given', 'not',
+                  'not present', '(not present)', '[not present]', '<not present>',
+                  'not present or not entered', '[not yet identified]', 'nothing',
+                  'none / [missing]', 'missing', '(missing)', '?missing?', '"missing"',
+                  '[missing]', '(missing info)', '[missing data]', '[missing or not entered]',
+                  'missing entry', 'not available', '(not available)', '[not available]',
+                  'not found', '(not found)', '[not found]', '(not found on cd)',
+                  'missing / not found', '[indecipherable]', '(indistinguishable)', 'not known',
+                  'unknown', '(unknown)', '[unknown]', 'unk', 'not on disc', 'not visible',
+                  '(not visible)', '(not visble)', '[not visible]', 'not visible/present',
+                  'none or not visible', 'not visible on both cds', 'not visible (black cd)',
+                  'not visable', 'none visible', '[none visible]', 'non visible',
+                  '[no code visible]', '[none recorded]', '[none or missing]', 'none seen',
+                  '[none seen]', '[not seen]', 'not registered', 'none detected', 'none entered',
+                  'not entered', '[not entered]', '(not entered', '(not entered)',
+                  '[nothing entered]', 'not enterd', 'none or not entered', '(none or not entered)',
+                  '[none or not entered]', 'not entered / none', 'not entered or none',
+                  '(not entered or none)', '[not entered/none]', '... not entered ...',
+                  '[to be entered]', 'not entered or not present', 'need to be entered',
+                  'to be confirmed', '[?]', '[? ?]', '?', '??', '???', '????', '???????',
+                  '(???)', 'no', 'not recorded', '[not recorded]', 'not supplied', '(not supplied)',
+                  '[not supplied]', 'none supplied', 'unreadable', '[unreadable]', '(unreadable)',
+                  'unreadable/too small', 'none or unreadable', 'nil', 'not given',
+                  '(not given)', '[not given]', 'not inserted', '(not inserted)', '[not inserted]',
+                  'not added', '(not added)', '[not added]', '[not added yet]',
+                  '(to be added by another user)', 'none cited', 'not provided', '(not provided)',
+                  'not stated', '[not stated]', 'not submitted', '[not submitted]',
+                  '[not submittted]', '(not apparent)', '[not apparent]', '<not apparent>',
+                  'none apparent', 'apparently none', 'not legible', '[not legible]', 'illegible',
+                  '[illegible]', 'no sid', 'no sid code', 'no sid codes', 'no mastering sid code',
+                  'not detectable', 'none or not detectable', '[not discernable]', 'not readable',
+                  '(not readable)', '[not readable]', '[none/not readable]',
+                  '[none / not readable]', 'not readable (to small)', 'not clearly readable',
+                  'can not read', '[not reported]', 'no code', '[no code]', '(empty)', '[empty]',
+                  'cannot locate', 'to be completed', 'obscured', 'invisible',
+                  '[not yet identified]', 'unidentified', 'not specified', 'no specified',
+                  'not included', 'not noted', '[not provided by user]', 'not shown',
+                  'still missing', 'none stated', 'absent', '[absent]', 'n/a', 'undetermined',
+                  '(doesnt have one)', 'non-existend', 'no mould', 'no mould sid',
+                  'no mould sid code', '(no mould sid code)', '[no mould sid code]',
+                  '"no mould sid code"', 'no mould sid-code', 'no mould code', '(no mould code)',
+                  'no ifpi', 'no ifpi code', 'unstated', '[blank]', 'unable to read',
+                  'can\'t find', 'can\'t find it', 'no code discernible', 'vacant',
+                  '[none observed]', 'indistinct', 'information missing', 'no information',
+                  '(too faint to see)', 'without sid',
+                  'There is something on the innermost edge but it is unreadable'])
+
 # a list of creative commons identifiers
 creativecommons = ['CC-BY-NC-ND', 'CC-BY-ND', 'CC-BY-SA', 'ShareAlike']
 
