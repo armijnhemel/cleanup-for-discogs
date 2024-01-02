@@ -243,7 +243,7 @@ class DiscogsHandler():
                             print('%8d -- Pressing plant Sony DADC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
                     '''
 
-                    for pl in discogssmells.plants:
+                    for pl in discogssmells.plants_compact_disc:
                         if self.contentbuffer == pl[0]:
                             if 'CD' in self.formattexts:
                                 if self.year < pl[1]:

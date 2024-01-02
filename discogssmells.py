@@ -484,7 +484,8 @@ nobarcode = set(['no barcode', 'without', 'without ean', 'without barcode',
 #
 # Format: (plant id, year production started, label name)
 #
-plants = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'), ('56025', 1984, 'MPO'),
-          ('93218', 1984, 'Nimbus'), ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'),
-          ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
+plants_compact_disc = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'),
+                       ('56025', 1984, 'MPO'), ('93218', 1984, 'Nimbus'),
+                       ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'),
+                       ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
 
