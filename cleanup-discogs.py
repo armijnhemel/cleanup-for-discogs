@@ -150,10 +150,6 @@ class DiscogsHandler():
                                         self.count += 1
                                         print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
                                         continue
-        elif self.indescription:
-            if self.indescriptions:
-                if 'Styrene' in self.contentbuffer:
-                    pass
         elif self.inartistid:
             if self.config['check_artist']:
                 if self.contentbuffer == '0':
@@ -202,10 +198,6 @@ class DiscogsHandler():
         # now reset some values
         self.contentbuffer = ''
         self.inartistid = False
-        if name == 'descriptions':
-            self.indescriptions = True
-        elif not name == 'description':
-            self.indescriptions = False
 
         if name == 'artist':
             self.inartist = True
@@ -255,8 +247,6 @@ class DiscogsHandler():
             self.intracklist = True
         elif name == 'position':
             self.inposition = True
-        elif name == 'description':
-            self.indescription = True
         elif name == 'identifier':
             isdeposito = False
             attritems = dict(attrs.items())
@@ -712,6 +702,8 @@ def main(cfg, datadump, release_nr):
                         elif child.tag == 'formats':
                             for release_format in child:
                                 current_format = None
+
+                                # first check the attributes
                                 for (key, value) in release_format.items():
                                     if key == 'name':
                                         if value == 'CD':
@@ -745,6 +737,13 @@ def main(cfg, datadump, release_nr):
                                                 if current_format != 'Vinyl':
                                                     print_error(f'DMM ({current_format}, in Format)', release_id)
                                                     counter += 1
+
+                                # then process any children
+                                for ch in release_format:
+                                    if ch.tag == 'descriptions':
+                                        for description in ch:
+                                            if 'Styrene' in description.text:
+                                                pass
 
                         elif child.tag == 'genres':
                             for genre in child:
