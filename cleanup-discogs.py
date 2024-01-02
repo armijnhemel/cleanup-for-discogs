@@ -856,7 +856,7 @@ def main(cfg, datadump, release_nr):
                                     else:
                                         description = identifier.get('description', '').strip()
                                         if description.startswith('asin'):
-                                            print_errr(counter, f'ASIN (in {identifier})', release_id)
+                                            print_error(counter, f'ASIN (in {identifier})', release_id)
                                             counter += 1
 
                                 # Depósito Legal, only check for releases from Spain
@@ -1025,15 +1025,15 @@ def main(cfg, datadump, release_nr):
                                     else:
                                         # specifically check the description
                                         if description_lower.startswith('isrc'):
-                                            print_error(counter, f'ISRC Code (in {identifier})', release_id)
+                                            print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
                                             counter += 1
                                         elif description_lower.startswith('issrc'):
-                                            print_error(counter, f'ISRC Code (in {identifier})', release_id)
+                                            print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
                                             counter += 1
                                         else:
                                             for isrc in discogssmells.isrc_ftf:
                                                 if isrc in description_lower:
-                                                    print_error(counter, f'ISRC Code (in {identifier})', release_id)
+                                                    print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
                                                     counter += 1
                                                     break
                                 # Label Code
@@ -1160,7 +1160,7 @@ def main(cfg, datadump, release_nr):
                                                         counter += 1
                                     else:
                                         if description_lower in discogssmells.mouldsids:
-                                            print_error(counter, f'Mould SID Code (in {identifier})', release_id)
+                                            print_error(counter, f'Mould SID Code (in {identifier_type})', release_id)
                                             counter += 1
 
                                 # Mastering SID and Mould SID descriptions
