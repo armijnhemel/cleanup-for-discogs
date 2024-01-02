@@ -430,12 +430,6 @@ class DiscogsHandler():
                     self.depositofound = True
                 elif v == 'Barcode':
                     self.inbarcode = True
-                elif v == 'ASIN':
-                    self.inasin = True
-                elif v == 'Mould SID Code':
-                    self.inmouldsid = True
-                elif v == 'Matrix / Runout':
-                    self.inmatrix = True
                 elif v == 'Other':
                     self.inother = True
             if 'value' in attritems:
@@ -459,53 +453,6 @@ class DiscogsHandler():
                     if 'creative commons' in v.lower():
                         self.count += 1
                         print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                if self.config['check_matrix']:
-                    if self.inmatrix:
-                        if self.year is not None:
-                            if 'MFG BY CINRAM' in v and '#' in v and 'USA' not in v:
-                                cinramres = re.search(r'#(\d{2})', v)
-                                if cinramres is not None:
-                                    cinramyear = int(cinramres.groups()[0])
-                                    # correct the year. This won't work correctly after 2099.
-                                    if cinramyear <= currentyear - 2000:
-                                        cinramyear += 2000
-                                    else:
-                                        cinramyear += 1900
-                                    if cinramyear > currentyear:
-                                        self.count += 1
-                                        print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < cinramyear:
-                                        self.count += 1
-                                        print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, cinramyear, str(self.release)))
-                            elif 'P+O' in v:
-                                # https://www.discogs.com/label/277449-PO-Pallas
-                                pallasres = re.search(r'P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', v)
-                                if pallasres is not None:
-                                    pallasyear = int(pallasres.groups()[0])
-                                    # correct the year. This won't work correctly after 2099.
-                                    if pallasyear <= currentyear - 2000:
-                                        pallasyear += 2000
-                                    else:
-                                        pallasyear += 1900
-                                    if pallasyear > currentyear:
-                                        self.count += 1
-                                        print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < pallasyear:
-                                        self.count += 1
-                                        print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, pallasyear, str(self.release)))
-
-                elif not self.inother:
-                    if self.config['check_spars_code']:
-                        if 'd' in v.lower():
-                            tmpspars = v.lower().strip()
-                            tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
-
-                            # just check a few other possibilities of
-                            # possible SPARS codes
-                            if tmpspars in discogssmells.validsparscodes:
-                                self.count += 1
-                                print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
                 elif not self.inother:
                     if self.config['check_rights_society']:
                         if '/' in v:
@@ -522,26 +469,6 @@ class DiscogsHandler():
                                     self.count += 1
                                     print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                     break
-                if self.inbarcode:
-                    if self.country == 'Spain':
-                        if self.config['check_deposito'] and not self.depositofound:
-                            for depositovalre in discogssmells.depositovalres:
-                                if depositovalre.match(v.lower()) is not None:
-                                    self.count += 1
-                                    print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    return
-                if self.inasin:
-                    if self.config['check_asin']:
-                        # temporary hack, move to own configuration option
-                        asinstrict = False
-                        if not asinstrict:
-                            tmpasin = v.strip().replace('-', '')
-                        else:
-                            tmpasin = v
-                        if not len(tmpasin.split(':')[-1].strip()) == 10:
-                            self.count += 1
-                            print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
                 if self.country == 'India':
                     if self.config['check_pkd']:
                         if 'pkd' in v.lower() or "production date" in v.lower():
@@ -605,24 +532,6 @@ class DiscogsHandler():
                         self.count += 1
                         print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                         return
-                if self.config['check_spars_code']:
-                    if not self.inspars:
-                        for spars in discogssmells.spars_ftf:
-                            if spars in self.description:
-                                self.count += 1
-                                print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                if self.config['check_asin']:
-                    if not self.inasin and self.description.startswith('asin'):
-                        self.count += 1
-                        print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                        return
-                if self.config['check_mould_sid']:
-                    if not self.inmouldsid:
-                        if self.description.strip() in discogssmells.mouldsids:
-                            self.count += 1
-                            print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
                 if self.country == 'Spain':
                     if self.config['check_deposito'] and not self.indeposito:
                         found = False
@@ -762,7 +671,8 @@ def check_rights_society(value):
 @click.command(short_help='process BANG result files and output ELF graphs')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
 @click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
-def main(cfg, datadump):
+@click.option('--release', '-r', 'release_nr', help='release number to scan', type=int)
+def main(cfg, datadump, release_nr):
     config = configparser.ConfigParser()
 
     try:
@@ -949,16 +859,20 @@ def main(cfg, datadump):
             counter = 1
             for event, element in et.iterparse(dumpfile):
                 if element.tag == 'release':
+                    # store the release id
+                    release_id = int(element.get('id'))
+                    if release_nr is not None:
+                        if release_nr != release_id:
+                            continue
+
                     # first see if a release is worth looking at
                     status = element.get('status')
                     if status in ['Deleted', 'Draft', 'Rejected']:
                         continue
 
-                    # store the release id
-                    release_id = element.get('id')
-
                     # then store various things about the release
                     country = ""
+                    deposito_found = False
                     deposito_found_in_notes = False
                     year = None
                     formats = set()
@@ -1028,14 +942,30 @@ def main(cfg, datadump):
                             for identifier in child:
                                 identifier_type = identifier.get('type')
 
+                                # ASIN
+                                if config_settings.asin:
+                                    if identifier_type == 'ASIN':
+                                        value = identifier.get('value').strip()
+                                        # temporary hack, move to own configuration option
+                                        asin_strinct = False
+                                        if not asin_strinct:
+                                            tmpasin = value.replace('-', '')
+                                        else:
+                                            tmpasin = value
+                                        if not len(tmpasin.split(':')[-1].strip()) == 10:
+                                            print_error(counter, 'ASIN (wrong length)', release_id)
+                                            counter += 1
+                                    else:
+                                        description = identifier.get('description', '').strip()
+                                        if description.startswith('asin'):
+                                            print_errr(counter, f'ASIN (in {identifier})', release_id)
+                                            counter += 1
+
                                 # Depósito Legal, only check for releases from Spain
                                 if country == 'Spain':
                                     if config_settings.deposito_legal:
                                         if identifier_type == 'Depósito Legal':
-                                            #deposito_found = True
-                                            if release_id == '34153':
-                                                print('BLAAT')
-                                                sys.exit(0)
+                                            deposito_found = True
                                             value = identifier.get('value')
                                             if value.endswith('.'):
                                                 print_error(counter, "Depósito Legal (formatting)", release_id)
@@ -1088,10 +1018,16 @@ def main(cfg, datadump):
                                                     counter += 1
                                         else:
                                             value = identifier.get('value')
-                                            for dls in ['D.L.', 'Depósito']:
-                                                if value.startswith(dls):
-                                                    print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
-                                                    counter += 1
+                                            value_lower = identifier.get('value').lower()
+
+                                            if not deposito_found:
+                                                for depositovalre in discogssmells.depositovalres:
+                                                    if depositovalre.match(value_lower) is not None:
+                                                        print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
+                                                        counter += 1
+                                                        deposito_found = True
+                                                        break
+
 
                                         # check for a DL in the description field
 
@@ -1191,6 +1127,43 @@ def main(cfg, datadump):
                                                 print_error(counter, f"Label Code (in {identifier_type})", release_id)
                                                 counter += 1
 
+                                # Matrix / Runout
+                                if config_settings.matrix:
+                                    value = identifier.get('value')
+                                    if identifier_type == 'Matrix / Runout':
+                                        if year is not None:
+                                            if 'MFG BY CINRAM' in value and '#' in value and 'USA' not in value:
+                                                cinramres = re.search(r'#(\d{2})', value)
+                                                if cinramres is not None:
+                                                    cinramyear = int(cinramres.groups()[0])
+                                                    # correct the year. This won't work correctly after 2099.
+                                                    if cinramyear <= currentyear - 2000:
+                                                        cinramyear += 2000
+                                                    else:
+                                                        cinramyear += 1900
+                                                    if cinramyear > currentyear:
+                                                        print_error(counter, f'Matrix (impossible year: {year})', release_id)
+                                                        counter += 1
+                                                    elif year < cinramyear:
+                                                        print_error(counter, f'Matrix (release date {year} earlier than matrix year {cinramyear})', release_id)
+                                                        counter += 1
+                                            elif 'P+O' in value:
+                                                # https://www.discogs.com/label/277449-PO-Pallas
+                                                pallasres = re.search(r'P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', value)
+                                                if pallasres is not None:
+                                                    pallasyear = int(pallasres.groups()[0])
+                                                    # correct the year. This won't work correctly after 2099.
+                                                    if pallasyear <= currentyear - 2000:
+                                                        pallasyear += 2000
+                                                    else:
+                                                        pallasyear += 1900
+                                                    if pallasyear > currentyear:
+                                                        print_error(counter, f'Matrix (impossible year: {year})', release_id)
+                                                        counter += 1
+                                                    elif year < pallasyear:
+                                                        print_error(counter, f'Matrix (release date {year} earlier than matrix year {pallasyear})', release_id)
+                                                        counter += 1
+
                                 # Mastering SID Code
                                 if config_settings.mastering_sid:
                                     if identifier_type == 'Mastering SID Code':
@@ -1227,6 +1200,8 @@ def main(cfg, datadump):
                                 # temporary hack, move to own configuration option
                                 mould_sid_strict = False
                                 if config_settings.mould_sid:
+                                    description = identifier.get('description', '').strip()
+                                    description_lower = description.lower()
                                     if identifier_type == 'Mould SID Code':
                                         value = identifier.get('value').strip()
                                         value_lower = identifier.get('value').lower().strip()
@@ -1255,6 +1230,10 @@ def main(cfg, datadump):
                                                     if year < 1993:
                                                         print_error(counter, f'Mould SID Code (wrong year: {year})', release_id)
                                                         counter += 1
+                                    else:
+                                        if description_lower in discogssmells.mouldsids:
+                                            print_error(counter, f'Mould SID Code (in {identifier})', release_id)
+                                            counter += 1
 
                                 # Mastering SID and Mould SID descriptions
                                 if config_settings.mastering_sid or config_settings.mould_sid:
@@ -1370,6 +1349,13 @@ def main(cfg, datadump):
                                         if value.lower() in discogssmells.validsparscodes:
                                             print_error(counter, f"SPARS Code ({value}, in {identifier_type})", release_id)
                                             counter += 1
+                                        else:
+                                            description = identifier.get('description', '').lower()
+                                            for spars in discogssmells.spars_ftf:
+                                                if spars in description:
+                                                    print_error(counter, f'Possible SPARS Code (in {identifier_type})', release_id)
+                                                    counter += 1
+                                                    break
                         elif child.tag == 'notes':
                             #if '카지노' in child.text:
                             #    # Korean casino spam that used to pop up
@@ -1377,8 +1363,6 @@ def main(cfg, datadump):
                             #    print_error(counter, "Korean casino spam", release_id)
                             #    counter += 1
                             if country == 'Spain':
-                                if release_id == '34153':
-                                    print(deposito_found_in_notes)
                                 if config_settings.deposito_legal:
                                     # sometimes "deposito legal" can be found
                                     # in the "notes" section.
@@ -1387,8 +1371,6 @@ def main(cfg, datadump):
                                         result = d.search(content_lower)
                                         if result is not None:
                                             deposito_found_in_notes = True
-                                            print_error(counter, "Depósito Legal (Notes)", release_id)
-                                            counter += 1
                                             break
 
                             # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
@@ -1430,8 +1412,17 @@ def main(cfg, datadump):
                                         print_error(counter, f"Year {child.text} invalid", release_id)
                                         counter += 1
 
+                    # report DLs found in notes if no other DL was found
+                    if not deposito_found and deposito_found_in_notes:
+                        print_error(counter, "Depósito Legal (Notes)", release_id)
+                        counter += 1
+
                     # cleanup to reduce memory usage
                     element.clear()
+
+                    if release_nr is not None:
+                        if release_nr == release_id:
+                            break
     except Exception as e:
         print("Cannot open dump file", e, file=sys.stderr)
         sys.exit(1)
