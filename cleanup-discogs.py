@@ -93,7 +93,6 @@ class DiscogsHandler():
         # many default settings
         self.count = 0
         self.formattexts = set()
-        self.iscd = False
         self.depositofound = False
         self.labels = []
         self.config = config_settings
@@ -109,16 +108,6 @@ class DiscogsHandler():
         # element that was stored.
         if self.ingenre:
             self.genres.add(self.contentbuffer)
-        if self.config['check_spelling_cs']:
-            if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
-                # People use 0x115 instead of 0x11B, which look very similar
-                # but 0x115 is not valid in the Czech alphabet. Check for all
-                # data except the YouTube playlist.
-                # https://www.discogs.com/group/thread/757556
-                if not self.invideos:
-                    if chr(0x115) in self.contentbuffer:
-                        self.count += 1
-                        print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
         if self.inrole:
             if self.noartist:
                 wrongrolefornoartist = True
@@ -342,15 +331,6 @@ class DiscogsHandler():
         if not self.incompany:
             self.incompanyid = False
         self.inartistid = False
-        if name == "release":
-            # new release entry, so reset many fields
-            self.labels = []
-            self.formatmaxqty = 0
-            self.genres = set()
-            self.tracklistpositions = set()
-            for (k, v) in attrs.items():
-                if k == 'id':
-                    self.release = v
         if name == 'descriptions':
             self.indescriptions = True
         elif not name == 'description':
@@ -413,8 +393,6 @@ class DiscogsHandler():
             self.intracklist = False
         elif name == 'companies':
             self.invideos = False
-        elif name == 'title':
-            self.intitle = True
         elif name == 'position':
             self.inposition = True
         elif name == 'description':
@@ -494,14 +472,6 @@ class DiscogsHandler():
                 v = attritems['description']
                 attrvalue = attritems['value']
                 self.description = v.lower()
-                if self.config['check_spelling_cs']:
-                    # People use 0x115 instead of 0x11B, which look very
-                    # similar but 0x115 is not valid in the Czech alphabet.
-                    # https://www.discogs.com/group/thread/757556
-                    if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
-                        if chr(0x115) in attrvalue or chr(0x115) in self.description:
-                            self.count += 1
-                            print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                 if self.config['check_creative_commons']:
                     if 'creative commons' in self.description:
                         self.count += 1
@@ -545,10 +515,6 @@ class DiscogsHandler():
                             self.count += 1
                             print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
-                    else:
-                        if self.config['check_deposito']:
-                            if self.indeposito:
-                                return
                 elif self.country == 'India':
                     if self.config['check_pkd']:
                         if 'pkd' in self.description or "production date" in self.description:
@@ -616,9 +582,6 @@ class DiscogsHandler():
                 # Useful to find misspellings of various fields
                 if self.config['debug']:
                     print(self.description, self.release)
-
-    def characters(self, content):
-        self.contentbuffer += content
 
 def print_error(counter, reason, release_id):
     '''Helper method for printing errors'''
@@ -878,6 +841,25 @@ def main(cfg, datadump, release_nr):
                         if config_settings.report_all:
                             if release_nr == last_release_checked:
                                 break
+
+                        if country in ['Czechoslovakia', 'Czech Republic']:
+                            if config_settings.czechoslovak_spelling:
+                                # People use 0x115 instead of 0x11B, which look very similar
+                                # but 0x115 is not valid in the Czech alphabet. Check for all
+                                # data except the YouTube playlist.
+                                # https://www.discogs.com/group/thread/757556
+                                if child.tag != 'videos':
+                                    czech_error_found = False
+                                    for iter_child in child.iter():
+                                        for i in ['description', 'value']:
+                                            free_text = iter_child.get(i, '').lower()
+                                            if chr(0x115) in free_text:
+                                                print_error(counter, 'Czech character (0x115)', release_id)
+                                                counter += 1
+                                                czech_error_found = True
+                                                break
+                                        if czech_error_found:
+                                            break
 
                         if child.tag == 'country':
                             country = child.text
