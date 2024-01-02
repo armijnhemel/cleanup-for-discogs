@@ -484,8 +484,21 @@ nobarcode = set(['no barcode', 'without', 'without ean', 'without barcode',
 #
 # Format: (plant id, year production started, label name)
 #
-plants_compact_disc = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'),
-                       ('56025', 1984, 'MPO'), ('93218', 1984, 'Nimbus'),
-                       ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'),
-                       ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
+plants_compact_disc = [(7207, 1987, 'Dureco'), (300888, 1987, 'Microservice'),
+                       (56025, 1984, 'MPO'), (93218, 1984, 'Nimbus'),
+                       (147881, 1985, 'Mayking'), (266256, 1989, 'EMI Uden'),
+                       (291934, 1996, 'WEA Mfg Olyphant'), (271323, 1986, 'Opti.Me.S')]
 
+# https://www.discogs.com/label/358102-PDO-USA
+# https://www.discogs.com/label/360848-PMDC-USA
+# https://www.discogs.com/label/266782-UML
+# https://www.discogs.com/label/381697-EDC-USA
+# https://www.discogs.com/label/358025-PDO-Germany
+# https://www.discogs.com/label/342158-PMDC-Germany
+# https://www.discogs.com/label/331548-Universal-M-L-Germany
+# https://www.discogs.com/label/384133-EDC-Germany
+
+plants = [(358102, 1986, 'PDO, USA'), (360848, 1992, 'PMDC, USA'), (266782, 1999, 'UML'),
+          (381697, 2005, 'EDC, USA'), (358025, 1986, 'PDO, Germany'),
+          (342158, 1993, 'PMDC, Germany'), (331548, 1999, 'Universal, M & L, Germany'),
+          (384133, 2005, 'EDC, Germany'), (265455, 1992, 'PMDC, France')]
