@@ -608,6 +608,8 @@ def main(cfg, datadump, release_nr):
                     # skip the release if -r was passed on the command line
                     if release_nr is not None:
                         if release_nr != release_id:
+                            # reduce memory usage
+                            element.clear()
                             continue
 
                     # first see if a release is worth looking at
@@ -631,6 +633,13 @@ def main(cfg, datadump, release_nr):
 
                     # genres, currently not used in a check
                     genres = set()
+
+                    # first store the country to make sure it is always available
+                    # for for various country checks (like Czech misspellings)
+                    for child in element:
+                        if child.tag == 'country':
+                            country = child.text
+                            break
 
                     # and process the different elements
                     for child in element:
@@ -700,8 +709,6 @@ def main(cfg, datadump, release_nr):
                                                                 counter += 1
                                                                 break
 
-                        elif child.tag == 'country':
-                            country = child.text
                         elif child.tag == 'formats':
                             for release_format in child:
                                 current_format = None
