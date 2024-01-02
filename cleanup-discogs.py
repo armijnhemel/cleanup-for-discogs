@@ -427,8 +427,6 @@ class DiscogsHandler():
                 if v == 'Depósito Legal':
                     self.indeposito = True
                     self.depositofound = True
-                elif v == 'Barcode':
-                    self.inbarcode = True
                 elif v == 'Other':
                     self.inother = True
             if 'value' in attritems:
@@ -1375,7 +1373,7 @@ def main(cfg, datadump, release_nr):
 
                             # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
                             if config_settings.url_in_html:
-                                if '&lt;a href="http://www.discogs.com/release/' not in child.text:
+                                if '&lt;a href="http://www.discogs.com/release/' in child.text:
                                     print_error(counter, "old link (Notes)", release_id)
                                     counter += 1
                             if config_settings.creative_commons:
