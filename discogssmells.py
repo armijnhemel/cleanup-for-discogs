@@ -439,3 +439,52 @@ nobarcode = set(['no barcode', 'without', 'without ean', 'without barcode',
                  'no barcord', 'no bracode', 'no borcode', 'no contiene cod de barras.',
                  'w/o code',
                 ])
+
+# pressing plants
+#
+# Dureco:
+# -------
+# https://www.discogs.com/label/7207-Dureco
+# https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
+# https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
+# https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
+# https://www.youtube.com/watch?v=laDLvlj8tIQ
+# https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
+#
+# Since Dureco was also a distributor there are
+# sometimes false positives
+#
+# Microservice:
+# -------------
+# https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
+#
+# MPO:
+# ----
+# https://www.discogs.com/label/56025-MPO
+#
+# Nimbus:
+# ------
+# https://www.discogs.com/label/93218-Nimbus
+#
+# Mayking:
+# -------
+# https://www.discogs.com/label/147881-Mayking
+#
+# EMI Uden:
+# --------
+# https://www.discogs.com/label/266256-EMI-Uden
+#
+# WEA Mfg Olyphant:
+# -----------------
+# https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
+#
+# Opti.Me.S:
+# ----------
+# https://www.discogs.com/label/271323-OptiMeS
+#
+# Format: (plant id, year production started, label name)
+#
+plants = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'), ('56025', 1984, 'MPO'),
+          ('93218', 1984, 'Nimbus'), ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'),
+          ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
+

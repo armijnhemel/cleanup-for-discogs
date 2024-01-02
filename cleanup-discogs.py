@@ -106,8 +106,6 @@ class DiscogsHandler():
     def startElement(self, name, attrs):
         # first process the contentbuffer of the previous
         # element that was stored.
-        if self.ingenre:
-            self.genres.add(self.contentbuffer)
         if self.inrole:
             if self.noartist:
                 wrongrolefornoartist = True
@@ -245,51 +243,7 @@ class DiscogsHandler():
                             print('%8d -- Pressing plant Sony DADC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
                     '''
 
-                    # check for:
-                    #
-                    # Dureco:
-                    # -------
-                    # https://www.discogs.com/label/7207-Dureco
-                    # https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
-                    # https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
-                    # https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
-                    # https://www.youtube.com/watch?v=laDLvlj8tIQ
-                    # https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
-                    #
-                    # Since Dureco was also a distributor there are
-                    # sometimes false positives
-                    #
-                    # Microservice:
-                    # -------------
-                    # https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
-                    #
-                    # MPO:
-                    # ----
-                    # https://www.discogs.com/label/56025-MPO
-                    #
-                    # Nimbus:
-                    # ------
-                    # https://www.discogs.com/label/93218-Nimbus
-                    #
-                    # Mayking:
-                    # -------
-                    # https://www.discogs.com/label/147881-Mayking
-                    #
-                    # EMI Uden:
-                    # --------
-                    # https://www.discogs.com/label/266256-EMI-Uden
-                    #
-                    # WEA Mfg Olyphant:
-                    # -----------------
-                    # https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
-                    #
-                    # Opti.Me.S:
-                    # ----------
-                    # https://www.discogs.com/label/271323-OptiMeS
-                    #
-                    # Format: (plant id, year production started, label name)
-                    plants = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'), ('56025', 1984, 'MPO'), ('93218', 1984, 'Nimbus'), ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'), ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
-                    for pl in plants:
+                    for pl in discogssmells.plants:
                         if self.contentbuffer == pl[0]:
                             if 'CD' in self.formattexts:
                                 if self.year < pl[1]:
@@ -384,15 +338,8 @@ class DiscogsHandler():
                             print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                             return
             self.labels.append((labelname, catno))
-        elif name == 'genre':
-            self.ingenre = True
         elif name == 'tracklist':
             self.intracklist = True
-        elif name == 'videos':
-            self.invideos = True
-            self.intracklist = False
-        elif name == 'companies':
-            self.invideos = False
         elif name == 'position':
             self.inposition = True
         elif name == 'description':
@@ -402,10 +349,7 @@ class DiscogsHandler():
             attritems = dict(attrs.items())
             if 'type' in attritems:
                 v = attritems['type']
-                if v == 'Depósito Legal':
-                    self.indeposito = True
-                    self.depositofound = True
-                elif v == 'Other':
+                if v == 'Other':
                     self.inother = True
             if 'value' in attritems:
                 v = attritems['value']
@@ -441,33 +385,6 @@ class DiscogsHandler():
                                     self.count += 1
                                     print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                     break
-                if self.country == 'India':
-                    if self.config['check_pkd']:
-                        if 'pkd' in v.lower() or "production date" in v.lower():
-                            if self.year is not None:
-                                # try a few variants
-                                pkdres = re.search(r"\d{1,2}/((?:19|20)?\d{2})", v)
-                                if pkdres is not None:
-                                    pkdyear = int(pkdres.groups()[0])
-                                    if pkdyear < 100:
-                                        # correct the year. This won't work correctly after 2099.
-                                        if pkdyear <= currentyear - 2000:
-                                            pkdyear += 2000
-                                        else:
-                                            pkdyear += 1900
-                                    if pkdyear < 1900:
-                                        self.count += 1
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif pkdyear > currentyear:
-                                        self.count += 1
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < pkdyear:
-                                        self.count += 1
-                                        print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                            else:
-                                self.count += 1
-                                print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
             if 'description' in attritems:
                 v = attritems['description']
                 attrvalue = attritems['value']
@@ -836,6 +753,9 @@ def main(cfg, datadump, release_nr):
                     isrcs_seen = set()
                     isrc_descriptions_seen = set()
 
+                    # genres, currently not used in a check
+                    genres = set()
+
                     # and process the different elements
                     for child in element:
                         if config_settings.report_all:
@@ -900,6 +820,9 @@ def main(cfg, datadump, release_nr):
                                                     print_error(f'DMM ({current_format}, in Format)', release_id)
                                                     counter += 1
 
+                        elif child.tag == 'genres':
+                            for genre in child:
+                                genres.add(genre.text)
                         elif child.tag == 'identifiers':
                             # Here things get very hairy, as every check
                             # potentially has to be done multiple times: once
@@ -1005,6 +928,35 @@ def main(cfg, datadump, release_nr):
 
 
                                         # check for a DL in the description field
+
+                                # India PKD
+                                if country == 'India':
+                                    if config_settings.indian_pkd:
+                                        value = identifier.get('value', '').lower()
+                                        if 'pkd' in value or "production date" in value:
+                                            if year is not None:
+                                                # try a few variants
+                                                pkdres = re.search(r"\d{1,2}/((?:19|20)?\d{2})", value)
+                                                if pkdres is not None:
+                                                    pkdyear = int(pkdres.groups()[0])
+                                                    if pkdyear < 100:
+                                                        # correct the year. This won't work correctly after 2099.
+                                                        if pkdyear <= currentyear - 2000:
+                                                            pkdyear += 2000
+                                                        else:
+                                                            pkdyear += 1900
+                                                    if pkdyear < 1900:
+                                                        print_error(counter, 'Indian PKD (impossible year)', release_id)
+                                                        counter += 1
+                                                    elif pkdyear > currentyear:
+                                                        print_error(counter, 'Indian PKD (impossible year)', release_id)
+                                                        counter += 1
+                                                    elif year < pkdyear:
+                                                        print_error(counter, 'Indian PKD (release date earlier)', release_id)
+                                                        counter += 1
+                                            else:
+                                                print_error(counter, 'India PKD code (no year)', release_id)
+                                                counter += 1
 
                                 # ISRC
                                 if config_settings.isrc:
