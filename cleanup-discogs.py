@@ -941,10 +941,11 @@ def main(cfg, datadump, release_nr):
 
                                             # check the descriptions
                                             # TODO: match with the actual track list
-                                            if description_lower in isrc_descriptions_seen:
-                                                print_error(counter, f'ISRC code (description reuse: {description}', release_id)
-                                                counter += 1
-                                            isrc_descriptions_seen.add(description_lower)
+                                            if description_lower != '':
+                                                if description_lower in isrc_descriptions_seen:
+                                                    print_error(counter, f'ISRC code (description reuse: {description})', release_id)
+                                                    counter += 1
+                                                isrc_descriptions_seen.add(description_lower)
                                     else:
                                         # specifically check the description
                                         if description_lower.startswith('isrc'):
