@@ -94,7 +94,6 @@ class DiscogsHandler():
         # many default settings
         self.count = 0
         self.formattexts = set()
-        self.labels = []
         self.config = config_settings
         self.contentbuffer = ''
         if self.config['check_credits']:
@@ -209,39 +208,6 @@ class DiscogsHandler():
                 self.noartist = False
         elif name == 'role':
             self.inrole = True
-        elif name == 'label':
-            for (k, v) in attrs.items():
-                if k == 'name':
-                    labelname = v
-                    if self.config['check_label_name']:
-                        if v == 'London':
-                            self.count += 1
-                            print('%8d -- Wrong label (London): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                elif k == 'catno':
-                    catno = v.lower()
-                    if self.config['check_label_code']:
-                        if catno.startswith('lc'):
-                            if discogssmells.labelcodere.match(catno) is not None:
-                                self.count += 1
-                                print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                    if self.config['check_deposito']:
-                        # now check for D.L.
-                        dlfound = False
-                        for d in discogssmells.depositores:
-                            result = d.search(catno)
-                            if result is not None:
-                                for depositovalre in discogssmells.depositovalres:
-                                    if depositovalre.search(catno) is not None:
-                                        dlfound = True
-                                        break
-
-                        if dlfound:
-                            self.count += 1
-                            print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-            self.labels.append((labelname, catno))
         elif name == 'tracklist':
             self.intracklist = True
         elif name == 'position':
@@ -1210,6 +1176,37 @@ def main(cfg, datadump, release_nr):
                                                     print_error(counter, f'Possible SPARS Code (in {identifier_type})', release_id)
                                                     counter += 1
                                                     break
+                        elif child.tag == 'labels':
+                            for label in child:
+                                label_id = int(label.get('id', ''))
+                                catno = label.get('catno', '').lower()
+                                if config_settings.label_name:
+                                    # https://vinylanddata.blogspot.com/2018/01/detecting-wrong-label-information-in.html
+                                    if label_id == 26905:
+                                        print_error(counter, 'Wrong label (London)', release_id)
+                                        counter += 1
+                                if config_settings.label_code:
+                                    # check the catalog numbers for possible false positives,
+                                    # but exclude "Loft Classics".
+                                    if catno.startswith('lc') and label_id != 22804:
+                                        if discogssmells.labelcodere.match(catno) is not None:
+                                            print_error(counter, f'Possible Label Code (in Catalogue Number: {catno})', release_id)
+                                            counter += 1
+                                if config_settings.deposito_legal and country == 'Spain':
+                                    deposito_legal_found = False
+                                    if label_id not in [26617, 60778]:
+                                        for d in discogssmells.depositores:
+                                            result = d.search(catno)
+                                            if result is not None:
+                                                for depositovalre in discogssmells.depositovalres:
+                                                    if depositovalre.search(catno) is not None:
+                                                        deposito_legal_found = True
+                                                        break
+                                            if deposito_legal_found:
+                                                print_error(counter, f'Possible Depósito Legal (in Catalogue Number: {catno})', release_id)
+                                                counter += 1
+                                                break
+
                         elif child.tag == 'notes':
                             #if '카지노' in child.text:
                             #    # Korean casino spam that used to pop up
