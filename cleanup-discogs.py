@@ -65,6 +65,7 @@ pkd_re = re.compile(r"\d{1,2}/((?:19|20)?\d{2})")
 @dataclass
 class CleanupConfig:
     '''Default cleanup configuration'''
+    #artist: bool = False
     artist: bool = True
     asin: bool = True
     cd_plus_g: bool = True
@@ -420,7 +421,7 @@ def main(cfg, datadump, requested_release):
     except:
         pass
 
-    # store settings for artists, default True
+    # store settings for artists, default False
     try:
         config_settings.artist = config.getboolean('cleanup', 'artist')
     except:
@@ -550,7 +551,15 @@ def main(cfg, datadump, requested_release):
                                         if czech_error_found:
                                             break
 
-                        if child.tag == 'companies':
+                        if child.tag == 'artists' or child.tag == 'extraartists':
+                            if config_settings.artist:
+                                for artist_elem in child:
+                                    for artist in artist_elem:
+                                        if artist.tag == 'id':
+                                            if artist.text == '0':
+                                                print_error(counter, 'Artist not in database', release_id)
+                                                counter += 1
+                        elif child.tag == 'companies':
                             if year is not None:
                                 for companies in child:
                                     for company in companies:
@@ -1244,6 +1253,7 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
 
                         elif child.tag == 'tracklist':
+                            # check artists and extraartists here TODO
                             if config_settings.tracklisting:
                                 # various tracklist sanity checks, but only if there is
                                 # only a single format to make things easier. This should be
