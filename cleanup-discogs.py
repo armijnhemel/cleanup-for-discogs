@@ -1256,27 +1256,26 @@ def main(cfg, datadump, requested_release):
                                 tracklist_positions = set()
                                 tracklist_correct = True
                                 if len(formats) == 1:
+                                    recorded_format = list(formats)[0]
                                     for track in child:
                                         for track_elem in track:
                                             if track_elem.tag == 'position':
                                                 if track_elem.text not in [None, '', '-']:
                                                     if num_formats == 1:
                                                         if track_elem.text in tracklist_positions:
-                                                            print_error(counter, f'Tracklisting reuse ({list(formats)[0]}, {track_elem.text})', release_id)
+                                                            print_error(counter, f'Tracklisting reuse ({recorded_format}, {track_elem.text})', release_id)
                                                             counter += 1
                                                     tracklist_positions.add(track_elem.text)
 
                                                     if tracklist_correct:
-                                                        for recorded_format in TRACKLIST_CHECK_FORMATS:
-                                                            if recorded_format in formats:
-                                                                try:
-                                                                    int(track_elem.text)
-                                                                    print_error(counter, f'Tracklisting uses numbers ({recorded_format})', release_id)
-                                                                    counter += 1
-                                                                    tracklist_correct = False
-                                                                    break
-                                                                except ValueError:
-                                                                    pass
+                                                        if recorded_format in TRACKLIST_CHECK_FORMATS:
+                                                            try:
+                                                                int(track_elem.text)
+                                                                print_error(counter, f'Tracklisting uses numbers ({recorded_format})', release_id)
+                                                                counter += 1
+                                                                tracklist_correct = False
+                                                            except ValueError:
+                                                                pass
 
                         if prev_counter != counter:
                             last_release_checked = release_id
