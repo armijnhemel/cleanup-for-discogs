@@ -169,7 +169,6 @@ class DiscogsHandler():
                 #        print(self.genres)
                 #        sys.exit(0)
                 self.artists.add(self.contentbuffer)
-        if self.intracklist and self.inposition:
             '''
             # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
             if 'Vinyl' in self.formattexts:
@@ -191,10 +190,6 @@ class DiscogsHandler():
                 self.noartist = False
         elif name == 'role':
             self.inrole = True
-        elif name == 'tracklist':
-            self.intracklist = True
-        elif name == 'position':
-            self.inposition = True
         elif name == 'identifier':
             attritems = dict(attrs.items())
             if 'value' in attritems:
@@ -231,11 +226,6 @@ class DiscogsHandler():
                                     self.count += 1
                                     print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
                             return
-                if self.config['check_label_code'] and not self.inlabelcode:
-                    if self.description in discogssmells.label_code_ftf:
-                        self.count += 1
-                        print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                        return
                 if self.country == 'Czechoslovakia':
                     if self.config['check_manufacturing_date_cs']:
                         # config hack, needs to be in its own configuration option
@@ -916,6 +906,7 @@ def main(cfg, datadump, requested_release):
                                 # Label Code
                                 if config_settings.label_code:
                                     value = identifier.get('value').lower()
+                                    description = identifier.get('description', '').lower()
                                     if identifier_type == 'Label Code':
                                         # check how many people use 'O' instead of '0'
                                         if value.startswith('lc'):
@@ -930,6 +921,10 @@ def main(cfg, datadump, requested_release):
                                             if discogssmells.labelcodere.match(value) is not None:
                                                 print_error(counter, f"Label Code (in {identifier_type})", release_id)
                                                 counter += 1
+
+                                        if description in discogssmells.label_code_ftf:
+                                            print_error(counter, f"Label Code (in {identifier_type})", release_id)
+                                            counter += 1
 
                                 # Matrix / Runout
                                 if config_settings.matrix:
