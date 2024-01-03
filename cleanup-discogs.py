@@ -306,175 +306,173 @@ def main(cfg, datadump, requested_release):
     # Most of the defaults (but not all!) are set to 'True'
     config_settings = CleanupConfig()
 
-    for section in config.sections():
-        if section == 'cleanup':
-            # store settings for depósito legal checks
-            try:
-                config_settings.deposito_legal = config.getboolean(section, 'deposito')
-            except:
-                pass
+    # store settings for depósito legal checks
+    try:
+        config_settings.deposito_legal = config.getboolean('cleanup', 'deposito')
+    except:
+        pass
 
-            # store settings for rights society checks
-            try:
-                config_settings.rights_society = config.getboolean(section, 'rights_society')
-            except:
-                pass
+    # store settings for rights society checks
+    try:
+        config_settings.rights_society = config.getboolean('cleanup', 'rights_society')
+    except:
+        pass
 
-            # store settings for label code checks
-            try:
-                config_settings.label_code = config.getboolean(section, 'label_code')
-            except:
-                pass
+    # store settings for label code checks
+    try:
+        config_settings.label_code = config.getboolean('cleanup', 'label_code')
+    except:
+        pass
 
-            # store settings for label name checks
-            try:
-                config_settings.label_name = config.getboolean(section, 'label_name')
-            except:
-                pass
+    # store settings for label name checks
+    try:
+        config_settings.label_name = config.getboolean('cleanup', 'label_name')
+    except:
+        pass
 
-            # store settings for ISRC checks
-            try:
-                config_settings.isrc = config.getboolean(section, 'isrc')
-            except:
-                pass
+    # store settings for ISRC checks
+    try:
+        config_settings.isrc = config.getboolean('cleanup', 'isrc')
+    except:
+        pass
 
-            # store settings for ASIN checks
-            try:
-                config_settings.asin = config.getboolean(section, 'asin')
-            except:
-                pass
+    # store settings for ASIN checks
+    try:
+        config_settings.asin = config.getboolean('cleanup', 'asin')
+    except:
+        pass
 
-            # store settings for mastering SID checks
-            try:
-                config_settings.mastering_sid = config.getboolean(section, 'mastering_sid')
-            except:
-                pass
+    # store settings for mastering SID checks
+    try:
+        config_settings.mastering_sid = config.getboolean('cleanup', 'mastering_sid')
+    except:
+        pass
 
-            # store settings for mould SID checks
-            try:
-                config_settings.mould_sid = config.getboolean(section, 'mould_sid')
-            except:
-                pass
+    # store settings for mould SID checks
+    try:
+        config_settings.mould_sid = config.getboolean('cleanup', 'mould_sid')
+    except:
+        pass
 
-            # store settings for mould SID strict checks
-            try:
-                config_settings.mould_sid_strict = config.getboolean(section, 'mould_sid_strict')
-            except:
-                pass
+    # store settings for mould SID strict checks
+    try:
+        config_settings.mould_sid_strict = config.getboolean('cleanup', 'mould_sid_strict')
+    except:
+        pass
 
-            # store settings for SPARS Code checks
-            try:
-                config_settings.spars = config.getboolean(section, 'spars')
-            except:
-                pass
+    # store settings for SPARS Code checks
+    try:
+        config_settings.spars = config.getboolean('cleanup', 'spars')
+    except:
+        pass
 
-            # store settings for Indian PKD checks
-            try:
-                config_settings.indian_pkd = config.getboolean(section, 'pkd')
-            except:
-                pass
+    # store settings for Indian PKD checks
+    try:
+        config_settings.indian_pkd = config.getboolean('cleanup', 'pkd')
+    except:
+        pass
 
-            # store settings for Greek license number checks
-            try:
-                config_settings.greek_license = config.getboolean(section, 'greek_license_number')
-            except:
-                pass
+    # store settings for Greek license number checks
+    try:
+        config_settings.greek_license = config.getboolean('cleanup', 'greek_license_number')
+    except:
+        pass
 
-            # store settings for CD+G checks
-            try:
-                config_settings.cd_plus_g = config.getboolean(section, 'cdg')
-            except:
-                pass
+    # store settings for CD+G checks
+    try:
+        config_settings.cd_plus_g = config.getboolean('cleanup', 'cdg')
+    except:
+        pass
 
-            # store settings for Matrix checks
-            try:
-                config_settings.matrix = config.getboolean(section, 'matrix')
-            except:
-                pass
+    # store settings for Matrix checks
+    try:
+        config_settings.matrix = config.getboolean('cleanup', 'matrix')
+    except:
+        pass
 
-            # store settings for label checks
-            try:
-                config_settings.labels = config.getboolean(section, 'labels')
-            except:
-                pass
+    # store settings for label checks
+    try:
+        config_settings.labels = config.getboolean('cleanup', 'labels')
+    except:
+        pass
 
-            # store settings for manufacturing plant checks
-            try:
-                config_settings.pressing_plants = config.getboolean(section, 'plants')
-            except:
-                pass
+    # store settings for manufacturing plant checks
+    try:
+        config_settings.pressing_plants = config.getboolean('cleanup', 'plants')
+    except:
+        pass
 
-            # check for Czechoslovak manufacturing dates
-            try:
-                config_settings.czechoslovak_dates = config.getboolean(section, 'manufacturing_date_cs')
-            except:
-                pass
+    # check for Czechoslovak manufacturing dates
+    try:
+        config_settings.czechoslovak_dates = config.getboolean('cleanup', 'manufacturing_date_cs')
+    except:
+        pass
 
-            # check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
-            try:
-                config_settings.czechoslovak_spelling = config.getboolean(section, 'spelling_cs')
-            except:
-                pass
+    # check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
+    try:
+        config_settings.czechoslovak_spelling = config.getboolean('cleanup', 'spelling_cs')
+    except:
+        pass
 
-            # store settings for tracklisting checks, default True
-            try:
-                config_settings.tracklisting = config.getboolean(section, 'tracklisting')
-            except:
-                pass
+    # store settings for tracklisting checks, default True
+    try:
+        config_settings.tracklisting = config.getboolean('cleanup', 'tracklisting')
+    except:
+        pass
 
-            # store settings for artists, default True
-            try:
-                config_settings.artist = config.getboolean(section, 'artist')
-            except:
-                pass
+    # store settings for artists, default True
+    try:
+        config_settings.artist = config.getboolean('cleanup', 'artist')
+    except:
+        pass
 
-            # store settings for credits list checks
-            config_settings.credits = False
-            try:
-                if config.get(section, 'credits') == 'yes':
-                    creditsfile = config.get(section, 'creditsfile')
-                    if os.path.exists(creditsfile):
-                        # TODO: fix
-                        config_settings.creditsfile = creditsfile
-                        config_settings.credits = True
-            except:
-                pass
+    # store settings for credits list checks
+    config_settings.credits = False
+    try:
+        if config.get('cleanup', 'credits') == 'yes':
+            creditsfile = config.get('cleanup', 'creditsfile')
+            if os.path.exists(creditsfile):
+                # TODO: fix
+                config_settings.creditsfile = creditsfile
+                config_settings.credits = True
+    except:
+        pass
 
-            # store settings for URLs in Notes checks
-            try:
-                config_settings.url_in_html = config.getboolean(section, 'html')
-            except:
-                pass
+    # store settings for URLs in Notes checks
+    try:
+        config_settings.url_in_html = config.getboolean('cleanup', 'html')
+    except:
+        pass
 
-            # month is 00 check: default is False
-            try:
-                config_settings.month_valid = config.getboolean(section, 'month')
-            except:
-                pass
+    # month is 00 check: default is False
+    try:
+        config_settings.month_valid = config.getboolean('cleanup', 'month')
+    except:
+        pass
 
-            # year is wrong check: default is False
-            try:
-                config_settings.year_valid = config.getboolean(section, 'year')
-            except:
-                pass
+    # year is wrong check: default is False
+    try:
+        config_settings.year_valid = config.getboolean('cleanup', 'year')
+    except:
+        pass
 
-            # reporting all: default is False
-            try:
-                config_settings.report_all = config.getboolean(section, 'reportall')
-            except:
-                pass
+    # reporting all: default is False
+    try:
+        config_settings.report_all = config.getboolean('cleanup', 'reportall')
+    except:
+        pass
 
-            # debug: default is False
-            try:
-                config_settings.debug = config.getboolean(section, 'debug')
-            except:
-                pass
+    # debug: default is False
+    try:
+        config_settings.debug = config.getboolean('cleanup', 'debug')
+    except:
+        pass
 
-            # report creative commons references: default is False
-            try:
-                config_settings.creative_commons = config.getboolean(section, 'creative_commons')
-            except:
-                pass
+    # report creative commons references: default is False
+    try:
+        config_settings.creative_commons = config.getboolean('cleanup', 'creative_commons')
+    except:
+        pass
 
     try:
         with gzip.open(datadump, "rb") as dumpfile:
@@ -494,7 +492,7 @@ def main(cfg, datadump, requested_release):
                             element.clear()
                             continue
                         elif requested_release < release_id:
-                            print(f'Release {requested_release} cannot be found in data set!, exiting',
+                            print(f'Release {requested_release} cannot be found in data set!',
                                   file=sys.stderr)
                             sys.exit(1)
 
@@ -1273,7 +1271,7 @@ def main(cfg, datadump, requested_release):
                                                             if recorded_format in formats:
                                                                 try:
                                                                     int(track_elem.text)
-                                                                    print_error(counter, f'Tracklisting ({recorded_format})', release_id)
+                                                                    print_error(counter, f'Tracklisting uses numbers ({recorded_format})', release_id)
                                                                     counter += 1
                                                                     tracklist_correct = False
                                                                     break
