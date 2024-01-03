@@ -59,6 +59,9 @@ TRACKLIST_CHECK_FORMATS = ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']
 # to the correct date or use NTP!
 currentyear = datetime.datetime.utcnow().year
 
+
+pkd_re = re.compile(r"\d{1,2}/((?:19|20)?\d{2})")
+
 @dataclass
 class CleanupConfig:
     '''Default cleanup configuration'''
@@ -296,7 +299,7 @@ def check_rights_society(value):
 
     return errors
 
-@click.command(short_help='process BANG result files and output ELF graphs')
+@click.command(short_help='process Discogs datadump files and print errors found')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
 @click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
 @click.option('--release', '-r', 'requested_release', help='release number to scan', type=int)
@@ -560,12 +563,12 @@ def main(cfg, datadump, requested_release):
                                             break
 
                         if child.tag == 'companies':
-                            for companies in child:
-                                for company in companies:
-                                    if company.tag == 'id':
-                                        company_nr = int(company.text)
-                                        if config_settings.labels:
-                                            if year is not None:
+                            if year is not None:
+                                for companies in child:
+                                    for company in companies:
+                                        if company.tag == 'id':
+                                            company_nr = int(company.text)
+                                            if config_settings.labels:
                                                 # check for:
                                                 # https://www.discogs.com/label/205-Fontana
                                                 # https://www.discogs.com/label/7704-Philips
@@ -577,8 +580,7 @@ def main(cfg, datadump, requested_release):
                                                     if year < 1950:
                                                         print_error(counter, f'Label (wrong year {year})', release_id)
                                                         counter += 1
-                                        if config_settings.pressing_plants:
-                                            if year is not None:
+                                            if config_settings.pressing_plants:
                                                 '''
                                                 ## https://www.discogs.com/label/34825-Sony-DADC
                                                 if company_nr == 34825:
@@ -813,7 +815,7 @@ def main(cfg, datadump, requested_release):
                                         if 'pkd' in value or "production date" in value:
                                             if year is not None:
                                                 # try a few variants
-                                                pkdres = re.search(r"\d{1,2}/((?:19|20)?\d{2})", value)
+                                                pkdres = pkd_re.search(value)
                                                 if pkdres is not None:
                                                     pkdyear = int(pkdres.groups()[0])
                                                     if pkdyear < 100:
