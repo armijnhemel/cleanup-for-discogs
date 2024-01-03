@@ -53,6 +53,8 @@ SID_TRANSLATE = str.maketrans({' ': None, '-': None,
                               '⨍': 'f', 'ƒ': 'f',
                               'ρ': 'p', 'ƥ': 'p'})
 
+TRACKLIST_CHECK_FORMATS = ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']
+
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
 currentyear = datetime.datetime.utcnow().year
@@ -173,26 +175,6 @@ class DiscogsHandler():
                         self.count += 1
                         print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
             '''
-            if self.config['check_tracklisting']:
-                if self.tracklistcorrect:
-                    if len(self.formattexts) == 1:
-                        for f in ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']:
-                            if f in self.formattexts:
-                                try:
-                                    int(self.contentbuffer)
-                                    self.count += 1
-                                    print('%8d -- Tracklisting (%s): https://www.discogs.com/release/%s' % (self.count, f, str(self.release)))
-                                    self.tracklistcorrect = False
-                                    return
-                                except:
-                                    pass
-                        if self.formatmaxqty == 1:
-                            if self.contentbuffer.strip() != '' and self.contentbuffer.strip() != '-' and self.contentbuffer in self.tracklistpositions:
-                                self.count += 1
-                                print('%8d -- Tracklisting reuse (%s, %s): https://www.discogs.com/release/%s' % (self.count, list(self.formattexts)[0], self.contentbuffer, str(self.release)))
-                                return
-                            self.tracklistpositions.add(self.contentbuffer)
-
         # now reset some values
         self.contentbuffer = ''
         self.inartistid = False
@@ -200,8 +182,6 @@ class DiscogsHandler():
         if name == 'artist':
             self.inartist = True
             self.noartist = False
-        if name == 'company':
-            self.inartist = False
         if name == 'id':
             if self.inartist:
                 self.inartistid = True
@@ -319,8 +299,8 @@ def check_rights_society(value):
 @click.command(short_help='process BANG result files and output ELF graphs')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
 @click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
-@click.option('--release', '-r', 'release_nr', help='release number to scan', type=int)
-def main(cfg, datadump, release_nr):
+@click.option('--release', '-r', 'requested_release', help='release number to scan', type=int)
+def main(cfg, datadump, requested_release):
     config = configparser.ConfigParser()
 
     try:
@@ -508,21 +488,26 @@ def main(cfg, datadump, release_nr):
             counter = 1
             prev_counter = 1
             last_release_checked = 0
+            ignore_status = ['Deleted', 'Draft', 'Rejected']
             for event, element in et.iterparse(dumpfile):
                 if element.tag == 'release':
                     # store the release id
                     release_id = int(element.get('id'))
 
                     # skip the release if -r was passed on the command line
-                    if release_nr is not None:
-                        if release_nr != release_id:
+                    if requested_release is not None:
+                        if requested_release > release_id:
                             # reduce memory usage
                             element.clear()
                             continue
+                        elif requested_release < release_id:
+                            print(f'Release {requested_release} cannot be found in data set!, exiting',
+                                  file=sys.stderr)
+                            sys.exit(1)
 
                     # first see if a release is worth looking at
                     status = element.get('status')
-                    if status in ['Deleted', 'Draft', 'Rejected']:
+                    if status in ignore_status:
                         continue
 
                     # then store various things about the release
@@ -552,7 +537,7 @@ def main(cfg, datadump, release_nr):
                     # and process the different elements
                     for child in element:
                         if config_settings.report_all:
-                            if release_nr == last_release_checked:
+                            if release_id == last_release_checked:
                                 break
 
                         if country in ['Czechoslovakia', 'Czech Republic']:
@@ -1243,7 +1228,7 @@ def main(cfg, datadump, release_nr):
                                         print_error(counter, "Creative Commons reference", release_id)
                                         counter += 1
 
-                        if child.tag == 'released':
+                        elif child.tag == 'released':
                             if config_settings.month_valid:
                                 monthres = re.search(r'-(\d+)-', child.text)
                                 if monthres is not None:
@@ -1263,6 +1248,41 @@ def main(cfg, datadump, release_nr):
                                         print_error(counter, f"Year {child.text} invalid", release_id)
                                         counter += 1
 
+                        elif child.tag == 'tracklist':
+                            if config_settings.tracklisting:
+                                # various tracklist sanity checks, but only if there is
+                                # only a single format to make things easier. This should be
+                                # fixed at some point TODO.
+                                #
+                                # Currently two checks are supported:
+                                #
+                                # * tracklist numbering reuse
+                                # * not using correct numbering on releases with sides
+                                tracklist_positions = set()
+                                tracklist_correct = True
+                                if len(formats) == 1:
+                                    for track in child:
+                                        for track_elem in track:
+                                            if track_elem.tag == 'position':
+                                                if track_elem.text not in [None, '', '-']:
+                                                    if num_formats == 1:
+                                                        if track_elem.text in tracklist_positions:
+                                                            print_error(counter, f'Tracklisting reuse ({list(formats)[0]}, {track_elem.text})', release_id)
+                                                            counter += 1
+                                                    tracklist_positions.add(track_elem.text)
+
+                                                    if tracklist_correct:
+                                                        for recorded_format in TRACKLIST_CHECK_FORMATS:
+                                                            if recorded_format in formats:
+                                                                try:
+                                                                    int(track_elem.text)
+                                                                    print_error(counter, f'Tracklisting ({recorded_format})', release_id)
+                                                                    counter += 1
+                                                                    tracklist_correct = False
+                                                                    break
+                                                                except ValueError:
+                                                                    pass
+
                         if prev_counter != counter:
                             last_release_checked = release_id
                             prev_counter = counter
@@ -1275,8 +1295,8 @@ def main(cfg, datadump, release_nr):
                     # cleanup to reduce memory usage
                     element.clear()
 
-                    if release_nr is not None:
-                        if release_nr == release_id:
+                    if requested_release is not None:
+                        if requested_release == release_id:
                             break
     except Exception as e:
         print("Cannot open dump file", e, file=sys.stderr)
