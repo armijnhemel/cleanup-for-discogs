@@ -502,3 +502,6 @@ plants = [(358102, 1986, 'PDO, USA'), (360848, 1992, 'PMDC, USA'), (266782, 1999
           (381697, 2005, 'EDC, USA'), (358025, 1986, 'PDO, Germany'),
           (342158, 1993, 'PMDC, Germany'), (331548, 1999, 'Universal, M & L, Germany'),
           (384133, 2005, 'EDC, Germany'), (265455, 1992, 'PMDC, France')]
+
+pmdc_misspellings = ['MADE IN USA BY PDMC', 'MADE IN GERMANY BY PDMC',
+                     'MADE IN FRANCE BY PDMC', 'PDMC FRANCE']

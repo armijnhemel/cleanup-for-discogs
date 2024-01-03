@@ -94,7 +94,6 @@ class DiscogsHandler():
         # many default settings
         self.count = 0
         self.formattexts = set()
-        self.depositofound = False
         self.labels = []
         self.config = config_settings
         self.contentbuffer = ''
@@ -248,31 +247,10 @@ class DiscogsHandler():
         elif name == 'position':
             self.inposition = True
         elif name == 'identifier':
-            isdeposito = False
             attritems = dict(attrs.items())
-            if 'type' in attritems:
-                v = attritems['type']
-                if v == 'Other':
-                    self.inother = True
             if 'value' in attritems:
                 v = attritems['value']
-                if 'MADE IN USA BY PDMC' in v:
-                    self.count += 1
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                elif 'MADE IN GERMANY BY PDMC' in v:
-                    self.count += 1
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                elif 'MADE IN FRANCE BY PDMC' in v:
-                    self.count += 1
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                elif 'PDMC FRANCE' in v:
-                    self.count += 1
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                if self.config['check_creative_commons']:
-                    if 'creative commons' in v.lower():
-                        self.count += 1
-                        print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                elif not self.inother:
+                if not self.inother:
                     if self.config['check_rights_society']:
                         if '/' in v:
                             vsplits = v.split('/')
@@ -292,10 +270,6 @@ class DiscogsHandler():
                 v = attritems['description']
                 attrvalue = attritems['value']
                 self.description = v.lower()
-                if self.config['check_creative_commons']:
-                    if 'creative commons' in self.description:
-                        self.count += 1
-                        print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                 # squash repeated spaces
                 self.description = re.sub(r'\s+', ' ', self.description)
                 if self.config['check_rights_society']:
@@ -313,29 +287,7 @@ class DiscogsHandler():
                         self.count += 1
                         print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                         return
-                if self.country == 'Spain':
-                    if self.config['check_deposito'] and not self.indeposito:
-                        found = False
-                        for d in discogssmells.depositores:
-                            result = d.search(self.description)
-                            if result is not None:
-                                found = True
-                                break
-
-                        # sometimes the depósito value itself can be
-                        # found in the free text field
-                        if not found:
-                            for depositovalre in discogssmells.depositovalres:
-                                deposres = depositovalre.match(self.description)
-                                if deposres is not None:
-                                    found = True
-                                    break
-
-                        if found:
-                            self.count += 1
-                            print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                elif self.country == 'Czechoslovakia':
+                if self.country == 'Czechoslovakia':
                     if self.config['check_manufacturing_date_cs']:
                         # config hack, needs to be in its own configuration option
                         strict_cs = False
@@ -784,6 +736,17 @@ def main(cfg, datadump, release_nr):
                                             print_error(counter, f'ASIN (in {identifier})', release_id)
                                             counter += 1
 
+                                # creative commons, check value and description
+                                if config_settings.creative_commons:
+                                    description = identifier.get('description', '').strip().lower()
+                                    value = identifier.get('value', '').strip().lower()
+                                    if 'creative commons' in description:
+                                        print_error(counter, 'Creative Commons reference', release_id)
+                                        counter += 1
+                                    if 'creative commons' in value:
+                                        print_error(counter, 'Creative Commons reference', release_id)
+                                        counter += 1
+
                                 # Depósito Legal, only check for releases from Spain
                                 if country == 'Spain':
                                     if config_settings.deposito_legal:
@@ -840,8 +803,10 @@ def main(cfg, datadump, release_nr):
                                                     print_error(counter, "Depósito Legal (year not found)", release_id)
                                                     counter += 1
                                         else:
-                                            value = identifier.get('value')
-                                            value_lower = identifier.get('value').lower()
+                                            value = identifier.get('value').strip()
+                                            value_lower = value.lower()
+                                            description = identifier.get('description', '').strip()
+                                            description_lower = description.lower()
 
                                             if not deposito_found:
                                                 for depositovalre in discogssmells.depositovalres:
@@ -851,8 +816,26 @@ def main(cfg, datadump, release_nr):
                                                         deposito_found = True
                                                         break
 
+                                            # check for a DL hint in the description field
+                                            if not deposito_found:
+                                                for d in discogssmells.depositores:
+                                                    result = d.search(description_lower)
+                                                    if result is not None:
+                                                        print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                        counter += 1
+                                                        deposito_found = True
+                                                        break
 
-                                        # check for a DL in the description field
+                                            # sometimes the depósito value itself can be
+                                            # found in the free text field
+                                            if not deposito_found:
+                                                for depositovalre in discogssmells.depositovalres:
+                                                    deposres = depositovalre.match(description_lower)
+                                                    if deposres is not None:
+                                                        print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                        counter += 1
+                                                        deposito_found = True
+                                                        break
 
                                 # Greek license numbers
                                 if country == 'Greece':
@@ -998,6 +981,10 @@ def main(cfg, datadump, release_nr):
                                 if config_settings.matrix:
                                     value = identifier.get('value')
                                     if identifier_type == 'Matrix / Runout':
+                                        for pdmc in discogssmells.pmdc_misspellings:
+                                            if pdmc in value:
+                                                print_error(counter, 'Matrix (PDMC instead of PMDC)', release_id)
+                                                counter += 1
                                         if year is not None:
                                             if 'MFG BY CINRAM' in value and '#' in value and 'USA' not in value:
                                                 cinramres = re.search(r'#(\d{2})', value)
