@@ -99,14 +99,11 @@ class DiscogsHandler():
     def __init__(self, config_settings):
         # many default settings
         self.count = 0
-        self.formattexts = set()
         self.config = config_settings
         self.contentbuffer = ''
 
     # startElement() is called every time a new XML element is parsed
     def startElement(self, name, attrs):
-        # first process the contentbuffer of the previous
-        # element that was stored.
         if self.inrole:
             if self.noartist:
                 wrongrolefornoartist = True
@@ -126,7 +123,6 @@ class DiscogsHandler():
                             if role == '':
                                 continue
                             if role not in self.credits:
-                                self.count += 1
                                 print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
                     else:
                         # sometimes there is an additional description
@@ -147,7 +143,6 @@ class DiscogsHandler():
                                     if role == 'By':
                                         continue
                                     if role not in self.credits:
-                                        self.count += 1
                                         print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
                                         continue
         elif self.inartistid:
@@ -163,13 +158,11 @@ class DiscogsHandler():
                 #        print("https://www.discogs.com/artist/%s" % self.contentbuffer, "https://www.discogs.com/release/%s" % str(self.release))
                 #        print(self.genres)
                 #        sys.exit(0)
-                self.artists.add(self.contentbuffer)
             '''
             # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
             if 'Vinyl' in self.formattexts:
                 if self.year is not None:
                     if self.year < 1948:
-                        self.count += 1
                         print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
             '''
         # now reset some values
@@ -196,31 +189,13 @@ class DiscogsHandler():
                             for vsplit in vsplits:
                                 for r in discogssmells.rights_societies:
                                     if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r:
-                                        self.count += 1
                                         print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                         break
                         else:
                             for r in discogssmells.rights_societies:
                                 if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
-                                    self.count += 1
                                     print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                                     break
-            if 'description' in attritems:
-                v = attritems['description']
-                attrvalue = attritems['value']
-                self.description = v.lower()
-                # squash repeated spaces
-                self.description = re.sub(r'\s+', ' ', self.description)
-                if self.config['check_rights_society']:
-                    if not self.inrightssociety:
-                        if self.description in discogssmells.rights_societies_ftf:
-                            self.count += 1
-                            print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            for rs in discogssmells.rights_societies_wrong_char:
-                                if rs in attrvalue:
-                                    self.count += 1
-                                    print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
-                            return
 
                 # debug code to print descriptions that were skipped.
                 # Useful to find misspellings of various fields
@@ -231,6 +206,10 @@ def print_error(counter, reason, release_id):
     '''Helper method for printing errors'''
     print(f'{counter: 8} -- {reason}: https://www.discogs.com/release/{release_id}')
     sys.stdout.flush()
+
+def check_role(role):
+    '''Helper method for checking roles'''
+    pass
 
 def check_spars(value, year):
     '''Helper method for checking SPARS codes'''
@@ -255,6 +234,7 @@ def check_spars(value, year):
     return errors
 
 def check_rights_society(value):
+    '''Helper method for checking rights societies'''
     errors = []
     value = value.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
     if value in discogssmells.rights_societies_wrong:
@@ -387,7 +367,7 @@ def main(cfg, datadump, requested_release):
     except:
         pass
 
-    # check for Czechoslovak manufacturing dates
+    # check for strict Czechoslovak manufacturing dates
     try:
         config_settings.czechoslovak_dates_strict = config.getboolean('cleanup', 'manufacturing_date_cs_strict')
     except:
@@ -689,7 +669,7 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
 
                                 if country == 'Czechoslovakia' and year is not None:
-                                    if config_settings.config_settings.czechoslovak_dates:
+                                    if config_settings.czechoslovak_dates:
                                         description = identifier.get('description', '').strip().lower()
                                         value = identifier.get('value', '').strip().lower()
                                         if 'date' in description:
@@ -808,7 +788,7 @@ def main(cfg, datadump, requested_release):
                                                     if license_year < 100:
                                                         license_year += 1900
                                                     if license_year > year:
-                                                        print_error(counter, f'Greek license year wrong', release_id)
+                                                        print_error(counter, 'Greek license year wrong', release_id)
                                                         counter += 1
                                                     break
                                                 except:
@@ -1105,7 +1085,6 @@ def main(cfg, datadump, requested_release):
                                                             for error in errors:
                                                                 print_error(counter, f"Rights Society ({error})", release_id)
                                                                 counter += 1
-                                                                reported = True
                                                     else:
                                                         rs_determined += 1
 
@@ -1117,6 +1096,23 @@ def main(cfg, datadump, requested_release):
                                         if value_upper_translated in discogssmells.rights_societies:
                                             print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
                                             counter += 1
+                                        else:
+                                            # check the description of a field
+                                            description = identifier.get('description', '').strip().lower()
+
+                                            # squash repeated spaces
+                                            description = re.sub(r'\s+', ' ', description)
+                                            if description in discogssmells.rights_societies_ftf:
+                                                errors = check_rights_society(value_upper)
+
+                                                if errors:
+                                                    for error in errors:
+                                                        print_error(counter, f"Rights Society (in {identifier_type}, {error})", release_id)
+                                                        counter += 1
+                                                else:
+                                                    print_error(counter, f'Rights Society (in {identifier_type} (description))', release_id)
+                                                    counter += 1
+                                                break
 
                                 # SPARS Code
                                 if config_settings.spars:
