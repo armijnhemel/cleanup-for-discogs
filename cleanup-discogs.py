@@ -65,8 +65,7 @@ pkd_re = re.compile(r"\d{1,2}/((?:19|20)?\d{2})")
 @dataclass
 class CleanupConfig:
     '''Default cleanup configuration'''
-    #artist: bool = False
-    artist: bool = True
+    artist: bool = False
     asin: bool = True
     cd_plus_g: bool = True
     creative_commons: bool = False
