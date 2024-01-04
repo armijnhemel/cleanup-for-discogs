@@ -178,29 +178,6 @@ class DiscogsHandler():
                 self.noartist = False
         elif name == 'role':
             self.inrole = True
-        elif name == 'identifier':
-            attritems = dict(attrs.items())
-            if 'value' in attritems:
-                v = attritems['value']
-                if not self.inother:
-                    if self.config['check_rights_society']:
-                        if '/' in v:
-                            vsplits = v.split('/')
-                            for vsplit in vsplits:
-                                for r in discogssmells.rights_societies:
-                                    if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r:
-                                        print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                        break
-                        else:
-                            for r in discogssmells.rights_societies:
-                                if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
-                                    print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    break
-
-                # debug code to print descriptions that were skipped.
-                # Useful to find misspellings of various fields
-                if self.config['debug']:
-                    print(self.description, self.release)
 
 def print_error(counter, reason, release_id):
     '''Helper method for printing errors'''
@@ -756,25 +733,28 @@ def main(cfg, datadump, requested_release):
                                                         break
 
                                             # check for a DL hint in the description field
-                                            if not deposito_found:
-                                                for d in discogssmells.depositores:
-                                                    result = d.search(description_lower)
-                                                    if result is not None:
-                                                        print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
-                                                        counter += 1
-                                                        deposito_found = True
-                                                        break
+                                            if description != '':
+                                                if not deposito_found:
+                                                    for d in discogssmells.depositores:
+                                                        result = d.search(description_lower)
+                                                        if result is not None:
+                                                            print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                            counter += 1
+                                                            deposito_found = True
+                                                            break
+                                                    if not deposito_found and config_settings.debug:
+                                                        print(description, release_id)
 
-                                            # sometimes the depósito value itself can be
-                                            # found in the free text field
-                                            if not deposito_found:
-                                                for depositovalre in discogssmells.depositovalres:
-                                                    deposres = depositovalre.match(description_lower)
-                                                    if deposres is not None:
-                                                        print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
-                                                        counter += 1
-                                                        deposito_found = True
-                                                        break
+                                                # sometimes the depósito value itself can be
+                                                # found in the free text field
+                                                if not deposito_found:
+                                                    for depositovalre in discogssmells.depositovalres:
+                                                        deposres = depositovalre.match(description_lower)
+                                                        if deposres is not None:
+                                                            print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                            counter += 1
+                                                            deposito_found = True
+                                                            break
 
                                 # Greek license numbers
                                 if country == 'Greece':
@@ -1093,10 +1073,21 @@ def main(cfg, datadump, requested_release):
                                                     print_error(counter, f"Rights Society (bogus value: {value})", release_id)
                                                     counter += 1
                                     else:
+                                        rs_found = False
                                         if value_upper_translated in discogssmells.rights_societies:
                                             print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
                                             counter += 1
-                                        else:
+                                            rs_found = True
+                                        elif '/' in value:
+                                            possible_rss = value_upper.split('/')
+                                            for possible_rs in possible_rss:
+                                                if possible_rs.translate(RIGHTS_SOCIETY_TRANSLATE_QND) in discogssmells.rights_societies:
+                                                    print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
+                                                    counter += 1
+                                                    rs_found = True
+                                                    break
+
+                                        if not rs_found:
                                             # check the description of a field
                                             description = identifier.get('description', '').strip().lower()
 
@@ -1112,7 +1103,6 @@ def main(cfg, datadump, requested_release):
                                                 else:
                                                     print_error(counter, f'Rights Society (in {identifier_type} (description))', release_id)
                                                     counter += 1
-                                                break
 
                                 # SPARS Code
                                 if config_settings.spars:
@@ -1170,6 +1160,15 @@ def main(cfg, datadump, requested_release):
                                                     print_error(counter, f'Possible SPARS Code (in {identifier_type})', release_id)
                                                     counter += 1
                                                     break
+
+                                # debug code to print all descriptions
+                                # Useful to find misspellings of various fields
+                                # Use with care.
+                                #if config_settings.debug:
+                                #    description = identifier.get('description', '')
+                                #    if description != '':
+                                #        print(description, release_id)
+
                         elif child.tag == 'labels':
                             for label in child:
                                 label_id = int(label.get('id', ''))
