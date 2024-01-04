@@ -554,11 +554,16 @@ def main(cfg, datadump, requested_release):
                         if child.tag == 'artists' or child.tag == 'extraartists':
                             if config_settings.artist:
                                 for artist_elem in child:
+                                    artist_id = 0
+                                    artist_name = ''
                                     for artist in artist_elem:
                                         if artist.tag == 'id':
-                                            if artist.text == '0':
-                                                print_error(counter, 'Artist not in database', release_id)
-                                                counter += 1
+                                            artist_id = int(artist.text)
+                                        elif artist.tag == 'name':
+                                            artist_name = artist.text
+                                    if artist_id == 0:
+                                        print_error(counter, f'Artist \'{artist_name}\' not in database', release_id)
+                                        counter += 1
                         elif child.tag == 'companies':
                             if year is not None:
                                 for companies in child:
