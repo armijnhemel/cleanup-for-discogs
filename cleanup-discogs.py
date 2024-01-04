@@ -29,6 +29,11 @@ import discogssmells
 ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
                                 ':': None, '–': None,})
 
+# a list of possible label code false positives. These are
+# used when checking the catalog numbers.
+LABEL_CODE_FALSE_POSITIVES = set([654, 1005, 1060, 11358, 20234, 22804, 29480, 38653,
+                                  39161, 54361, 97031, 113617, 163947])
+
 RIGHTS_SOCIETY_DELIMITERS = ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']
 
 # a quick and dirty translation table to see if rights society values
@@ -743,7 +748,8 @@ def main(cfg, datadump, requested_release):
                                                             deposito_found = True
                                                             break
                                                     if not deposito_found and config_settings.debug:
-                                                        print(description, release_id)
+                                                        # print descriptions for debugging. Careful.
+                                                        print(f'Depósito Legal debug: {release_id}, {description}')
 
                                                 # sometimes the depósito value itself can be
                                                 # found in the free text field
@@ -1183,8 +1189,8 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
                                 if config_settings.label_code:
                                     # check the catalog numbers for possible false positives,
-                                    # but exclude "Loft Classics".
-                                    if catno.startswith('lc') and label_id != 22804:
+                                    # but exclude "Loft Classics" and others
+                                    if catno.startswith('lc') and label_id not in LABEL_CODE_FALSE_POSITIVES:
                                         if discogssmells.labelcodere.match(catno) is not None:
                                             print_error(counter, f'Possible Label Code (in Catalogue Number: {catno})', release_id)
                                             counter += 1
