@@ -131,7 +131,8 @@ rights_societies = set(["BEL BIEM", "BEL/BIEM", "BIEM", "ACAM", "ACDAM", "ACUM",
                         "SESAC", "SGA", "SGAE", "SIAE", "SIMIM", "SOCAN",
                         "SODRAC", "SOKOJ", "SOZA", "SPA", "STEF", "STEMRA",
                         "STIM", "SUISA", "TEOSTO", "TONO", "UACRR", "UBC",
-                        "UCMR-ADA", "ZAIKS", "ZPAV", "SACEM", "SACD", "SDRM", "SGDL"])
+                        "UCMR-ADA", "ZAIKS", "ZPAV", "SACEM", "SACD", "SDRM", "SGDL",
+                        "SACEM SDRM SACD SGDL"])
 
 rights_societies_ftf = set(['(right societies)', '(rights society',
                             '(rights society)', 'collection society',
