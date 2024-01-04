@@ -71,6 +71,7 @@ class CleanupConfig:
     creative_commons: bool = False
     credits: bool = False
     czechoslovak_dates: bool = True
+    czechoslovak_dates_strict: bool = False
     czechoslovak_spelling: bool = True
     debug: bool = False
     deposito_legal: bool = True
@@ -386,6 +387,12 @@ def main(cfg, datadump, requested_release):
     except:
         pass
 
+    # check for Czechoslovak manufacturing dates
+    try:
+        config_settings.czechoslovak_dates_strict = config.getboolean('cleanup', 'manufacturing_date_cs_strict')
+    except:
+        pass
+
     # check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
     try:
         config_settings.czechoslovak_spelling = config.getboolean('cleanup', 'spelling_cs')
@@ -471,7 +478,7 @@ def main(cfg, datadump, requested_release):
                             # reduce memory usage
                             element.clear()
                             continue
-                        elif requested_release < release_id:
+                        if requested_release < release_id:
                             print(f'Release {requested_release} cannot be found in data set!',
                                   file=sys.stderr)
                             sys.exit(1)
@@ -683,9 +690,6 @@ def main(cfg, datadump, requested_release):
 
                                 if country == 'Czechoslovakia' and year is not None:
                                     if config_settings.config_settings.czechoslovak_dates:
-                                        # config hack, needs to be in its own configuration option
-                                        strict_cs = False
-
                                         description = identifier.get('description', '').strip().lower()
                                         value = identifier.get('value', '').strip().lower()
                                         if 'date' in description:
@@ -698,7 +702,7 @@ def main(cfg, datadump, requested_release):
                                                         print_error(counter, 'Czechoslovak manufacturing date (release year wrong)', release_id)
                                                         counter += 1
                                                     # possibly this check makes sense, but not always
-                                                    elif manufacturing_year < year and strict_cs:
+                                                    elif manufacturing_year < year and config_settings.czechoslovak_dates_strict:
                                                         print_error(counter, 'Czechoslovak manufacturing date (release year possibly wrong)', release_id)
                                                         counter += 1
 
