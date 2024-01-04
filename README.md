@@ -68,6 +68,23 @@ for example:
 $ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz
 ```
 
+To check a single release use `-r`:
+
+```console
+$ python3 cleanup-discogs.py -c /path/to/config -d /path/to/discogs/dump -r release_number
+```
+
+for example:
+
+```console
+$ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz -r 1234
+```
+
+In case the number cannot be found the program will exit with an error code
+and an error message. Please note that because the Discogs release files are
+very big and the file has to be searched from the beginning it can take quite
+some time if the release number is a high number.
+
 # List of checks
 
 Below is a list of checks implemented in `cleanup-discogs.py`.
