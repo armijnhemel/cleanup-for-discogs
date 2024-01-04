@@ -69,6 +69,7 @@ depositores.append(re.compile(r'legak des?posit'))
 depositores.append(re.compile(r'legai des?posit'))
 depositores.append(re.compile(r'legal depos?t'))
 depositores.append(re.compile(r'legal dep\.'))
+depositores.append(re.compile(r'legal nr\.'))
 depositores.append(re.compile(r'legal submis+ion'))
 
 # basque DL:
@@ -271,7 +272,7 @@ masteringsids = set(['mastering sid code', 'master sid code', 'master sid',
                      'mastering sid сode', 'masterin sid code',
                      'cd centre etching - mastering sid code',
                      'sid mastering code cd2', 'master s.i.d.',
-                     'master s.i.d. code'])
+                     'master s.i.d. code', 'dvd - mastering sid code'])
 
 mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code',
                  'modul sid code', 'moould sid code', 'moudl sid code',
@@ -338,7 +339,7 @@ mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code',
                  'mould sid code disc 2', 'mould sid code dvd1',
                  'mould s.i.d.', 'mould s.i.d. code', 'moulds.i.d. code',
                  's.i.d. mould code', 's.i.d. moulding code',
-                 'modul sid code (both discs)'])
+                 'modul sid code (both discs)', 'inner mould sid code'])
 
 possible_mastering_sid = set(['sid code matrix', 'sid code - matrix', 'sid code (matrix)',
                               'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)',
