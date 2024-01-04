@@ -31,8 +31,9 @@ ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
 
 # a list of possible label code false positives. These are
 # used when checking the catalog numbers.
-LABEL_CODE_FALSE_POSITIVES = set([654, 1005, 1060, 11358, 20234, 22804, 29480, 38653,
-                                  39161, 54361, 97031, 113617, 163947])
+LABEL_CODE_FALSE_POSITIVES = set([654, 1005, 1060, 5320, 11358, 20234, 22804, 29480, 38653,
+                                  39161, 54361, 63510, 97031, 113617, 127100, 163947,
+                                  199380, 487381, 498544])
 
 RIGHTS_SOCIETY_DELIMITERS = ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']
 

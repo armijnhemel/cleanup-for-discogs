@@ -16,11 +16,11 @@ depositores = []
 # First the most common ones
 depositores.append(re.compile(r'depósito legal'))
 depositores.append(re.compile(r'deposito legal'))
-depositores.append(re.compile(r'de?s?p*ós*i?r?tl?o?i?\s*l+e?g?al?\.?'))
+depositores.append(re.compile(r'de?s?p*ós*t?i?r?t?l?o?i?\s*l+e?g?al?\.?'))
 depositores.append(re.compile(r'des?p?os+ito?\s+legt?al?\.?'))
 depositores.append(re.compile(r'legal? des?posit'))
 depositores.append(re.compile(r'dep\.\s*legal'))
-depositores.append(re.compile(r'dip. legal'))
+depositores.append(re.compile(r'dip.\s* legal'))
 depositores.append(re.compile(r'dip. leg.'))
 depositores.append(re.compile(r'dipòsit legal'))
 depositores.append(re.compile(r'dipósit legal'))
@@ -69,6 +69,7 @@ depositores.append(re.compile(r'legak des?posit'))
 depositores.append(re.compile(r'legai des?posit'))
 depositores.append(re.compile(r'legal depos?t'))
 depositores.append(re.compile(r'legal dep\.'))
+depositores.append(re.compile(r'legal submis+ion'))
 
 # basque DL:
 # http://www.euskadi.eus/deposito-legal/web01-a2libzer/es/impresion.html
