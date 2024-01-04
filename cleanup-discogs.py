@@ -867,18 +867,19 @@ def main(cfg, datadump, requested_release):
                                                 isrc_descriptions_seen.add(description_lower)
                                     else:
                                         # specifically check the description
-                                        if description_lower.startswith('isrc'):
-                                            print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
-                                            counter += 1
-                                        elif description_lower.startswith('issrc'):
-                                            print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
-                                            counter += 1
-                                        else:
-                                            for isrc in discogssmells.isrc_ftf:
-                                                if isrc in description_lower:
-                                                    print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
-                                                    counter += 1
-                                                    break
+                                        if description_lower != '':
+                                            if description_lower.startswith('isrc'):
+                                                print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
+                                                counter += 1
+                                            elif description_lower.startswith('issrc'):
+                                                print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
+                                                counter += 1
+                                            else:
+                                                for isrc in discogssmells.isrc_ftf:
+                                                    if isrc in description_lower:
+                                                        print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
+                                                        counter += 1
+                                                        break
                                 # Label Code
                                 if config_settings.label_code:
                                     value = identifier.get('value').lower()
@@ -1091,18 +1092,19 @@ def main(cfg, datadump, requested_release):
                                             # check the description of a field
                                             description = identifier.get('description', '').strip().lower()
 
-                                            # squash repeated spaces
-                                            description = re.sub(r'\s+', ' ', description)
-                                            if description in discogssmells.rights_societies_ftf:
-                                                errors = check_rights_society(value_upper)
+                                            if description != '':
+                                                # squash repeated spaces
+                                                description = re.sub(r'\s+', ' ', description)
+                                                if description in discogssmells.rights_societies_ftf:
+                                                    errors = check_rights_society(value_upper)
 
-                                                if errors:
-                                                    for error in errors:
-                                                        print_error(counter, f"Rights Society (in {identifier_type}, {error})", release_id)
+                                                    if errors:
+                                                        for error in errors:
+                                                            print_error(counter, f"Rights Society (in {identifier_type}, {error})", release_id)
+                                                            counter += 1
+                                                    else:
+                                                        print_error(counter, f'Rights Society (in {identifier_type} (description))', release_id)
                                                         counter += 1
-                                                else:
-                                                    print_error(counter, f'Rights Society (in {identifier_type} (description))', release_id)
-                                                    counter += 1
 
                                 # SPARS Code
                                 if config_settings.spars:
@@ -1155,11 +1157,12 @@ def main(cfg, datadump, requested_release):
                                             counter += 1
                                         else:
                                             description = identifier.get('description', '').lower()
-                                            for spars in discogssmells.spars_ftf:
-                                                if spars in description:
-                                                    print_error(counter, f'Possible SPARS Code (in {identifier_type})', release_id)
-                                                    counter += 1
-                                                    break
+                                            if description != '':
+                                                for spars in discogssmells.spars_ftf:
+                                                    if spars in description:
+                                                        print_error(counter, f'Possible SPARS Code (in {identifier_type})', release_id)
+                                                        counter += 1
+                                                        break
 
                                 # debug code to print all descriptions
                                 # Useful to find misspellings of various fields
