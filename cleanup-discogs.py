@@ -15,7 +15,6 @@
 import configparser
 import datetime
 import gzip
-import os
 import pathlib
 import re
 import sys
@@ -29,6 +28,8 @@ import discogssmells
 
 ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
                                 ':': None, '–': None,})
+
+RIGHTS_SOCIETY_DELIMITERS = ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']
 
 # a quick and dirty translation table to see if rights society values
 # are correct. This is just for the first big sweep.
@@ -58,7 +59,6 @@ TRACKLIST_CHECK_FORMATS = ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
 currentyear = datetime.datetime.utcnow().year
-
 
 pkd_re = re.compile(r"\d{1,2}/((?:19|20)?\d{2})")
 
@@ -101,10 +101,6 @@ class DiscogsHandler():
         self.formattexts = set()
         self.config = config_settings
         self.contentbuffer = ''
-        if self.config['check_credits']:
-            creditsfile = open(self.config['creditsfile'], 'r')
-            self.credits = set(map(lambda x: x.strip(), creditsfile.readlines()))
-            creditsfile.close()
 
     # startElement() is called every time a new XML element is parsed
     def startElement(self, name, attrs):
@@ -156,8 +152,6 @@ class DiscogsHandler():
         elif self.inartistid:
             if self.config['check_artist']:
                 if self.contentbuffer == '0':
-                    self.count += 1
-                    print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
                     self.noartist = True
                 else:
                     self.noartist = False
@@ -226,24 +220,6 @@ class DiscogsHandler():
                                     self.count += 1
                                     print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
                             return
-                if self.country == 'Czechoslovakia':
-                    if self.config['check_manufacturing_date_cs']:
-                        # config hack, needs to be in its own configuration option
-                        strict_cs = False
-                        if 'date' in self.description:
-                            if self.year is not None:
-                                manufacturing_date_res = re.search(r"(\d{2})\s+\d$", attrvalue.rstrip())
-                                if manufacturing_date_res is not None:
-                                    manufacturing_year = int(manufacturing_date_res.groups()[0])
-                                    if manufacturing_year < 100:
-                                        manufacturing_year += 1900
-                                        if manufacturing_year > self.year:
-                                            self.count += 1
-                                            print("%8d -- Czechoslovak manufacturing date (release year wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        # possibly this check makes sense, but not always
-                                        elif manufacturing_year < self.year and strict_cs:
-                                            self.count += 1
-                                            print("%8d -- Czechoslovak manufacturing date (release year possibly wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
 
                 # debug code to print descriptions that were skipped.
                 # Useful to find misspellings of various fields
@@ -290,8 +266,10 @@ def check_rights_society(value):
     return errors
 
 @click.command(short_help='process Discogs datadump files and print errors found')
-@click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
-@click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
+@click.option('--config-file', '-c', 'cfg', required=True, help='configuration file',
+              type=click.File('r'))
+@click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file',
+              type=click.Path(exists=True))
 @click.option('--release', '-r', 'requested_release', help='release number to scan', type=int)
 def main(cfg, datadump, requested_release):
     config = configparser.ConfigParser()
@@ -426,15 +404,17 @@ def main(cfg, datadump, requested_release):
     except:
         pass
 
+    # store known valid credits
+    credit_roles = set()
+
     # store settings for credits list checks
-    config_settings.credits = False
     try:
         if config.get('cleanup', 'credits') == 'yes':
-            creditsfile = config.get('cleanup', 'creditsfile')
-            if os.path.exists(creditsfile):
-                # TODO: fix
-                config_settings.creditsfile = creditsfile
+            creditsfile = pathlib.Path(config.get('cleanup', 'creditsfile'))
+            if creditsfile.exists():
                 config_settings.credits = True
+                with open(creditsfile, 'r') as open_file:
+                    credit_roles = set(map(lambda x: x.strip(), open_file.readlines()))
     except:
         pass
 
@@ -700,6 +680,27 @@ def main(cfg, datadump, requested_release):
                                     if 'creative commons' in value:
                                         print_error(counter, 'Creative Commons reference', release_id)
                                         counter += 1
+
+                                if country == 'Czechoslovakia' and year is not None:
+                                    if config_settings.config_settings.czechoslovak_dates:
+                                        # config hack, needs to be in its own configuration option
+                                        strict_cs = False
+
+                                        description = identifier.get('description', '').strip().lower()
+                                        value = identifier.get('value', '').strip().lower()
+                                        if 'date' in description:
+                                            manufacturing_date_res = re.search(r"(\d{2})\s+\d$", value)
+                                            if manufacturing_date_res is not None:
+                                                manufacturing_year = int(manufacturing_date_res.groups()[0])
+                                                if manufacturing_year < 100:
+                                                    manufacturing_year += 1900
+                                                    if manufacturing_year > year:
+                                                        print_error(counter, 'Czechoslovak manufacturing date (release year wrong)', release_id)
+                                                        counter += 1
+                                                    # possibly this check makes sense, but not always
+                                                    elif manufacturing_year < year and strict_cs:
+                                                        print_error(counter, 'Czechoslovak manufacturing date (release year possibly wrong)', release_id)
+                                                        counter += 1
 
                                 # Depósito Legal, only check for releases from Spain
                                 if country == 'Spain':
@@ -1085,9 +1086,9 @@ def main(cfg, datadump, requested_release):
                                                 # This is not necessarily the best order or the best split.
                                                 # TODO: rework.
                                                 split_rs = []
-                                                for s in ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']:
-                                                    if s in value_upper:
-                                                        split_rs = list(map(lambda x: x.strip(), value_upper.split(s)))
+                                                for delimiter in RIGHTS_SOCIETY_DELIMITERS:
+                                                    if delimiter in value_upper:
+                                                        split_rs = list(map(lambda x: x.strip(), value_upper.split(delimiter)))
                                                         rights_society_to_check = split_rs
                                                         break
 
