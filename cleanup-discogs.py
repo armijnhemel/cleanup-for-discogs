@@ -100,25 +100,6 @@ class CleanupConfig:
     url_in_html: bool = True
     year_valid: bool = False
 
-# a class with a handler for the SAX parser
-class DiscogsHandler():
-    def __init__(self, config_settings):
-        # many default settings
-        self.count = 0
-        self.config = config_settings
-        self.contentbuffer = ''
-
-    def startElement(self, name, attrs):
-        if self.inrole:
-            if self.noartist:
-                wrongrolefornoartist = True
-                for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
-                    if r in self.contentbuffer.strip():
-                        wrongrolefornoartist = False
-                        break
-                if wrongrolefornoartist:
-                    pass
-                    #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
 
 def print_error(counter, reason, release_id):
     '''Helper method for printing errors'''
@@ -157,7 +138,6 @@ def check_rights_society(value):
     value = value.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
     if value in discogssmells.rights_societies_wrong:
         errors.append(f"possible wrong value: {value}")
-        reported = True
 
     if value in discogssmells.rights_societies_wrong_char:
         errors.append(f"wrong character set: {value}")
@@ -458,6 +438,17 @@ def main(cfg, datadump, requested_release):
                                         elif artist.tag == 'name':
                                             artist_name = artist.text
                                         elif artist.tag == 'role':
+                                            '''
+                                            if artist_id == 0:
+                                                wrong_role_for_noartist = True
+                                                for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
+                                                    if r in artist.text.strip():
+                                                        wrong_role_for_noartist = False
+                                                        break
+                                                if wrong_role_for_noartist:
+                                                    pass
+                                                    #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
+                                            '''
                                             if config_settings.credits:
                                                 role_data = artist.text
                                                 if role_data is None:
