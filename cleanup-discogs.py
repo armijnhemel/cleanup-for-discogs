@@ -474,7 +474,7 @@ def main(cfg, datadump, requested_release):
                                             break
 
                         if child.tag == 'artists' or child.tag == 'extraartists':
-                            if config_settings.artist or True:
+                            if config_settings.artist:
                                 for artist_elem in child:
                                     # set to "no artist" as a place holder
                                     artist_id = 0
