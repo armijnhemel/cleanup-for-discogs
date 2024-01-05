@@ -108,7 +108,6 @@ class DiscogsHandler():
         self.config = config_settings
         self.contentbuffer = ''
 
-    # startElement() is called every time a new XML element is parsed
     def startElement(self, name, attrs):
         if self.inrole:
             if self.noartist:
@@ -120,37 +119,6 @@ class DiscogsHandler():
                 if wrongrolefornoartist:
                     pass
                     #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
-            if self.config['check_credits']:
-                roledata = self.contentbuffer.strip()
-                if roledata != '':
-                    if '[' not in roledata:
-                        roles = map(lambda x: x.strip(), roledata.split(','))
-                        for role in roles:
-                            if role == '':
-                                continue
-                            if role not in self.credits:
-                                print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-                    else:
-                        # sometimes there is an additional description
-                        # in the role in between [ and ]
-                        rolesplit = roledata.split('[')
-                        for rs in rolesplit:
-                            if ']' in rs:
-                                rs_tmp = rs
-                                while ']' in rs_tmp:
-                                    rs_tmp = rs_tmp.split(']', 1)[1]
-                                roles = map(lambda x: x.strip(), rs_tmp.split(','))
-                                for role in roles:
-                                    if role == '':
-                                        continue
-                                    # ugly hack because sometimes the extra
-                                    # data between [ and ] appears halfway the
-                                    # words in a role, sigh.
-                                    if role == 'By':
-                                        continue
-                                    if role not in self.credits:
-                                        print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-                                        continue
         elif self.inartistid:
             if self.config['check_artist']:
                 if self.contentbuffer == '0':
@@ -377,7 +345,8 @@ def main(cfg, datadump, requested_release):
     # store known valid credits
     credit_roles = set()
 
-    # store settings for credits list checks
+    # store settings for credits list checks, implies artist checks
+    # This only makes sense if there is a valid credits file
     try:
         if config.get('cleanup', 'credits') == 'yes':
             creditsfile = pathlib.Path(config.get('cleanup', 'creditsfile'))
@@ -385,6 +354,10 @@ def main(cfg, datadump, requested_release):
                 config_settings.credits = True
                 with open(creditsfile, 'r') as open_file:
                     credit_roles = set(map(lambda x: x.strip(), open_file.readlines()))
+                if credit_roles != set():
+                    config_settings.artist = True
+                else:
+                    config_settings.credits = False
     except:
         pass
 
@@ -501,8 +474,9 @@ def main(cfg, datadump, requested_release):
                                             break
 
                         if child.tag == 'artists' or child.tag == 'extraartists':
-                            if config_settings.artist:
+                            if config_settings.artist or True:
                                 for artist_elem in child:
+                                    # set to "no artist" as a place holder
                                     artist_id = 0
                                     artist_name = ''
                                     for artist in artist_elem:
@@ -510,6 +484,42 @@ def main(cfg, datadump, requested_release):
                                             artist_id = int(artist.text)
                                         elif artist.tag == 'name':
                                             artist_name = artist.text
+                                        elif artist.tag == 'role':
+                                            if config_settings.credits:
+                                                role_data = artist.text
+                                                if role_data is None:
+                                                    continue
+                                                role_data = role_data.strip()
+                                                if role_data != '':
+                                                    if '[' not in role_data:
+                                                        roles = map(lambda x: x.strip(), role_data.split(','))
+                                                        for role in roles:
+                                                            if role == '':
+                                                                continue
+                                                            if role not in credit_roles:
+                                                                print_error(counter, f'Role \'{role}\' invalid', release_id)
+                                                                counter += 1
+                                                    else:
+                                                        # sometimes there is an additional description
+                                                        # in the role in between [ and ]. TODO: rework this
+                                                        rolesplit = role_data.split('[')
+                                                        for rs in rolesplit:
+                                                            if ']' in rs:
+                                                                rs_tmp = rs
+                                                                while ']' in rs_tmp:
+                                                                    rs_tmp = rs_tmp.split(']', 1)[1]
+                                                                roles = map(lambda x: x.strip(), rs_tmp.split(','))
+                                                                for role in roles:
+                                                                    if role == '':
+                                                                        continue
+                                                                    # ugly hack because sometimes the extra
+                                                                    # data between [ and ] appears halfway the
+                                                                    # words in a role, sigh.
+                                                                    if role == 'By':
+                                                                        continue
+                                                                    if role not in credit_roles:
+                                                                        print_error(counter, f'Role \'{role}\' invalid', release_id)
+                                                                        counter += 1
                                     if artist_id == 0:
                                         print_error(counter, f'Artist \'{artist_name}\' not in database', release_id)
                                         counter += 1
