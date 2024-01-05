@@ -119,39 +119,6 @@ class DiscogsHandler():
                 if wrongrolefornoartist:
                     pass
                     #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
-        elif self.inartistid:
-            if self.config['check_artist']:
-                if self.contentbuffer == '0':
-                    self.noartist = True
-                else:
-                    self.noartist = False
-                # TODO: check for genres, as No Artist is
-                # often confused with Unknown Artist
-                #if self.contentbuffer == '118760':
-                #    if len(self.genres) != 0:
-                #        print("https://www.discogs.com/artist/%s" % self.contentbuffer, "https://www.discogs.com/release/%s" % str(self.release))
-                #        print(self.genres)
-                #        sys.exit(0)
-            '''
-            # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
-            if 'Vinyl' in self.formattexts:
-                if self.year is not None:
-                    if self.year < 1948:
-                        print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-            '''
-        # now reset some values
-        self.contentbuffer = ''
-        self.inartistid = False
-
-        if name == 'artist':
-            self.inartist = True
-            self.noartist = False
-        if name == 'id':
-            if self.inartist:
-                self.inartistid = True
-                self.noartist = False
-        elif name == 'role':
-            self.inrole = True
 
 def print_error(counter, reason, release_id):
     '''Helper method for printing errors'''
@@ -482,6 +449,12 @@ def main(cfg, datadump, requested_release):
                                     for artist in artist_elem:
                                         if artist.tag == 'id':
                                             artist_id = int(artist.text)
+                                            # TODO: check for genres, as No Artist is
+                                            # often confused with Unknown Artist
+                                            #if artist_id == 118760:
+                                            #    if genres:
+                                            #        print_error(counter, f'https://www.discogs.com/artist/{artist_id}' release_id)
+                                            #        counter += 1
                                         elif artist.tag == 'name':
                                             artist_name = artist.text
                                         elif artist.tag == 'role':
@@ -576,6 +549,13 @@ def main(cfg, datadump, requested_release):
                                             is_cd = True
                                         formats.add(value)
                                         current_format = value
+                                        '''
+                                        # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
+                                        if current_format == 'Vinyl' and year is not None:
+                                            if year < 1948:
+                                                print(counter, f'Impossible year '{year}' for vinyl', release_id)
+                                                counter += 1
+                                        '''
                                     elif key == 'qty':
                                         if num_formats == 0:
                                             num_formats = max(num_formats, int(value))
