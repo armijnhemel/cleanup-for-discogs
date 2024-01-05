@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2023 - Armijn Hemel
+# Copyright 2017-2024 - Armijn Hemel
 
 import re
 
@@ -16,11 +16,11 @@ depositores = []
 # First the most common ones
 depositores.append(re.compile(r'depósito legal'))
 depositores.append(re.compile(r'deposito legal'))
-depositores.append(re.compile(r'de?s?p*ós*i?r?tl?o?i?\s*l+e?g?al?\.?'))
+depositores.append(re.compile(r'de?s?p*ós*t?i?r?t?l?o?i?\s*l+e?g?al?\.?'))
 depositores.append(re.compile(r'des?p?os+ito?\s+legt?al?\.?'))
 depositores.append(re.compile(r'legal? des?posit'))
 depositores.append(re.compile(r'dep\.\s*legal'))
-depositores.append(re.compile(r'dip. legal'))
+depositores.append(re.compile(r'dip.\s* legal'))
 depositores.append(re.compile(r'dip. leg.'))
 depositores.append(re.compile(r'dipòsit legal'))
 depositores.append(re.compile(r'dipósit legal'))
@@ -69,6 +69,8 @@ depositores.append(re.compile(r'legak des?posit'))
 depositores.append(re.compile(r'legai des?posit'))
 depositores.append(re.compile(r'legal depos?t'))
 depositores.append(re.compile(r'legal dep\.'))
+depositores.append(re.compile(r'legal nr\.'))
+depositores.append(re.compile(r'legal submis+ion'))
 
 # basque DL:
 # http://www.euskadi.eus/deposito-legal/web01-a2libzer/es/impresion.html
@@ -113,7 +115,8 @@ isrc_ftf = set(['international standard recording code',
                 'icrs', 'international recording standard code', "isr code"])
 
 # a few rights societies from https://www.discogs.com/help/submission-guidelines-release-country.html
-rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
+# These are all uppercased.
+rights_societies = set(["BEL BIEM", "BEL/BIEM", "BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
                         "ΑΕΠΙ", "AGADU", "AKKA/LAA", "AKM", "ALBAUTOR",
                         "AMCOS", "APA", "APDASPAC", "APDAYC", "APRA",
                         "ARTISJUS", "ASCAP", "AUSTROMECHANA", "BMI", "BUMA",
@@ -122,15 +125,16 @@ rights_societies = set(["BIEM", "ACAM", "ACDAM", "ACUM", "ADDAF", "AEPI",
                         "GESAP", "GRAMO", "GVL", "HDS", "HFA", "IMRO", "IPRS",
                         "JASRAC", "KCI", "KODA", "KOMCA", "LATGA-A", "MACP",
                         "MECOLICO", "MCPS", "MCSC", "MCSK", "MESAM",
-                        "MUSICAUTOR", "MUST", "NCB", "n©b", "N©B", "N(C)B",
+                        "MUSICAUTOR", "MUST", "NCB", "N©B", "N(C)B",
                         "OSA", "PAMRA", "PPL", "PROCAN", "PRS", "RAO", "SABAM",
-                        "SACEM", "SACEM Luxembourg", "SACM", "SACVEN",
+                        "SACEM", "SACEM LUXEMBOURG", "SACM", "SACVEN",
                         "SADAIC", "SAKOJ", "SAMI", "SAMRO", "SAYCO", "SAZAS",
                         "SBACEM", "SCPP", "SCD", "SDRM", "SEDRIM", "SENA",
                         "SESAC", "SGA", "SGAE", "SIAE", "SIMIM", "SOCAN",
                         "SODRAC", "SOKOJ", "SOZA", "SPA", "STEF", "STEMRA",
                         "STIM", "SUISA", "TEOSTO", "TONO", "UACRR", "UBC",
-                        "UCMR-ADA", "ZAIKS", "ZPAV"])
+                        "UCMR-ADA", "ZAIKS", "ZPAV", "SACEM", "SACD", "SDRM", "SGDL",
+                        "SACEM SDRM SACD SGDL"])
 
 rights_societies_ftf = set(['(right societies)', '(rights society',
                             '(rights society)', 'collection society',
@@ -184,17 +188,22 @@ rights_societies_ftf = set(['(right societies)', '(rights society',
                             'rights associations', 'rights association',
                             'original rights', 'rights info'])
 
-# several possible misspellings of rights societies
-# Not all of these are wrong all the time: STEMPRA has been used
-# on actual releases:
+# several possible misspellings of rights societies, all uppercased
+# Not all of these are necessarily Discogs user errors.
+#
+# As an example STEMPRA has been used on actual releases:
+#
 # https://www.discogs.com/release/8578592
 # https://www.discogs.com/release/629916
+#
 # STEMA:
+#
 # https://www.discogs.com/release/1511006
 # https://www.discogs.com/release/529700
+#
 # There are a few wrong values, but currently they are also triggered
 # by correct values, so they are ignored for now.
-#rights_societies_wrong = set(['BIE', 'TEMRA'])
+#rights_societies_wrong = set(['BIE', 'TEMRA', 'STEMR'])
 rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'BIEAM', 'BIEEM', 'BIELM', 'BIEL', 'BIEMA',
                               'BIETM', 'BIRM', 'BIER', 'BIERM', 'BIE,', 'BIEW',
@@ -202,13 +211,13 @@ rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'BUMDA', 'BUMRA', 'ETEMRA', 'SEMRA', 'SEMTRA',
                               'STAMRA', 'STEAMRA', 'STREMA', 'STREMRA',
                               'STERMA', 'STERMRA', 'STEMA', 'STERA', 'STETMRA',
-                              'STEMPRA', 'STEMCA', 'STEMPA', 'STEMBRA',
-                              'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA',
-                              'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA',
+                              'STERNA', 'STEMPRA', 'STEMCA', 'STEMPA', 'STEMBRA',
+                              'STEMERA', 'STEMTA', 'STEMRS', 'STEMMA', 'STEMRAA',
+                              'STEMRE', 'STEMRO', 'STEMPIA', 'STEMTRA', 'STEMEA',
                               'STENRA', 'SREMRA', 'JAIRAC', 'JAJSRAC',
                               'JAMRAC', 'JASPAC', 'JASDAC', 'JASARC', 'JASMAC',
                               'JASNAC', 'JASRACK', 'JASREC', 'JASTAC',
-                              'JASTRAC', 'JASRAK', 'JASRC', 'JASRAQ',
+                              'JASTRAC', 'JASRAK', 'JASRC', 'JASRAQ', 'ASRAC',
                               'JASARAC', 'JASCRAC', 'JARAC', 'JSARAC', 'JSRAC',
                               'JASHAC', 'RJASRAC', 'YASRAC', 'GMA', 'GENA',
                               'GAMA', 'GE;A', 'GAME', 'GEMRA', 'GGEMA',
@@ -216,7 +225,10 @@ rights_societies_wrong = set(['BOEM', 'BEIM', 'BIME', 'BIEN', 'BIE;', 'BIEIM',
                               'GEME', 'GEMM', 'GEMS', 'GMEA', 'SSABAM', 'SBAM',
                               'SABBAM', 'SABEM', 'SABAN', 'SABM', 'SABIAM',
                               'SABMA', 'SABAAM', 'SAAM', 'SABNAM', 'SEBAM',
-                              'SGEA', 'SGSE', 'MPCS', 'MCPA'])
+                              'SGEA', 'SGSE', 'MPCS', 'MCPA', 'ACAP', 'ACSAP',
+                              'ACSCAP', 'ACASP', 'ASAP', 'ASCA[', 'ASCAF',
+                              'ASCA', 'ASCAP_', 'ASCAP,', 'ASCAPE', 'ASCSAP',
+                              'ASCVAP', 'ASCASP', 'ASACP', 'ASXP', 'ASRTISJUS'])
 
 # a set of rights society names with characters from the wrong character set
 rights_societies_wrong_char = set(['ΒΙΕΜ', 'BΙEM', 'BΙΕΜ', 'BIEΜ', 'AEΠΙ',
@@ -260,7 +272,7 @@ masteringsids = set(['mastering sid code', 'master sid code', 'master sid',
                      'mastering sid сode', 'masterin sid code',
                      'cd centre etching - mastering sid code',
                      'sid mastering code cd2', 'master s.i.d.',
-                     'master s.i.d. code'])
+                     'master s.i.d. code', 'dvd - mastering sid code'])
 
 mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code',
                  'modul sid code', 'moould sid code', 'moudl sid code',
@@ -327,7 +339,62 @@ mouldsids = set(['mould sid code', 'mould sid', 'mold sid', 'mold sid code',
                  'mould sid code disc 2', 'mould sid code dvd1',
                  'mould s.i.d.', 'mould s.i.d. code', 'moulds.i.d. code',
                  's.i.d. mould code', 's.i.d. moulding code',
-                 'modul sid code (both discs)'])
+                 'modul sid code (both discs)', 'inner mould sid code'])
+
+possible_mastering_sid = set(['sid code matrix', 'sid code - matrix', 'sid code (matrix)',
+                              'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)',
+                              'sid code, matrix ring', 'sid code: matrix ring'])
+
+# some values that are not the actual data, but are metadata describing
+# something about the SID codes (readable, missing, and so on) or about
+# actions that need to be taken.
+sid_ignore = set(['none', 'none?', 'none (?)', '(none)', '-none-', '[none]', '<none>', '\'none\'',
+                  'none.', 'non', 'nond', 'none found', 'none or hidden', 'none given', 'not',
+                  'not present', '(not present)', '[not present]', '<not present>',
+                  'not present or not entered', '[not yet identified]', 'nothing',
+                  'none / [missing]', 'missing', '(missing)', '?missing?', '"missing"',
+                  '[missing]', '(missing info)', '[missing data]', '[missing or not entered]',
+                  'missing entry', 'not available', '(not available)', '[not available]',
+                  'not found', '(not found)', '[not found]', '(not found on cd)',
+                  'missing / not found', '[indecipherable]', '(indistinguishable)', 'not known',
+                  'unknown', '(unknown)', '[unknown]', 'unk', 'not on disc', 'not visible',
+                  '(not visible)', '(not visble)', '[not visible]', 'not visible/present',
+                  'none or not visible', 'not visible on both cds', 'not visible (black cd)',
+                  'not visable', 'none visible', '[none visible]', 'non visible',
+                  '[no code visible]', '[none recorded]', '[none or missing]', 'none seen',
+                  '[none seen]', '[not seen]', 'not registered', 'none detected', 'none entered',
+                  'not entered', '[not entered]', '(not entered', '(not entered)',
+                  '[nothing entered]', 'not enterd', 'none or not entered', '(none or not entered)',
+                  '[none or not entered]', 'not entered / none', 'not entered or none',
+                  '(not entered or none)', '[not entered/none]', '... not entered ...',
+                  '[to be entered]', 'not entered or not present', 'need to be entered',
+                  'to be confirmed', '[?]', '[? ?]', '?', '??', '???', '????', '???????',
+                  '(???)', 'no', 'not recorded', '[not recorded]', 'not supplied', '(not supplied)',
+                  '[not supplied]', 'none supplied', 'unreadable', '[unreadable]', '(unreadable)',
+                  'unreadable/too small', 'none or unreadable', 'nil', 'not given',
+                  '(not given)', '[not given]', 'not inserted', '(not inserted)', '[not inserted]',
+                  'not added', '(not added)', '[not added]', '[not added yet]',
+                  '(to be added by another user)', 'none cited', 'not provided', '(not provided)',
+                  'not stated', '[not stated]', 'not submitted', '[not submitted]',
+                  '[not submittted]', '(not apparent)', '[not apparent]', '<not apparent>',
+                  'none apparent', 'apparently none', 'not legible', '[not legible]', 'illegible',
+                  '[illegible]', 'no sid', 'no sid code', 'no sid codes', 'no mastering sid code',
+                  'not detectable', 'none or not detectable', '[not discernable]', 'not readable',
+                  '(not readable)', '[not readable]', '[none/not readable]',
+                  '[none / not readable]', 'not readable (to small)', 'not clearly readable',
+                  'can not read', '[not reported]', 'no code', '[no code]', '(empty)', '[empty]',
+                  'cannot locate', 'to be completed', 'obscured', 'invisible',
+                  '[not yet identified]', 'unidentified', 'not specified', 'no specified',
+                  'not included', 'not noted', '[not provided by user]', 'not shown',
+                  'still missing', 'none stated', 'absent', '[absent]', 'n/a', 'undetermined',
+                  '(doesnt have one)', 'non-existend', 'no mould', 'no mould sid',
+                  'no mould sid code', '(no mould sid code)', '[no mould sid code]',
+                  '"no mould sid code"', 'no mould sid-code', 'no mould code', '(no mould code)',
+                  'no ifpi', 'no ifpi code', 'unstated', '[blank]', 'unable to read',
+                  'can\'t find', 'can\'t find it', 'no code discernible', 'vacant',
+                  '[none observed]', 'indistinct', 'information missing', 'no information',
+                  '(too faint to see)', 'without sid', 'present, but digits cannot be identified',
+                  'There is something on the innermost edge but it is unreadable'])
 
 # a list of creative commons identifiers
 creativecommons = ['CC-BY-NC-ND', 'CC-BY-ND', 'CC-BY-SA', 'ShareAlike']
@@ -375,3 +442,69 @@ nobarcode = set(['no barcode', 'without', 'without ean', 'without barcode',
                  'no barcord', 'no bracode', 'no borcode', 'no contiene cod de barras.',
                  'w/o code',
                 ])
+
+# pressing plants
+#
+# Dureco:
+# -------
+# https://www.discogs.com/label/7207-Dureco
+# https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
+# https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
+# https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
+# https://www.youtube.com/watch?v=laDLvlj8tIQ
+# https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
+#
+# Since Dureco was also a distributor there are
+# sometimes false positives
+#
+# Microservice:
+# -------------
+# https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
+#
+# MPO:
+# ----
+# https://www.discogs.com/label/56025-MPO
+#
+# Nimbus:
+# ------
+# https://www.discogs.com/label/93218-Nimbus
+#
+# Mayking:
+# -------
+# https://www.discogs.com/label/147881-Mayking
+#
+# EMI Uden:
+# --------
+# https://www.discogs.com/label/266256-EMI-Uden
+#
+# WEA Mfg Olyphant:
+# -----------------
+# https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
+#
+# Opti.Me.S:
+# ----------
+# https://www.discogs.com/label/271323-OptiMeS
+#
+# Format: (plant id, year production started, label name)
+#
+plants_compact_disc = [(7207, 1987, 'Dureco'), (300888, 1987, 'Microservice'),
+                       (56025, 1984, 'MPO'), (93218, 1984, 'Nimbus'),
+                       (147881, 1985, 'Mayking'), (266256, 1989, 'EMI Uden'),
+                       (291934, 1996, 'WEA Mfg Olyphant'), (271323, 1986, 'Opti.Me.S')]
+
+# https://www.discogs.com/label/358102-PDO-USA
+# https://www.discogs.com/label/360848-PMDC-USA
+# https://www.discogs.com/label/266782-UML
+# https://www.discogs.com/label/381697-EDC-USA
+# https://www.discogs.com/label/358025-PDO-Germany
+# https://www.discogs.com/label/342158-PMDC-Germany
+# https://www.discogs.com/label/331548-Universal-M-L-Germany
+# https://www.discogs.com/label/384133-EDC-Germany
+
+plants = [(358102, 1986, 'PDO, USA'), (360848, 1992, 'PMDC, USA'), (266782, 1999, 'UML'),
+          (381697, 2005, 'EDC, USA'), (358025, 1986, 'PDO, Germany'),
+          (342158, 1993, 'PMDC, Germany'), (331548, 1999, 'Universal, M & L, Germany'),
+          (384133, 2005, 'EDC, Germany'), (265455, 1992, 'PMDC, France')]
+
+pmdc_misspellings = ['MADE IN USA BY PDMC', 'MADE IN GERMANY BY PDMC',
+                     'MADE IN FRANCE BY PDMC', 'PDMC FRANCE']

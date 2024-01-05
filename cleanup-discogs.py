@@ -3,40 +3,6 @@
 # Tool to discover 'smells' in the Discogs data dump. It prints a list of URLs
 # of releases that need to be fixed.
 #
-# Why this happens:
-#
-# https://www.well.com/~doctorow/metacrap.htm
-#
-# Currently the following smells can be discovered:
-#
-# * depósito legal :: until recently the "depósito legal" data (for Spanish
-#   releases) was essentially free text in the "Barcode and Other Identifiers"
-#   section.
-#   Since the August 2017 dump there is a separate field for it (and it has
-#   effectively become a first class citizen in BaOI), but there are still many
-#   releases where this information has not been changed and is in an "Other"
-#   field in BaOI.
-#   Also, there are many misspellings, making it more difficult to find.
-# * label code :: until recently "Other" was used to specify the
-#   label code, but since then there is a dedicated field called
-#   "Label Code". There are still many entries that haven't been changed
-#   though.
-# * SPARS code :: until recently "Other" was used to specify the
-#   SPARS code, but since then there is a dedicated field called
-#   "SPARS Code". There are still many entries that haven't been changed
-#   though.
-# * rights society :: until a few years ago "Other" was used to specify
-#   the rights society, but since then there is a dedicated field called
-#   "Rights Society". There are still many entries that haven't been changed
-#   though.
-# * month as 00 :: in older releases it was allowed to have the month as 00
-#   but this is no longer allowed. When editing an entry that has 00 as the
-#   month Discogs will throw an error.
-# * hyperlinks :: in older releases it was OK to have normal HTML hyperlinks
-#   but these have been replaced by markup:
-#   https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
-#   There are still many releases where old hyperlinks are used.
-#
 # The results that are printed by this script are
 # by no means complete or accurate
 #
@@ -44,1261 +10,147 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2023 - Armijn Hemel
+# Copyright 2017-2024 - Armijn Hemel
 
 import configparser
 import datetime
 import gzip
-import os
+import pathlib
 import re
 import sys
-import xml.sax
+
+from dataclasses import dataclass
+
+import defusedxml.ElementTree as et
 
 import click
 import discogssmells
+
+ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
+                                ':': None, '–': None,})
+
+# a list of possible label code false positives. These are
+# used when checking the catalog numbers.
+LABEL_CODE_FALSE_POSITIVES = set([654, 1005, 1060, 5320, 11358, 20234, 22804, 29480, 38653,
+                                  39161, 54361, 63510, 97031, 113617, 127100, 163947,
+                                  199380, 487381, 498544])
+
+RIGHTS_SOCIETY_DELIMITERS = ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']
+
+# a quick and dirty translation table to see if rights society values
+# are correct. This is just for the first big sweep.
+RIGHTS_SOCIETY_TRANSLATE_QND = str.maketrans({'.': None, ' ': None, '•': None,
+                                              '[': None, ']': None, '(': None,
+                                              ')': None})
+
+SID_INVALID_FORMATS = set(['Vinyl', 'Cassette', 'Shellac', 'File',
+                           'VHS', 'DCC', 'Memory Stick', 'Edison Disc'])
+
+# SID descriptions (either Mastering or Mould)
+SID_DESCRIPTIONS = ['source identification code', 'sid', 'sid code', 'sid-code']
+
+SPARS_TRANSLATE = str.maketrans({'.': None, ' ': None, '•': None, '·': None,
+                                 '∙': None, '᛫': None, '[': None, ']': None,
+                                 '-': None, '|': None, '︱': None, '/': None,
+                                 '\\': None})
+
+# Translation table for SID codes as some people
+# insist on using ƒ/⨍ instead of f or ρ/ƥ instead of p
+SID_TRANSLATE = str.maketrans({' ': None, '-': None,
+                              '⨍': 'f', 'ƒ': 'f',
+                              'ρ': 'p', 'ƥ': 'p'})
+
+TRACKLIST_CHECK_FORMATS = ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']
 
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
 currentyear = datetime.datetime.utcnow().year
 
-# a class with a handler for the SAX parser
-class discogs_handler(xml.sax.ContentHandler):
-    def __init__(self, config_settings):
-        # many default settings
-        self.incountry = False
-        self.inrole = False
-        self.inreleased = False
-        self.inspars = False
-        self.inother = False
-        self.indeposito = False
-        self.inlabelcode = False
-        self.inbarcode = False
-        self.inasin = False
-        self.inisrc = False
-        self.inmasteringsid = False
-        self.inmouldsid = False
-        self.inmatrix = False
-        self.inrightssociety = False
-        self.intracklist = False
-        self.invideos = False
-        self.innotes = False
-        self.incompany = False
-        self.incompanyid = False
-        self.inartistid = False
-        self.noartist = False
-        self.release = None
-        self.country = None
-        self.role = None
-        self.indescription = False
-        self.indescriptions = False
-        self.ingenre = False
-        self.inartist = False
-        self.debugcount = 0
-        self.count = 0
-        self.prev = None
-        self.formattexts = set([])
-        self.iscd = False
-        self.isrejected = False
-        self.isdraft = False
-        self.isdeleted = False
-        self.depositofound = False
-        self.labels = []
-        self.config = config_settings
-        self.contentbuffer = ''
-        if self.config['check_credits']:
-            creditsfile = open(self.config['creditsfile'], 'r')
-            self.credits = set(map(lambda x: x.strip(), creditsfile.readlines()))
-            creditsfile.close()
+pkd_re = re.compile(r"\d{1,2}/((?:19|20)?\d{2})")
 
-    # startElement() is called every time a new XML element is parsed
-    def startElement(self, name, attrs):
-        # first process the contentbuffer of the previous
-        # element that was stored.
-        if self.ingenre:
-            self.genres.add(self.contentbuffer)
-        if self.incountry:
-            self.country = self.contentbuffer
-            #print(str(self.release), self.country, self.labels)
-        if self.config['check_spelling_cs']:
-            if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
-                # People use 0x115 instead of 0x11B, which look very similar
-                # but 0x115 is not valid in the Czech alphabet. Check for all
-                # data except the YouTube playlist.
-                # https://www.discogs.com/group/thread/757556
-                if not self.invideos:
-                    if chr(0x115) in self.contentbuffer:
-                        self.count += 1
-                        print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-        if self.inrole:
-            if self.noartist:
-                wrongrolefornoartist = True
-                for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
-                    if r in self.contentbuffer.strip():
-                        wrongrolefornoartist = False
-                        break
-                if wrongrolefornoartist:
-                    pass
-                    #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
-            if self.config['check_credits']:
-                roledata = self.contentbuffer.strip()
-                if roledata != '':
-                    if '[' not in roledata:
-                        roles = map(lambda x: x.strip(), roledata.split(','))
-                        for role in roles:
-                            if role == '':
-                                continue
-                            if role not in self.credits:
-                                self.count += 1
-                                print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-                                sys.stdout.flush()
-                    else:
-                        # sometimes there is an additional description
-                        # in the role in between [ and ]
-                        rolesplit = roledata.split('[')
-                        for rs in rolesplit:
-                            if ']' in rs:
-                                rs_tmp = rs
-                                while ']' in rs_tmp:
-                                    rs_tmp = rs_tmp.split(']', 1)[1]
-                                roles = map(lambda x: x.strip(), rs_tmp.split(','))
-                                for role in roles:
-                                    if role == '':
-                                        continue
-                                    # ugly hack because sometimes the extra
-                                    # data between [ and ] appears halfway the
-                                    # words in a role, sigh.
-                                    if role == 'By':
-                                        continue
-                                    if role not in self.credits:
-                                        self.count += 1
-                                        print('%8d -- Role \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, role, str(self.release)))
-                                        sys.stdout.flush()
-                                        continue
-        elif self.indescription:
-            if self.indescriptions:
-                if 'Styrene' in self.contentbuffer:
-                    pass
-        elif self.inartistid:
-            if self.config['check_artist']:
-                if self.contentbuffer == '0':
-                    self.count += 1
-                    print('%8d -- Artist not in database: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                    sys.stdout.flush()
-                    self.noartist = True
-                else:
-                    self.noartist = False
-                # TODO: check for genres, as No Artist is
-                # often confused with Unknown Artist
-                #if self.contentbuffer == '118760':
-                #    if len(self.genres) != 0:
-                #        print("https://www.discogs.com/artist/%s" % self.contentbuffer, "https://www.discogs.com/release/%s" % str(self.release))
-                #        print(self.genres)
-                #        sys.exit(0)
-                self.artists.add(self.contentbuffer)
-        elif self.incompanyid:
-            if self.config['check_labels']:
-                if self.year is not None:
-                    # check for:
-                    # https://www.discogs.com/label/205-Fontana
-                    # https://www.discogs.com/label/7704-Philips
-                    if self.contentbuffer == '205':
-                        if self.year < 1957:
-                            self.count += 1
-                            print('%8d -- Label (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '7704':
-                        if self.year < 1950:
-                            self.count += 1
-                            print('%8d -- Label (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-            if self.config['check_plants']:
-                if self.year is not None:
-                    # check for:
-                    # https://www.discogs.com/label/358102-PDO-USA
-                    # https://www.discogs.com/label/360848-PMDC-USA
-                    # https://www.discogs.com/label/266782-UML
-                    # https://www.discogs.com/label/381697-EDC-USA
-                    if self.contentbuffer == '358102':
-                        if self.year < 1986:
-                            self.count += 1
-                            print('%8d -- Pressing plant PDO, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '360848':
-                        if self.year < 1992:
-                            self.count += 1
-                            print('%8d -- Pressing plant PMDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '266782':
-                        if self.year < 1999:
-                            self.count += 1
-                            print('%8d -- Pressing plant UML (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '381697':
-                        if self.year < 2005:
-                            self.count += 1
-                            print('%8d -- Pressing plant EDC, USA (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-                    # check for
-                    # https://www.discogs.com/label/358025-PDO-Germany
-                    # https://www.discogs.com/label/342158-PMDC-Germany
-                    # https://www.discogs.com/label/331548-Universal-M-L-Germany
-                    # https://www.discogs.com/label/384133-EDC-Germany
-                    if self.contentbuffer == '358025':
-                        if self.year < 1986:
-                            self.count += 1
-                            print('%8d -- Pressing plant PDO, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '342158':
-                        if self.year < 1993:
-                            self.count += 1
-                            print('%8d -- Pressing plant PMDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '331548':
-                        if self.year < 1999:
-                            self.count += 1
-                            print('%8d -- Pressing plant Universal, M & L, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    elif self.contentbuffer == '384133':
-                        if self.year < 2005:
-                            self.count += 1
-                            print('%8d -- Pressing plant EDC, Germany (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-                    # https://www.discogs.com/label/265455-PMDC
-                    if self.contentbuffer == '265455':
-                        if self.year < 1992:
-                            self.count += 1
-                            print('%8d -- Pressing plant PMDC, France (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-
-                    '''
-                    ## https://www.discogs.com/label/34825-Sony-DADC
-                    if self.contentbuffer == '34825':
-                        if self.year < 2000:
-                            self.count += 1
-                            print('%8d -- Pressing plant Sony DADC (wrong year %s): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-                    '''
-
-                    # check for:
-                    #
-                    # Dureco:
-                    # -------
-                    # https://www.discogs.com/label/7207-Dureco
-                    # https://dureco.wordpress.com/2014/12/09/opening-cd-fabriek-weesp/
-                    # https://www.anderetijden.nl/aflevering/141/De-komst-van-het-schijfje (starting 22:25)
-                    # https://books.google.nl/books?id=yyQEAAAAMBAJ&pg=RA1-PA37&lpg=RA1-PA37&dq=dureco+CDs+1987&source=bl&ots=cwc3WPM3Nw&sig=t0man_qWguylE9HEyqO39axo8kM&hl=nl&sa=X&ved=0ahUKEwjdme-xxcTZAhXN26QKHURgCJc4ChDoAQg4MAE#v=onepage&q&f=false
-                    # https://www.youtube.com/watch?v=laDLvlj8tIQ
-                    # https://krantenbankzeeland.nl/issue/pzc/1987-09-19/edition/0/page/21
-                    #
-                    # Since Dureco was also a distributor there are
-                    # sometimes false positives
-                    #
-                    # Microservice:
-                    # -------------
-                    # https://www.discogs.com/label/300888-Microservice-Microfilmagens-e-Reprodu%C3%A7%C3%B5es-T%C3%A9cnicas-Ltda
-                    #
-                    # MPO:
-                    # ----
-                    # https://www.discogs.com/label/56025-MPO
-                    #
-                    # Nimbus:
-                    # ------
-                    # https://www.discogs.com/label/93218-Nimbus
-                    #
-                    # Mayking:
-                    # -------
-                    # https://www.discogs.com/label/147881-Mayking
-                    #
-                    # EMI Uden:
-                    # --------
-                    # https://www.discogs.com/label/266256-EMI-Uden
-                    #
-                    # WEA Mfg Olyphant:
-                    # -----------------
-                    # https://www.discogs.com/label/291934-WEA-Mfg-Olyphant
-                    #
-                    # Opti.Me.S:
-                    # ----------
-                    # https://www.discogs.com/label/271323-OptiMeS
-                    #
-                    # Format: (plant id, year production started, label name)
-                    plants = [('7207', 1987, 'Dureco'), ('300888', 1987, 'Microservice'), ('56025', 1984, 'MPO'), ('93218', 1984, 'Nimbus'), ('147881', 1985, 'Mayking'), ('266256', 1989, 'EMI Uden'), ('291934', 1996, 'WEA Mfg Olyphant'), ('271323', 1986, 'Opti.Me.S')]
-                    for pl in plants:
-                        if self.contentbuffer == pl[0]:
-                            if 'CD' in self.formattexts:
-                                if self.year < pl[1]:
-                                    self.count += 1
-                                    print('%8d -- Pressing plant %s (possibly wrong year %s): https://www.discogs.com/release/%s' % (self.count, pl[2], self.year, str(self.release)))
-                                    break
-
-        elif self.inreleased:
-            if self.config['check_month']:
-                monthres = re.search('-(\d+)-', self.contentbuffer)
-                if monthres is not None:
-                    monthnr = int(monthres.groups()[0])
-                    if monthnr == 0:
-                        self.count += 1
-                        print('%8d -- Month 00: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                    elif monthnr > 12:
-                        self.count += 1
-                        print('%8d -- Month impossible (%d): https://www.discogs.com/release/%s' % (self.count, monthnr, str(self.release)))
-                    sys.stdout.flush()
-            if self.contentbuffer != '':
-                try:
-                    self.year = int(self.contentbuffer.split('-', 1)[0])
-                except:
-                    if self.config['check_year']:
-                        self.count += 1
-                        print('%8d -- Year \'%s\' invalid: https://www.discogs.com/release/%s' % (self.count, self.contentbuffer, str(self.release)))
-                        sys.stdout.flush()
-        elif self.innotes:
-            if '카지노' in self.contentbuffer:
-                # Korean casino spam that pops up every once in a while
-                print('Spam: https://www.discogs.com/release/%s' % str(self.release))
-                sys.stdout.flush()
-            if self.country == 'Spain':
-                if self.config['check_deposito'] and not self.depositofound:
-                    # sometimes "deposito legal" can be found
-                    # in the "notes" section
-                    content_lower = self.contentbuffer.lower()
-                    for d in discogssmells.depositores:
-                        result = d.search(content_lower)
-                        if result is not None:
-                            self.count += 1
-                            found = True
-                            self.prev = self.release
-                            print('%8d -- Depósito Legal (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            break
-            if self.config['check_html']:
-                # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
-                if '&lt;a href="http://www.discogs.com/release/' in self.contentbuffer.lower():
-                    self.count += 1
-                    print('%8d -- old link (Notes): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-            if self.config['check_creative_commons']:
-                ccfound = False
-                for cc in discogssmells.creativecommons:
-                    if cc in self.contentbuffer:
-                        self.count += 1
-                        print('%8d -- Creative Commons reference (%s): https://www.discogs.com/release/%s' % (self.count, cc, str(self.release)))
-                        ccfound = True
-                        break
-
-                if not ccfound:
-                    if 'creative commons' in self.contentbuffer.lower():
-                        self.count += 1
-                        print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                        ccfound = True
-        if self.intracklist and self.inposition:
-            '''
-            # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
-            if 'Vinyl' in self.formattexts:
-                if self.year is not None:
-                    if self.year < 1948:
-                        self.count += 1
-                        print('%8d -- Impossible year (%d): https://www.discogs.com/release/%s' % (self.count, self.year, str(self.release)))
-            '''
-            if self.config['check_tracklisting']:
-                if self.tracklistcorrect:
-                    if len(self.formattexts) == 1:
-                        for f in ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']:
-                            if f in self.formattexts:
-                                try:
-                                    int(self.contentbuffer)
-                                    self.count += 1
-                                    print('%8d -- Tracklisting (%s): https://www.discogs.com/release/%s' % (self.count, f, str(self.release)))
-                                    self.tracklistcorrect = False
-                                    return
-                                except:
-                                    pass
-                        if self.formatmaxqty == 1:
-                            if self.contentbuffer.strip() != '' and self.contentbuffer.strip() != '-' and self.contentbuffer in self.tracklistpositions:
-                                self.count += 1
-                                print('%8d -- Tracklisting reuse (%s, %s): https://www.discogs.com/release/%s' % (self.count, list(self.formattexts)[0], self.contentbuffer, str(self.release)))
-                                return
-                            self.tracklistpositions.add(self.contentbuffer)
-        sys.stdout.flush()
-
-        # now reset some values
-        self.incountry = False
-        self.inreleased = False
-        self.inrole = False
-        self.inspars = False
-        self.inother = False
-        self.inlabelcode = False
-        self.inbarcode = False
-        self.inasin = False
-        self.inisrc = False
-        self.inmasteringsid = False
-        self.inmouldsid = False
-        self.inmatrix = False
-        self.inrightssociety = False
-        self.indeposito = False
-        self.innotes = False
-        self.indescription = False
-        self.intitle = False
-        self.ingenre = False
-        self.inposition = False
-        self.contentbuffer = ''
-        if not self.incompany:
-            self.incompanyid = False
-        self.inartistid = False
-        if name == "release":
-            # new release entry, so reset many fields
-            self.isrejected = False
-            self.isdraft = False
-            self.isdeleted = False
-            self.depositofound = False
-            self.seentracklist = False
-            self.debugcount += 1
-            self.iscd = False
-            self.tracklistcorrect = True
-            self.year = None
-            self.role = None
-            self.country = None
-            self.intracklist = False
-            self.invideos = False
-            self.incompany = False
-            self.incompanyid = False
-            self.inartistid = False
-            self.noartist = False
-            self.ingenre = False
-            self.formattexts = set([])
-            self.artists = set([])
-            self.labels = []
-            self.formatmaxqty = 0
-            self.genres = set([])
-            self.tracklistpositions = set()
-            self.isrcpositions = set()
-            self.isrcseen = set()
-            for (k, v) in attrs.items():
-                if k == 'id':
-                    self.release = v
-                elif k == 'status':
-                    if v == 'Rejected':
-                        self.isrejected = True
-                    elif v == 'Draft':
-                        self.isdraft = True
-                    elif v == 'Deleted':
-                        self.isdeleted = True
-        if self.isrejected or self.isdraft or self.isdeleted:
-            return
-        if name == 'descriptions':
-            self.indescriptions = True
-        elif not name == 'description':
-            self.indescriptions = False
-
-        if name == 'artist':
-            self.inartist = True
-            self.incompany = False
-            self.noartist = False
-        if name == 'company':
-            self.incompany = True
-            self.inartist = False
-        if name == 'id':
-            if self.incompany:
-                self.incompanyid = True
-            if self.inartist:
-                self.inartistid = True
-                self.noartist = False
-        if name == 'country':
-            self.incountry = True
-        elif name == 'role':
-            self.inrole = True
-        elif name == 'label':
-            for (k, v) in attrs.items():
-                if k == 'name':
-                    labelname = v
-                    if self.config['check_label_name']:
-                        if v == 'London':
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Wrong label (London): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                elif k == 'catno':
-                    catno = v.lower()
-                    if self.config['check_label_code']:
-                        if catno.startswith('lc'):
-                            if discogssmells.labelcodere.match(catno) is not None:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Possible Label Code (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                    if self.config['check_deposito']:
-                        # now check for D.L.
-                        dlfound = False
-                        for d in discogssmells.depositores:
-                            result = d.search(catno)
-                            if result is not None:
-                                for depositovalre in discogssmells.depositovalres:
-                                    if depositovalre.search(catno) is not None:
-                                        dlfound = True
-                                        break
-
-                        if dlfound:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Possible Depósito Legal (in Catalogue Number): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-            self.labels.append((labelname, catno))
-        elif name == 'genre':
-            self.ingenre = True
-        elif name == 'tracklist':
-            self.intracklist = True
-        elif name == 'videos':
-            self.invideos = True
-            self.intracklist = False
-        elif name == 'companies':
-            self.invideos = False
-        elif name == 'title':
-            self.intitle = True
-        elif name == 'position':
-            self.inposition = True
-        elif name == 'format':
-            curformat = None
-            for (k, v) in attrs.items():
-                if k == 'name':
-                    if v == 'CD':
-                        self.iscd = True
-                    self.formattexts.add(v)
-                    curformat = v
-                elif k == 'qty':
-                    if self.formatmaxqty == 0:
-                        self.formatmaxqty = max(self.formatmaxqty, int(v))
-                    else:
-                        self.formatmaxqty += int(v)
-                elif k == 'text':
-                    if v != '':
-                        if self.config['check_spars_code']:
-                            tmpspars = v.lower().strip()
-                            for s in ['.', ' ', '•', '·', '[', ']', '-', '|', '/']:
-                                tmpspars = tmpspars.replace(s, '')
-                            if tmpspars in discogssmells.validsparscodes:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Possible SPARS Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                        if self.config['check_label_code']:
-                            if v.lower().startswith('lc'):
-                                if discogssmells.labelcodere.match(v.lower()) is not None:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Possible Label Code (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    return
-                        if self.config['check_cdg']:
-                            if v.lower().strip() == 'cd+g':
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- CD+G (in Format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                        if v == 'DMM':
-                            if curformat != 'Vinyl':
-                                print('%8d -- DMM (%s, in Format): https://www.discogs.com/release/%s' % (self.count, curformat, str(self.release)))
-
-        elif name == 'description':
-            self.indescription = True
-        elif name == 'released':
-            self.inreleased = True
-        elif name == 'notes':
-            self.innotes = True
-        elif name == 'identifier':
-            isdeposito = False
-            attritems = dict(attrs.items())
-            if 'type' in attritems:
-                v = attritems['type']
-                if v == 'SPARS Code':
-                    self.inspars = True
-                elif v == 'Depósito Legal':
-                    self.indeposito = True
-                    self.depositofound = True
-                elif v == 'Label Code':
-                    self.inlabelcode = True
-                elif v == 'Rights Society':
-                    self.inrightssociety = True
-                elif v == 'Barcode':
-                    self.inbarcode = True
-                elif v == 'ASIN':
-                    self.inasin = True
-                elif v == 'ISRC':
-                    self.inisrc = True
-                elif v == 'Mastering SID Code':
-                    self.inmasteringsid = True
-                elif v == 'Mould SID Code':
-                    self.inmouldsid = True
-                elif v == 'Matrix / Runout':
-                    self.inmatrix = True
-                elif v == 'Other':
-                    self.inother = True
-            if 'value' in attritems:
-                v = attritems['value']
-                if not self.config['reportall']:
-                    if self.prev == self.release:
-                        return
-                if 'MADE IN USA BY PDMC' in v:
-                    self.count += 1
-                    self.prev = self.release
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                elif 'MADE IN GERMANY BY PDMC' in v:
-                    self.count += 1
-                    self.prev = self.release
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                elif 'MADE IN FRANCE BY PDMC' in v:
-                    self.count += 1
-                    self.prev = self.release
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                elif 'PDMC FRANCE' in v:
-                    self.count += 1
-                    self.prev = self.release
-                    print("%8d -- Matrix (PDMC instead of PMDC): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                if self.config['check_creative_commons']:
-                    if 'creative commons' in v.lower():
-                        self.count += 1
-                        print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                if self.config['check_matrix']:
-                    if self.inmatrix:
-                        if self.year is not None:
-                            if 'MFG BY CINRAM' in v and '#' in v and 'USA' not in v:
-                                cinramres = re.search('#(\d{2})', v)
-                                if cinramres is not None:
-                                    cinramyear = int(cinramres.groups()[0])
-                                    # correct the year. This won't work correctly after 2099.
-                                    if cinramyear <= currentyear - 2000:
-                                        cinramyear += 2000
-                                    else:
-                                        cinramyear += 1900
-                                    if cinramyear > currentyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < cinramyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, cinramyear, str(self.release)))
-                            elif 'P+O' in v:
-                                # https://www.discogs.com/label/277449-PO-Pallas
-                                pallasres = re.search('P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', v)
-                                if pallasres is not None:
-                                    pallasyear = int(pallasres.groups()[0])
-                                    # correct the year. This won't work correctly after 2099.
-                                    if pallasyear <= currentyear - 2000:
-                                        pallasyear += 2000
-                                    else:
-                                        pallasyear += 1900
-                                    if pallasyear > currentyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Matrix (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < pallasyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Matrix (release date %d earlier than matrix year %d): https://www.discogs.com/release/%s" % (self.count, self.year, pallasyear, str(self.release)))
-
-                if self.inspars:
-                    if self.config['check_spars_code']:
-                        if v == "none":
-                            return
-                        # Sony format codes
-                        # https://www.discogs.com/forum/thread/339244
-                        # https://www.discogs.com/forum/thread/358285
-                        if v == 'CDC' or v == 'CDM':
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Sony Format Code in SPARS: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        wrongspars = False
-                        sparstocheck = []
-                        tmpspars = v.lower().strip()
-                        for s in ['.', ' ', '•', '·', '∙', '᛫', '[', ']', '-', '|', '/']:
-                            tmpspars = tmpspars.replace(s, '')
-                        if len(tmpspars) != 3:
-                            sparssplit = False
-                            for s in ['|', '/', ',', ' ', '&', '-', '+', '•']:
-                                if s in v.lower().strip():
-                                    splitspars = list(map(lambda x: x.strip(), v.lower().strip().split(s)))
-                                    if len(list(filter(lambda x: len(x) == 3, splitspars))) != len(splitspars):
-                                        continue
-                                    sparssplit = True
-                                    break
-                            if not sparssplit:
-                                sparstocheck.append(tmpspars)
-                        else:
-                            sparstocheck.append(tmpspars)
-                        for sparscheck in sparstocheck:
-                            if sparscheck not in discogssmells.validsparscodes:
-                                wrongspars = True
-                            for s in sparscheck:
-                                if ord(s) > 256:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- SPARS Code (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
-
-                            if wrongspars:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- SPARS Code (format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                        if self.year is not None:
-                            if self.year < 1984:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- SPARS Code (impossible year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                elif not self.inother:
-                    if self.config['check_spars_code']:
-                        if v.lower() in discogssmells.validsparscodes:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if 'd' in v.lower():
-                            tmpspars = v.lower().strip()
-                            for s in ['.', ' ', '•', '∙', '·', '᛫', '[', ']', '-', '|', '/', '︱']:
-                                tmpspars = tmpspars.replace(s, '')
-
-                            # just check a few other possibilities of
-                            # possible SPARS codes
-                            if tmpspars in discogssmells.validsparscodes:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                if self.inlabelcode:
-                    if self.config['check_label_code']:
-                        # check how many people use 'O' instead of '0'
-                        if v.lower().startswith('lc'):
-                            if 'O' in v:
-                                print('%8d -- Spelling error (in Label Code): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                sys.stdout.flush()
-                                return
-                        if discogssmells.labelcodere.match(v.lower().strip()) is None:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Label Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                if self.inrightssociety:
-                    if self.config['check_label_code']:
-                        if v.lower().startswith('lc'):
-                            if discogssmells.labelcodere.match(v.lower()) is not None:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Label Code (in Rights Society): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                    if self.config['check_rights_society']:
-                        for r in discogssmells.rights_societies_wrong:
-                            if r in v.upper():
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Rights Society (possible wrong value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                break
-                    if self.config['check_rights_society']:
-                        if v.upper() in discogssmells.rights_societies_wrong_char:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, v, str(self.release)))
-                elif not self.inother:
-                    if self.config['check_rights_society']:
-                        if '/' in v:
-                            vsplits = v.split('/')
-                            for vsplit in vsplits:
-                                for r in discogssmells.rights_societies:
-                                    if vsplit.upper().replace('.', '') == r or vsplit.upper().replace(' ', '') == r:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                        break
-                        else:
-                            for r in discogssmells.rights_societies:
-                                if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    break
-                if self.inbarcode:
-                    if self.config['check_label_code']:
-                        if v.lower().startswith('lc'):
-                            if discogssmells.labelcodere.match(v.lower()) is not None:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Label Code (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                    if self.country == 'Spain':
-                        if self.config['check_deposito'] and not self.depositofound:
-                            for depositovalre in discogssmells.depositovalres:
-                                if depositovalre.match(v.lower()) is not None:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Depósito Legal (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    return
-                    if self.config['check_rights_society']:
-                        for r in discogssmells.rights_societies:
-                            if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Rights Society (in Barcode): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                break
-                if self.inasin:
-                    if self.config['check_asin']:
-                        # temporary hack, move to own configuration option
-                        asinstrict = False
-                        if not asinstrict:
-                            tmpasin = v.strip().replace('-', '')
-                        else:
-                            tmpasin = v
-                        if not len(tmpasin.split(':')[-1].strip()) == 10:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ASIN (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            sys.stdout.flush()
-                            return
-                if self.inisrc:
-                    if self.config['check_rights_society']:
-                        for r in discogssmells.rights_societies:
-                            if v.upper().replace('.', '') == r or v.upper().replace(' ', '') == r:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Rights Society (in ISRC): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                break
-                    if self.config['check_isrc']:
-                        # Check the length of ISRC fields. According to the
-                        # specifications these should be 12 in length. Some
-                        # ISRC identifiers that have been recorded in the
-                        # database cover a range of tracks. These will be
-                        # reported as wrong ISRC codes. It is unclear what
-                        # needs to be done with those.
-                        # first get rid of cruft
-                        isrc_tmp = v.strip().upper()
-                        if isrc_tmp.startswith('ISRC'):
-                            isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
-                        if isrc_tmp.startswith('CODE'):
-                            isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
-
-                        # Chinese ISRC, see https://www.discogs.com/forum/thread/799845
-                        if '/A.J6' in isrc_tmp:
-                            isrc_tmp = isrc_tmp.rsplit('/', 1)[0].strip()
-
-                        # replace a few characters
-                        isrc_tmp = isrc_tmp.replace('-', '')
-                        isrc_tmp = isrc_tmp.replace(' ', '')
-                        isrc_tmp = isrc_tmp.replace('.', '')
-                        isrc_tmp = isrc_tmp.replace(':', '')
-                        isrc_tmp = isrc_tmp.replace('–', '')
-                        if len(isrc_tmp) != 12:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC (wrong length): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            sys.stdout.flush()
-                            return
-                        else:
-                            if isrc_tmp in self.isrcseen:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- ISRC (duplicate %s): https://www.discogs.com/release/%s' % (self.count, isrc_tmp, str(self.release)))
-                                sys.stdout.flush()
-                            self.isrcseen.add(isrc_tmp)
-                            isrcres = re.match("\w{5}(\d{2})\d{5}", isrc_tmp)
-                            if isrcres is None:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- ISRC (wrong format): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                sys.stdout.flush()
-                                return
-                            if self.year is not None:
-                                isrcyear = int(isrcres.groups()[0])
-                                if isrcyear < 100:
-                                    # correct the year. This won't work
-                                    # correctly after 2099.
-                                    if isrcyear <= currentyear - 2000:
-                                        isrcyear += 2000
-                                    else:
-                                        isrcyear += 1900
-                                if isrcyear > currentyear:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print("%8d -- ISRC (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                elif self.year < isrcyear:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print("%8d -- ISRC (date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                if self.inmouldsid:
-                    # temporary hack, move to own configuration option
-                    mould_sid_strict = False
-                    if self.config['check_mould_sid']:
-                        if v.strip() == 'none':
-                            return
-                        # cleanup first for not so heavy formatting booboos
-                        mould_tmp = v.strip().lower().replace(' ', '')
-                        mould_tmp = mould_tmp.replace('-', '')
-                        # some people insist on using ƒ instead of f
-                        mould_tmp = mould_tmp.replace('ƒ', 'f')
-                        res = discogssmells.mouldsidre.match(mould_tmp)
-                        if res is None:
-                            self.count += 1
-                            self.prev = self.release
-                            print(f'{self.count:8} -- Mould SID Code (value): https://www.discogs.com/release/{self.release}')
-                            return
-                        if mould_sid_strict:
-                            mould_split = mould_tmp.split('ifpi', 1)[-1]
-                            for ch in ['i', 'o', 's', 'q']:
-                                if ch in mould_split[-2:]:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Mould SID Code (strict value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    return
-                        # rough check to find SID codes for formats
-                        # other than CD/CD-like
-                        if len(self.formattexts) == 1:
-                            for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
-                                if fmt in self.formattexts:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Mould SID Code (Wrong Format: %s): https://www.discogs.com/release/%s' % (self.count, fmt, str(self.release)))
-                                    return
-                        if self.year is not None:
-                            if self.year < 1993:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Mould SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                if self.inmasteringsid:
-                    if self.config['check_mastering_sid']:
-                        if v.strip() == 'none':
-                            return
-                        # cleanup first for not so heavy formatting booboos
-                        master_tmp = v.strip().lower().replace(' ', '')
-                        master_tmp = master_tmp.replace('-', '')
-                        # some people insist on using ƒ instead of f
-                        master_tmp = master_tmp.replace('ƒ', 'f')
-                        res = discogssmells.masteringsidre.match(master_tmp)
-                        if res is None:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Mastering SID Code (value): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        # rough check to find SID codes for formats
-                        # other than CD/CD-like
-                        if len(self.formattexts) == 1:
-                            for fmt in set(['Vinyl', 'Cassette', 'Shellac', 'File', 'VHS', 'DCC', 'Memory Stick', 'Edison Disc']):
-                                if fmt in self.formattexts:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Mastering SID Code (Wrong Format: %s): https://www.discogs.com/release/%s' % (self.count, fmt, str(self.release)))
-                                    return
-                        if self.year is not None:
-                            if self.year < 1993:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Mastering SID Code (wrong year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                if not self.indeposito:
-                    if self.country == 'Spain':
-                        if self.config['check_deposito']:
-                            if v.startswith("Depósito"):
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                            elif v.startswith("D.L."):
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                else:
-                    if self.country == 'Spain':
-                        if self.config['check_deposito']:
-                            if v.endswith('.'):
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- Depósito Legal (formatting): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                            if self.year is not None:
-                                # now try to find the year
-                                depositoyear = None
-                                if v.strip().endswith('℗'):
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Depósito Legal (formatting, has ℗): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                    # ugly hack, remove ℗ to make at least be able to do some sort of check
-                                    v = v.strip().rsplit('℗', 1)[0]
-                                # several separators, including some Unicode ones
-                                for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
-                                    try:
-                                        depositoyeartext = v.strip().rsplit(sep, 1)[-1]
-                                        if sep == '.' and len(depositoyeartext) == 3:
-                                            continue
-                                        if '.' in depositoyeartext:
-                                            depositoyeartext = depositoyeartext.replace('.', '')
-                                        depositoyear = int(depositoyeartext)
-                                        if depositoyear < 100:
-                                            # correct the year. This won't work correctly after 2099.
-                                            if depositoyear <= currentyear - 2000:
-                                                depositoyear += 2000
-                                            else:
-                                                depositoyear += 1900
-                                        break
-                                    except:
-                                        pass
-
-                                # TODO, also allow (year), example: https://www.discogs.com/release/265497
-                                if depositoyear is not None:
-                                    if depositoyear < 1900:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        return
-                                    elif depositoyear > currentyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Depósito Legal (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        return
-                                    elif self.year < depositoyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Depósito Legal (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        return
-                                else:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print("%8d -- Depósito Legal (year not found): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                sys.stdout.flush()
-                if self.country == 'India':
-                    if self.config['check_pkd']:
-                        if 'pkd' in v.lower() or "production date" in v.lower():
-                            if self.year is not None:
-                                # try a few variants
-                                pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", v)
-                                if pkdres is not None:
-                                    pkdyear = int(pkdres.groups()[0])
-                                    if pkdyear < 100:
-                                        # correct the year. This won't work correctly after 2099.
-                                        if pkdyear <= currentyear - 2000:
-                                            pkdyear += 2000
-                                        else:
-                                            pkdyear += 1900
-                                    if pkdyear < 1900:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif pkdyear > currentyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < pkdyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                            else:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-            if 'description' in attritems:
-                v = attritems['description']
-                attrvalue = attritems['value']
-                if not self.config['reportall']:
-                    if self.prev == self.release:
-                        return
-                self.description = v.lower()
-                if self.config['check_spelling_cs']:
-                    # People use 0x115 instead of 0x11B, which look very
-                    # similar but 0x115 is not valid in the Czech alphabet.
-                    # https://www.discogs.com/group/thread/757556
-                    if self.country == 'Czechoslovakia' or self.country == 'Czech Republic':
-                        if chr(0x115) in attrvalue or chr(0x115) in self.description:
-                            self.count += 1
-                            print('%8d -- Czech character (0x115): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                if self.config['check_creative_commons']:
-                    if 'creative commons' in self.description:
-                        self.count += 1
-                        print('%8d -- Creative Commons reference: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                # squash repeated spaces
-                self.description = re.sub('\s+', ' ', self.description)
-                if self.config['check_rights_society']:
-                    if not self.inrightssociety:
-                        if self.description in discogssmells.rights_societies_ftf:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Rights Society: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            for rs in discogssmells.rights_societies_wrong_char:
-                                if rs in attrvalue:
-                                    self.count += 1
-                                    self.prev = self.release
-                                    print('%8d -- Rights Society (wrong character set, %s): https://www.discogs.com/release/%s' % (self.count, attrvalue, str(self.release)))
-                            return
-                if self.config['check_label_code'] and not self.inlabelcode:
-                    if self.description in discogssmells.label_code_ftf:
-                        self.count += 1
-                        self.prev = self.release
-                        print('%8d -- Label Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                        return
-                if self.config['check_spars_code']:
-                    if not self.inspars:
-                        sparsfound = False
-                        for spars in discogssmells.spars_ftf:
-                            if spars in self.description:
-                                sparsfound = True
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- SPARS Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                if self.config['check_asin']:
-                    if not self.inasin and self.description.startswith('asin'):
-                        self.count += 1
-                        self.prev = self.release
-                        print('%8d -- ASIN (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                        return
-                if self.config['check_isrc']:
-                    if not self.inisrc:
-                        if self.description.startswith('isrc'):
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if self.description.startswith('issrc'):
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        for isrc in discogssmells.isrc_ftf:
-                            if isrc in self.description:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- ISRC Code (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                    else:
-                        if self.description.strip() in self.isrcpositions:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- ISRC Code (description reuse %s): https://www.discogs.com/release/%s' % (self.count, self.description.strip(), str(self.release)))
-                        self.isrcpositions.add(self.description.strip())
-                if self.config['check_mastering_sid']:
-                    if not self.inmasteringsid:
-                        if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if self.description.strip() in discogssmells.masteringsids:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if self.description.strip() in ['sid code matrix', 'sid code - matrix', 'sid code (matrix)', 'sid-code, matrix', 'sid-code matrix', 'sid code (matrix ring)', 'sid code, matrix ring', 'sid code: matrix ring']:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Possible Mastering SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                if self.config['check_mould_sid']:
-                    if not self.inmouldsid:
-                        if self.description.strip() in ['source identification code', 'sid', 'sid code', 'sid-code']:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Unspecified SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                        if self.description.strip() in discogssmells.mouldsids:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Mould SID Code: https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                if self.country == 'Spain':
-                    if self.config['check_deposito'] and not self.indeposito:
-                        found = False
-                        for d in discogssmells.depositores:
-                            result = d.search(self.description)
-                            if result is not None:
-                                found = True
-                                break
-
-                        # sometimes the depósito value itself can be
-                        # found in the free text field
-                        if not found:
-                            for depositovalre in discogssmells.depositovalres:
-                                deposres = depositovalre.match(self.description)
-                                if deposres is not None:
-                                    found = True
-                                    break
-
-                        if found:
-                            self.count += 1
-                            self.prev = self.release
-                            print('%8d -- Depósito Legal (BaOI): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                            return
-                    else:
-                        if self.config['check_deposito']:
-                            if self.indeposito:
-                                return
-                elif self.country == 'India':
-                    if self.config['check_pkd']:
-                        if 'pkd' in self.description or "production date" in self.description:
-                            if self.year is not None:
-                                # try a few variants
-                                pkdres = re.search("\d{1,2}/((?:19|20)?\d{2})", attrvalue)
-                                if pkdres is not None:
-                                    pkdyear = int(pkdres.groups()[0])
-                                    if pkdyear < 100:
-                                        # correct the year. This won't work correctly after 2099.
-                                        if pkdyear <= currentyear - 2000:
-                                            pkdyear += 2000
-                                        else:
-                                            pkdyear += 1900
-                                    if pkdyear < 1900:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif pkdyear > currentyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Indian PKD (impossible year): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    elif self.year < pkdyear:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Indian PKD (release date earlier): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                            else:
-                                self.count += 1
-                                self.prev = self.release
-                                print('%8d -- India PKD code (no year): https://www.discogs.com/release/%s' % (self.count, str(self.release)))
-                                return
-                elif self.country == 'Czechoslovakia':
-                    if self.config['check_manufacturing_date_cs']:
-                        # config hack, needs to be in its own configuration option
-                        strict_cs = False
-                        if 'date' in self.description:
-                            if self.year is not None:
-                                manufacturing_date_res = re.search("(\d{2})\s+\d$", attrvalue.rstrip())
-                                if manufacturing_date_res is not None:
-                                    manufacturing_year = int(manufacturing_date_res.groups()[0])
-                                    if manufacturing_year < 100:
-                                        manufacturing_year += 1900
-                                        if manufacturing_year > self.year:
-                                            self.count += 1
-                                            self.prev = self.release
-                                            print("%8d -- Czechoslovak manufacturing date (release year wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                        # possibly this check makes sense, but not always
-                                        elif manufacturing_year < self.year and strict_cs:
-                                            self.count += 1
-                                            self.prev = self.release
-                                            print("%8d -- Czechoslovak manufacturing date (release year possibly wrong): https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-
-                elif self.country == 'Greece':
-                    if self.config['check_greek_license_number']:
-                        if "license" in self.description.strip() and self.year is not None:
-                            licenseyearfound = False
-                            for sep in ['/', ' ', '-', ')', '\'', '.']:
-                                if licenseyearfound:
-                                    break
-                                try:
-                                    license_year = int(attrvalue.strip().rsplit(sep, 1)[1])
-                                    if license_year < 100:
-                                        license_year += 1900
-                                    if license_year > self.year:
-                                        self.count += 1
-                                        self.prev = self.release
-                                        print("%8d -- Greek license year wrong: https://www.discogs.com/release/%s" % (self.count, str(self.release)))
-                                    licenseyearfound = True
-                                except:
-                                    pass
-                # debug code to print descriptions that were skipped.
-                # Useful to find misspellings of various fields
-                if self.config['debug']:
-                    print(self.description, self.release)
-                sys.stdout.flush()
-
-    def characters(self, content):
-        self.contentbuffer += content
+@dataclass
+class CleanupConfig:
+    '''Default cleanup configuration'''
+    artist: bool = False
+    asin: bool = True
+    cd_plus_g: bool = True
+    creative_commons: bool = False
+    credits: bool = False
+    czechoslovak_dates: bool = True
+    czechoslovak_dates_strict: bool = False
+    czechoslovak_spelling: bool = True
+    debug: bool = False
+    deposito_legal: bool = True
+    greek_license: bool = True
+    indian_pkd: bool = True
+    isrc: bool = True
+    label_code: bool = True
+    label_name: bool = True
+    labels: bool = True
+    mastering_sid: bool = True
+    matrix: bool = True
+    month_valid: bool = False
+    mould_sid: bool = True
+    mould_sid_strict: bool = False
+    pressing_plants: bool = True
+    report_all: bool = False
+    rights_society: bool = True
+    spars: bool = True
+    tracklisting: bool = True
+    url_in_html: bool = True
+    year_valid: bool = False
 
 
-@click.command(short_help='process BANG result files and output ELF graphs')
-@click.option('--config-file', '-c', 'cfg', required=True, help='configuration file', type=click.File('r'))
-@click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file', type=click.Path(exists=True))
-def main(cfg, datadump):
+def print_error(counter, reason, release_id):
+    '''Helper method for printing errors'''
+    print(f'{counter: 8} -- {reason}: https://www.discogs.com/release/{release_id}')
+    sys.stdout.flush()
+
+def check_role(role):
+    '''Helper method for checking roles'''
+    pass
+
+def check_spars(value, year):
+    '''Helper method for checking SPARS codes'''
+    wrong_spars = False
+    errors = []
+
+    # check if the code is valid
+    if value not in discogssmells.validsparscodes:
+        wrong_spars = True
+        errors.append(f'Invalid SPARS: {value}')
+
+    for s in value:
+        if ord(s) > 256:
+            wrong_spars = True
+            errors.append(f'wrong character set: {value}')
+            break
+
+    if not wrong_spars:
+        if year is not None:
+            if year < 1984:
+                errors.append(f"impossible year: {year}")
+    return errors
+
+def check_rights_society(value):
+    '''Helper method for checking rights societies'''
+    errors = []
+    value = value.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
+    if value in discogssmells.rights_societies_wrong:
+        errors.append(f"possible wrong value: {value}")
+
+    if value in discogssmells.rights_societies_wrong_char:
+        errors.append(f"wrong character set: {value}")
+
+    return errors
+
+@click.command(short_help='process Discogs datadump files and print errors found')
+@click.option('--config-file', '-c', 'cfg', required=True, help='configuration file',
+              type=click.File('r'))
+@click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file',
+              type=click.Path(exists=True))
+@click.option('--release', '-r', 'requested_release', help='release number to scan', type=int)
+def main(cfg, datadump, requested_release):
     config = configparser.ConfigParser()
 
     try:
@@ -1307,261 +159,1148 @@ def main(cfg, datadump):
         print("Cannot read configuration file", file=sys.stderr)
         sys.exit(1)
 
-    # process the configuration file and store settings
-    config_settings = {}
+    # process the configuration file and store settings.
+    # Most of the defaults (but not all!) are set to 'True'
+    config_settings = CleanupConfig()
 
-    for section in config.sections():
-        if section == 'cleanup':
-            # store settings for depósito legal checks
-            try:
-                if config.get(section, 'deposito') == 'yes':
-                    config_settings['check_deposito'] = True
-                else:
-                    config_settings['check_deposito'] = False
-            except Exception:
-                config_settings['check_deposito'] = True
-
-            # store settings for rights society checks
-            try:
-                if config.get(section, 'rights_society') == 'yes':
-                    config_settings['check_rights_society'] = True
-                else:
-                    config_settings['check_rights_society'] = False
-            except Exception:
-                config_settings['check_rights_society'] = True
-
-            # store settings for label code checks
-            try:
-                if config.get(section, 'label_code') == 'yes':
-                    config_settings['check_label_code'] = True
-                else:
-                    config_settings['check_label_code'] = False
-            except Exception:
-                config_settings['check_label_code'] = True
-
-            # store settings for label name checks
-            try:
-                if config.get(section, 'label_name') == 'yes':
-                    config_settings['check_label_name'] = True
-                else:
-                    config_settings['check_label_name'] = False
-            except Exception:
-                config_settings['check_label_name'] = True
-
-            # store settings for ISRC checks
-            try:
-                if config.get(section, 'isrc') == 'yes':
-                    config_settings['check_isrc'] = True
-                else:
-                    config_settings['check_isrc'] = False
-            except Exception:
-                config_settings['check_isrc'] = True
-
-            # store settings for ASIN checks
-            try:
-                if config.get(section, 'asin') == 'yes':
-                    config_settings['check_asin'] = True
-                else:
-                    config_settings['check_asin'] = False
-            except Exception:
-                config_settings['check_asin'] = True
-
-            # store settings for mastering SID checks
-            try:
-                if config.get(section, 'mastering_sid') == 'yes':
-                    config_settings['check_mastering_sid'] = True
-                else:
-                    config_settings['check_mastering_sid'] = False
-            except Exception:
-                config_settings['check_mastering_sid'] = True
-
-            # store settings for mould SID checks
-            try:
-                if config.get(section, 'mould_sid') == 'yes':
-                    config_settings['check_mould_sid'] = True
-                else:
-                    config_settings['check_mould_sid'] = False
-            except Exception:
-                config_settings['check_mould_sid'] = True
-
-            # store settings for SPARS Code checks
-            try:
-                if config.get(section, 'spars') == 'yes':
-                    config_settings['check_spars_code'] = True
-                else:
-                    config_settings['check_spars_code'] = False
-            except Exception:
-                config_settings['check_spars_code'] = True
-
-            # store settings for Indian PKD checks
-            try:
-                if config.get(section, 'pkd') == 'yes':
-                    config_settings['check_pkd'] = True
-                else:
-                    config_settings['check_pkd'] = False
-            except Exception:
-                config_settings['check_pkd'] = True
-
-            # store settings for Greek license number checks
-            try:
-                if config.get(section, 'greek_license_number') == 'yes':
-                    config_settings['check_greek_license_number'] = True
-                else:
-                    config_settings['check_greek_license_number'] = False
-            except Exception:
-                config_settings['check_greek_license_number'] = True
-
-            # store settings for CD+G checks
-            try:
-                if config.get(section, 'cdg') == 'yes':
-                    config_settings['check_cdg'] = True
-                else:
-                    config_settings['check_cdg'] = False
-            except Exception:
-                config_settings['check_cdg'] = True
-
-            # store settings for Matrix checks
-            try:
-                if config.get(section, 'matrix') == 'yes':
-                    config_settings['check_matrix'] = True
-                else:
-                    config_settings['check_matrix'] = False
-            except Exception:
-                config_settings['check_matrix'] = True
-
-            # store settings for label checks
-            try:
-                if config.get(section, 'labels') == 'yes':
-                    config_settings['check_labels'] = True
-                else:
-                    config_settings['check_labels'] = False
-            except Exception:
-                config_settings['check_labels'] = True
-
-            # store settings for manufacturing plant checks
-            try:
-                if config.get(section, 'plants') == 'yes':
-                    config_settings['check_plants'] = True
-                else:
-                    config_settings['check_plants'] = False
-            except Exception:
-                config_settings['check_plants'] = True
-
-            # check for Czechoslovak manufacturing dates
-            try:
-                if config.get(section, 'manufacturing_date_cs') == 'yes':
-                    config_settings['check_manufacturing_date_cs'] = True
-                else:
-                    config_settings['check_manufacturing_date_cs'] = False
-            except Exception:
-                config_settings['check_manufacturing_date_cs'] = True
-
-            # check for Czechoslovak and Czech spelling
-            # (0x115 used instead of 0x11B)
-            try:
-                if config.get(section, 'spelling_cs') == 'yes':
-                    config_settings['check_spelling_cs'] = True
-                else:
-                    config_settings['check_spelling_cs'] = False
-            except Exception:
-                config_settings['check_spelling_cs'] = True
-
-            # store settings for tracklisting checks, default True
-            try:
-                if config.get(section, 'tracklisting') == 'yes':
-                    config_settings['check_tracklisting'] = True
-                else:
-                    config_settings['check_tracklisting'] = False
-            except Exception:
-                config_settings['check_tracklisting'] = True
-
-            # store settings for artists, default True
-            try:
-                if config.get(section, 'artist') == 'yes':
-                    config_settings['check_artist'] = True
-                else:
-                    config_settings['check_artist'] = False
-            except Exception:
-                config_settings['check_artist'] = True
-
-            # store settings for credits list checks
-            config_settings['check_credits'] = False
-            try:
-                if config.get(section, 'credits') == 'yes':
-                    creditsfile = config.get(section, 'creditsfile')
-                    if os.path.exists(creditsfile):
-                        config_settings['creditsfile'] = creditsfile
-                        config_settings['check_credits'] = True
-                else:
-                    config_settings['check_credits'] = False
-            except Exception:
-                config_settings['check_credits'] = False
-
-            # store settings for URLs in Notes checks
-            try:
-                if config.get(section, 'html') == 'yes':
-                    config_settings['check_html'] = True
-                else:
-                    config_settings['check_html'] = False
-            except Exception:
-                config_settings['check_html'] = True
-
-            # month is 00 check: default is False
-            try:
-                if config.get(section, 'month') == 'yes':
-                    config_settings['check_month'] = True
-                else:
-                    config_settings['check_month'] = False
-            except Exception:
-                config_settings['check_month'] = False
-
-            # year is wrong check: default is False
-            try:
-                if config.get(section, 'year') == 'yes':
-                    config_settings['check_year'] = True
-                else:
-                    config_settings['check_year'] = False
-            except Exception:
-                config_settings['check_year'] = False
-
-            # reporting all: default is False
-            try:
-                if config.get(section, 'reportall') == 'yes':
-                    config_settings['reportall'] = True
-                else:
-                    config_settings['reportall'] = False
-            except Exception:
-                config_settings['reportall'] = False
-
-            # debug: default is False
-            try:
-                if config.get(section, 'debug') == 'yes':
-                    config_settings['debug'] = True
-                else:
-                    config_settings['debug'] = False
-            except Exception:
-                config_settings['debug'] = False
-
-            # report creative commons references: default is False
-            try:
-                if config.get(section, 'creative_commons') == 'yes':
-                    config_settings['check_creative_commons'] = True
-                else:
-                    config_settings['check_creative_commons'] = False
-            except Exception:
-                config_settings['check_creative_commons'] = False
-
-    # create a SAX parser and feed the gzip compressed file to it
-    dumpfileparser = xml.sax.make_parser()
-    dumpfileparser.setContentHandler(discogs_handler(config_settings))
+    # store settings for depósito legal checks
     try:
-        dumpfile = gzip.open(datadump, "rb")
+        config_settings.deposito_legal = config.getboolean('cleanup', 'deposito')
     except:
-        print("Cannot open dump file", file=sys.stderr)
-        sys.exit(1)
-    dumpfileparser.parse(dumpfile)
+        pass
 
-    dumpfile.close()
+    # store settings for rights society checks
+    try:
+        config_settings.rights_society = config.getboolean('cleanup', 'rights_society')
+    except:
+        pass
+
+    # store settings for label code checks
+    try:
+        config_settings.label_code = config.getboolean('cleanup', 'label_code')
+    except:
+        pass
+
+    # store settings for label name checks
+    try:
+        config_settings.label_name = config.getboolean('cleanup', 'label_name')
+    except:
+        pass
+
+    # store settings for ISRC checks
+    try:
+        config_settings.isrc = config.getboolean('cleanup', 'isrc')
+    except:
+        pass
+
+    # store settings for ASIN checks
+    try:
+        config_settings.asin = config.getboolean('cleanup', 'asin')
+    except:
+        pass
+
+    # store settings for mastering SID checks
+    try:
+        config_settings.mastering_sid = config.getboolean('cleanup', 'mastering_sid')
+    except:
+        pass
+
+    # store settings for mould SID checks
+    try:
+        config_settings.mould_sid = config.getboolean('cleanup', 'mould_sid')
+    except:
+        pass
+
+    # store settings for mould SID strict checks
+    try:
+        config_settings.mould_sid_strict = config.getboolean('cleanup', 'mould_sid_strict')
+    except:
+        pass
+
+    # store settings for SPARS Code checks
+    try:
+        config_settings.spars = config.getboolean('cleanup', 'spars')
+    except:
+        pass
+
+    # store settings for Indian PKD checks
+    try:
+        config_settings.indian_pkd = config.getboolean('cleanup', 'pkd')
+    except:
+        pass
+
+    # store settings for Greek license number checks
+    try:
+        config_settings.greek_license = config.getboolean('cleanup', 'greek_license_number')
+    except:
+        pass
+
+    # store settings for CD+G checks
+    try:
+        config_settings.cd_plus_g = config.getboolean('cleanup', 'cdg')
+    except:
+        pass
+
+    # store settings for Matrix checks
+    try:
+        config_settings.matrix = config.getboolean('cleanup', 'matrix')
+    except:
+        pass
+
+    # store settings for label checks
+    try:
+        config_settings.labels = config.getboolean('cleanup', 'labels')
+    except:
+        pass
+
+    # store settings for manufacturing plant checks
+    try:
+        config_settings.pressing_plants = config.getboolean('cleanup', 'plants')
+    except:
+        pass
+
+    # check for Czechoslovak manufacturing dates
+    try:
+        config_settings.czechoslovak_dates = config.getboolean('cleanup', 'manufacturing_date_cs')
+    except:
+        pass
+
+    # check for strict Czechoslovak manufacturing dates
+    try:
+        config_settings.czechoslovak_dates_strict = config.getboolean('cleanup', 'manufacturing_date_cs_strict')
+    except:
+        pass
+
+    # check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
+    try:
+        config_settings.czechoslovak_spelling = config.getboolean('cleanup', 'spelling_cs')
+    except:
+        pass
+
+    # store settings for tracklisting checks, default True
+    try:
+        config_settings.tracklisting = config.getboolean('cleanup', 'tracklisting')
+    except:
+        pass
+
+    # store settings for artists, default False
+    try:
+        config_settings.artist = config.getboolean('cleanup', 'artist')
+    except:
+        pass
+
+    # store known valid credits
+    credit_roles = set()
+
+    # store settings for credits list checks, implies artist checks
+    # This only makes sense if there is a valid credits file
+    try:
+        if config.get('cleanup', 'credits') == 'yes':
+            creditsfile = pathlib.Path(config.get('cleanup', 'creditsfile'))
+            if creditsfile.exists():
+                config_settings.credits = True
+                with open(creditsfile, 'r') as open_file:
+                    credit_roles = set(map(lambda x: x.strip(), open_file.readlines()))
+                if credit_roles != set():
+                    config_settings.artist = True
+                else:
+                    config_settings.credits = False
+    except:
+        pass
+
+    # store settings for URLs in Notes checks
+    try:
+        config_settings.url_in_html = config.getboolean('cleanup', 'html')
+    except:
+        pass
+
+    # month is 00 check: default is False
+    try:
+        config_settings.month_valid = config.getboolean('cleanup', 'month')
+    except:
+        pass
+
+    # year is wrong check: default is False
+    try:
+        config_settings.year_valid = config.getboolean('cleanup', 'year')
+    except:
+        pass
+
+    # reporting all: default is False
+    try:
+        config_settings.report_all = config.getboolean('cleanup', 'reportall')
+    except:
+        pass
+
+    # debug: default is False
+    try:
+        config_settings.debug = config.getboolean('cleanup', 'debug')
+    except:
+        pass
+
+    # report creative commons references: default is False
+    try:
+        config_settings.creative_commons = config.getboolean('cleanup', 'creative_commons')
+    except:
+        pass
+
+    try:
+        with gzip.open(datadump, "rb") as dumpfile:
+            counter = 1
+            prev_counter = 1
+            last_release_checked = 0
+            ignore_status = ['Deleted', 'Draft', 'Rejected']
+            for event, element in et.iterparse(dumpfile):
+                if element.tag == 'release':
+                    # store the release id
+                    release_id = int(element.get('id'))
+
+                    # skip the release if -r was passed on the command line
+                    if requested_release is not None:
+                        if requested_release > release_id:
+                            # reduce memory usage
+                            element.clear()
+                            continue
+                        if requested_release < release_id:
+                            print(f'Release {requested_release} cannot be found in data set!',
+                                  file=sys.stderr)
+                            sys.exit(1)
+
+                    # first see if a release is worth looking at
+                    status = element.get('status')
+                    if status in ignore_status:
+                        continue
+
+                    # then store various things about the release
+                    country = ""
+                    deposito_found = False
+                    deposito_found_in_notes = False
+                    year = None
+                    formats = set()
+                    num_formats = 0
+                    is_cd = False
+
+                    # data structures specific for detecting reuse of
+                    # ISRC codes and descriptions.
+                    isrcs_seen = set()
+                    isrc_descriptions_seen = set()
+
+                    # genres, currently not used in a check
+                    genres = set()
+
+                    # first store the country to make sure it is always available
+                    # for for various country checks (like Czech misspellings)
+                    for child in element:
+                        if child.tag == 'country':
+                            country = child.text
+                            break
+
+                    # and process the different elements
+                    for child in element:
+                        if config_settings.report_all:
+                            if release_id == last_release_checked:
+                                break
+
+                        if country in ['Czechoslovakia', 'Czech Republic']:
+                            if config_settings.czechoslovak_spelling:
+                                # People use 0x115 instead of 0x11B, which look very similar
+                                # but 0x115 is not valid in the Czech alphabet. Check for all
+                                # data except the YouTube playlist.
+                                # https://www.discogs.com/group/thread/757556
+                                if child.tag != 'videos':
+                                    czech_error_found = False
+                                    for iter_child in child.iter():
+                                        for i in ['description', 'value']:
+                                            free_text = iter_child.get(i, '').lower()
+                                            if chr(0x115) in free_text:
+                                                print_error(counter, 'Czech character (0x115)', release_id)
+                                                counter += 1
+                                                czech_error_found = True
+                                                break
+                                        if czech_error_found:
+                                            break
+
+                        if child.tag == 'artists' or child.tag == 'extraartists':
+                            if config_settings.artist:
+                                for artist_elem in child:
+                                    # set to "no artist" as a place holder
+                                    artist_id = 0
+                                    artist_name = ''
+                                    for artist in artist_elem:
+                                        if artist.tag == 'id':
+                                            artist_id = int(artist.text)
+                                            # TODO: check for genres, as No Artist is
+                                            # often confused with Unknown Artist
+                                            #if artist_id == 118760:
+                                            #    if genres:
+                                            #        print_error(counter, f'https://www.discogs.com/artist/{artist_id}' release_id)
+                                            #        counter += 1
+                                        elif artist.tag == 'name':
+                                            artist_name = artist.text
+                                        elif artist.tag == 'role':
+                                            '''
+                                            if artist_id == 0:
+                                                wrong_role_for_noartist = True
+                                                for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
+                                                    if r in artist.text.strip():
+                                                        wrong_role_for_noartist = False
+                                                        break
+                                                if wrong_role_for_noartist:
+                                                    pass
+                                                    #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
+                                            '''
+                                            if config_settings.credits:
+                                                role_data = artist.text
+                                                if role_data is None:
+                                                    continue
+                                                role_data = role_data.strip()
+                                                if role_data != '':
+                                                    if '[' not in role_data:
+                                                        roles = map(lambda x: x.strip(), role_data.split(','))
+                                                        for role in roles:
+                                                            if role == '':
+                                                                continue
+                                                            if role not in credit_roles:
+                                                                print_error(counter, f'Role \'{role}\' invalid', release_id)
+                                                                counter += 1
+                                                    else:
+                                                        # sometimes there is an additional description
+                                                        # in the role in between [ and ]. TODO: rework this
+                                                        rolesplit = role_data.split('[')
+                                                        for rs in rolesplit:
+                                                            if ']' in rs:
+                                                                rs_tmp = rs
+                                                                while ']' in rs_tmp:
+                                                                    rs_tmp = rs_tmp.split(']', 1)[1]
+                                                                roles = map(lambda x: x.strip(), rs_tmp.split(','))
+                                                                for role in roles:
+                                                                    if role == '':
+                                                                        continue
+                                                                    # ugly hack because sometimes the extra
+                                                                    # data between [ and ] appears halfway the
+                                                                    # words in a role, sigh.
+                                                                    if role == 'By':
+                                                                        continue
+                                                                    if role not in credit_roles:
+                                                                        print_error(counter, f'Role \'{role}\' invalid', release_id)
+                                                                        counter += 1
+                                    if artist_id == 0:
+                                        print_error(counter, f'Artist \'{artist_name}\' not in database', release_id)
+                                        counter += 1
+                        elif child.tag == 'companies':
+                            if year is not None:
+                                for companies in child:
+                                    for company in companies:
+                                        if company.tag == 'id':
+                                            company_nr = int(company.text)
+                                            if config_settings.labels:
+                                                # check for:
+                                                # https://www.discogs.com/label/205-Fontana
+                                                # https://www.discogs.com/label/7704-Philips
+                                                if company_nr == 205:
+                                                    if year < 1957:
+                                                        print_error(counter, f'Label (wrong year {year})', release_id)
+                                                        counter += 1
+                                                elif company_nr == 7704:
+                                                    if year < 1950:
+                                                        print_error(counter, f'Label (wrong year {year})', release_id)
+                                                        counter += 1
+                                            if config_settings.pressing_plants:
+                                                '''
+                                                ## https://www.discogs.com/label/34825-Sony-DADC
+                                                if company_nr == 34825:
+                                                    if year < 2000:
+                                                        print_error(counter, f'Pressing Plant Sony DADC (wrong year {year})', release_id)
+                                                        counter += 1
+                                                '''
+
+                                                for pl in discogssmells.plants:
+                                                    if company_nr == pl[0]:
+                                                        if year < pl[1]:
+                                                            print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
+                                                            counter += 1
+                                                            break
+
+                                                for pl in discogssmells.plants_compact_disc:
+                                                    if company_nr == pl[0]:
+                                                        if 'CD' in formats:
+                                                            if year < pl[1]:
+                                                                print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
+                                                                counter += 1
+                                                                break
+
+                        elif child.tag == 'formats':
+                            for release_format in child:
+                                current_format = None
+
+                                # first check the attributes
+                                for (key, value) in release_format.items():
+                                    if key == 'name':
+                                        if value == 'CD':
+                                            is_cd = True
+                                        formats.add(value)
+                                        current_format = value
+                                        '''
+                                        # https://en.wikipedia.org/wiki/Phonograph_record#Microgroove_and_vinyl_era
+                                        if current_format == 'Vinyl' and year is not None:
+                                            if year < 1948:
+                                                print(counter, f'Impossible year '{year}' for vinyl', release_id)
+                                                counter += 1
+                                        '''
+                                    elif key == 'qty':
+                                        if num_formats == 0:
+                                            num_formats = max(num_formats, int(value))
+                                        else:
+                                            num_formats += int(value)
+                                    elif key == 'text':
+                                        if value != '':
+                                            value_lower = value.lower().strip()
+                                            if config_settings.spars:
+                                                tmp_spars = value_lower
+                                                tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
+                                                if tmp_spars in discogssmells.validsparscodes:
+                                                    print_error(counter, f"Possible SPARS Code ({value}, in Format)", release_id)
+                                                    counter += 1
+                                            if config_settings.label_code:
+                                                if value_lower.startswith('lc'):
+                                                    if discogssmells.labelcodere.match(value_lower) is not None:
+                                                        print_error(counter, f"Possible Label Code ({value}, in Format)", release_id)
+                                                        counter += 1
+                                            if config_settings.cd_plus_g:
+                                                if value_lower == 'cd+g':
+                                                    print_error(counter, 'CD+G (in Format)', release_id)
+                                                    counter += 1
+                                            if value_lower == 'DMM':
+                                                if current_format != 'Vinyl':
+                                                    print_error(f'DMM ({current_format}, in Format)', release_id)
+                                                    counter += 1
+
+                                # then process any children
+                                for ch in release_format:
+                                    if ch.tag == 'descriptions':
+                                        for description in ch:
+                                            if 'Styrene' in description.text:
+                                                pass
+
+                        elif child.tag == 'genres':
+                            for genre in child:
+                                genres.add(genre.text)
+                        elif child.tag == 'identifiers':
+                            # Here things get very hairy, as every check
+                            # potentially has to be done multiple times: once
+                            # in the 'correct' field (example: rights society
+                            # in a 'Rights Society' field) and then in all the
+                            # other fields as well.
+                            #
+                            # The checks in the 'correct' field tend to be more
+                            # thorough, as the chances that this is indeed the
+                            # correct field are high.
+                            #
+                            # Sometimes the "description" attribute needs to be
+                            # checked as well as people tend to hide information
+                            # there too.
+                            for identifier in child:
+                                identifier_type = identifier.get('type')
+
+                                # ASIN
+                                if config_settings.asin:
+                                    if identifier_type == 'ASIN':
+                                        value = identifier.get('value').strip()
+                                        # temporary hack, move to own configuration option
+                                        asin_strinct = False
+                                        if not asin_strinct:
+                                            tmpasin = value.replace('-', '')
+                                        else:
+                                            tmpasin = value
+                                        if not len(tmpasin.split(':')[-1].strip()) == 10:
+                                            print_error(counter, 'ASIN (wrong length)', release_id)
+                                            counter += 1
+                                    else:
+                                        description = identifier.get('description', '').strip()
+                                        if description.startswith('asin'):
+                                            print_error(counter, f'ASIN (in {identifier})', release_id)
+                                            counter += 1
+
+                                # creative commons, check value and description
+                                if config_settings.creative_commons:
+                                    description = identifier.get('description', '').strip().lower()
+                                    value = identifier.get('value', '').strip().lower()
+                                    if 'creative commons' in description:
+                                        print_error(counter, 'Creative Commons reference', release_id)
+                                        counter += 1
+                                    if 'creative commons' in value:
+                                        print_error(counter, 'Creative Commons reference', release_id)
+                                        counter += 1
+
+                                if country == 'Czechoslovakia' and year is not None:
+                                    if config_settings.czechoslovak_dates:
+                                        description = identifier.get('description', '').strip().lower()
+                                        value = identifier.get('value', '').strip().lower()
+                                        if 'date' in description:
+                                            manufacturing_date_res = re.search(r"(\d{2})\s+\d$", value)
+                                            if manufacturing_date_res is not None:
+                                                manufacturing_year = int(manufacturing_date_res.groups()[0])
+                                                if manufacturing_year < 100:
+                                                    manufacturing_year += 1900
+                                                    if manufacturing_year > year:
+                                                        print_error(counter, 'Czechoslovak manufacturing date (release year wrong)', release_id)
+                                                        counter += 1
+                                                    # possibly this check makes sense, but not always
+                                                    elif manufacturing_year < year and config_settings.czechoslovak_dates_strict:
+                                                        print_error(counter, 'Czechoslovak manufacturing date (release year possibly wrong)', release_id)
+                                                        counter += 1
+
+                                # Depósito Legal, only check for releases from Spain
+                                if country == 'Spain':
+                                    if config_settings.deposito_legal:
+                                        if identifier_type == 'Depósito Legal':
+                                            deposito_found = True
+                                            value = identifier.get('value')
+                                            if value.endswith('.'):
+                                                print_error(counter, "Depósito Legal (formatting)", release_id)
+                                                counter += 1
+
+                                            if year is not None:
+                                                # now try to find the year
+                                                deposito_year = None
+                                                year_value = value.strip()
+                                                if year_value.endswith('℗'):
+                                                    print_error(counter, "Depósito Legal (formatting, has ℗)", release_id)
+                                                    counter += 1
+                                                    # ugly hack, remove ℗ to make at least be able to do some sort of check
+                                                    year_value = year_value.rsplit('℗', 1)[0].strip()
+
+                                                # several separators seen in the DL codes,
+                                                # including some Unicode ones.
+                                                # TODO: rewrite/improve
+                                                for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
+                                                    try:
+                                                        deposito_year_text = year_value.rsplit(sep, 1)[-1]
+                                                        if sep == '.' and len(deposito_year_text) == 3:
+                                                            continue
+                                                        if '.' in deposito_year_text:
+                                                            deposito_year_text = deposito_year_text.replace('.', '')
+                                                        deposito_year = int(deposito_year_text)
+                                                        if deposito_year < 100:
+                                                            # correct the year. This won't work correctly after 2099.
+                                                            if deposito_year <= currentyear - 2000:
+                                                                deposito_year += 2000
+                                                            else:
+                                                                deposito_year += 1900
+                                                        break
+                                                    except ValueError:
+                                                        pass
+
+                                                # TODO, also allow (year), example: https://www.discogs.com/release/265497
+                                                if deposito_year is not None:
+                                                    if deposito_year < 1900:
+                                                        print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
+                                                        counter += 1
+                                                    elif deposito_year > currentyear:
+                                                        print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
+                                                        counter += 1
+                                                    elif year < deposito_year:
+                                                        print_error(counter, "Depósito Legal (release date earlier)", release_id)
+                                                        counter += 1
+                                                else:
+                                                    print_error(counter, "Depósito Legal (year not found)", release_id)
+                                                    counter += 1
+                                        else:
+                                            value = identifier.get('value').strip()
+                                            value_lower = value.lower()
+                                            description = identifier.get('description', '').strip()
+                                            description_lower = description.lower()
+
+                                            if not deposito_found:
+                                                for depositovalre in discogssmells.depositovalres:
+                                                    if depositovalre.match(value_lower) is not None:
+                                                        print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
+                                                        counter += 1
+                                                        deposito_found = True
+                                                        break
+
+                                            # check for a DL hint in the description field
+                                            if description != '':
+                                                if not deposito_found:
+                                                    for d in discogssmells.depositores:
+                                                        result = d.search(description_lower)
+                                                        if result is not None:
+                                                            print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                            counter += 1
+                                                            deposito_found = True
+                                                            break
+                                                    if not deposito_found and config_settings.debug:
+                                                        # print descriptions for debugging. Careful.
+                                                        print(f'Depósito Legal debug: {release_id}, {description}')
+
+                                                # sometimes the depósito value itself can be
+                                                # found in the free text field
+                                                if not deposito_found:
+                                                    for depositovalre in discogssmells.depositovalres:
+                                                        deposres = depositovalre.match(description_lower)
+                                                        if deposres is not None:
+                                                            print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                            counter += 1
+                                                            deposito_found = True
+                                                            break
+
+                                # Greek license numbers
+                                if country == 'Greece':
+                                    if config_settings.greek_license:
+                                        description = identifier.get('description', '').strip().lower()
+                                        value = identifier.get('value', '').strip()
+                                        if "license" in description.strip() and year is not None:
+                                            for sep in ['/', ' ', '-', ')', '\'', '.']:
+                                                try:
+                                                    license_year = int(value.rsplit(sep, 1)[1])
+                                                    if license_year < 100:
+                                                        license_year += 1900
+                                                    if license_year > year:
+                                                        print_error(counter, 'Greek license year wrong', release_id)
+                                                        counter += 1
+                                                    break
+                                                except:
+                                                    pass
+
+                                # India PKD
+                                if country == 'India':
+                                    if config_settings.indian_pkd:
+                                        value = identifier.get('value', '').lower()
+                                        if 'pkd' in value or "production date" in value:
+                                            if year is not None:
+                                                # try a few variants
+                                                pkdres = pkd_re.search(value)
+                                                if pkdres is not None:
+                                                    pkdyear = int(pkdres.groups()[0])
+                                                    if pkdyear < 100:
+                                                        # correct the year. This won't work correctly after 2099.
+                                                        if pkdyear <= currentyear - 2000:
+                                                            pkdyear += 2000
+                                                        else:
+                                                            pkdyear += 1900
+                                                    if pkdyear < 1900 or pkdyear > currentyear:
+                                                        print_error(counter, 'Indian PKD (impossible year)', release_id)
+                                                        counter += 1
+                                                    elif year < pkdyear:
+                                                        print_error(counter, 'Indian PKD (release date earlier)', release_id)
+                                                        counter += 1
+                                            else:
+                                                print_error(counter, 'India PKD code (no year)', release_id)
+                                                counter += 1
+
+                                # ISRC
+                                if config_settings.isrc:
+                                    description = identifier.get('description', '').strip()
+                                    description_lower = description.lower()
+                                    if identifier_type == 'ISRC':
+                                        # Check the length of ISRC fields. According to the
+                                        # specifications these should be 12 in length. Some
+                                        # ISRC identifiers that have been recorded in the
+                                        # database cover a range of tracks. These will be
+                                        # reported as wrong ISRC codes. It is unclear what
+                                        # needs to be done with those.
+                                        # first get rid of cruft
+                                        value_upper = identifier.get('value').strip().upper()
+                                        isrc_tmp = value_upper
+                                        if isrc_tmp.startswith('ISRC'):
+                                            isrc_tmp = isrc_tmp.split('ISRC')[-1].strip()
+                                        if isrc_tmp.startswith('CODE'):
+                                            isrc_tmp = isrc_tmp.split('CODE')[-1].strip()
+
+                                        # Chinese ISRC, see https://www.discogs.com/forum/thread/799845
+                                        if '/A.J6' in isrc_tmp:
+                                            isrc_tmp = isrc_tmp.rsplit('/', 1)[0].strip()
+
+                                        # replace a few characters
+                                        isrc_tmp = isrc_tmp.translate(ISRC_TRANSLATE)
+                                        if len(isrc_tmp) != 12:
+                                            print_error(counter, 'ISRC (wrong length)', release_id)
+                                            counter += 1
+                                        else:
+                                            valid_isrc = True
+                                            if isrc_tmp in isrcs_seen:
+                                                print_error(counter, f'ISRC (duplicate {isrc_tmp})', release_id)
+                                                counter += 1
+                                            else:
+                                                isrcs_seen.add(isrc_tmp)
+
+                                            isrcres = re.match(r"\w{5}(\d{2})\d{5}", isrc_tmp)
+                                            if isrcres is None:
+                                                print_error(counter, 'ISRC (wrong format)', release_id)
+                                                counter += 1
+                                                valid_isrc = False
+
+                                            if year is not None and valid_isrc:
+                                                isrcyear = int(isrcres.groups()[0])
+                                                if isrcyear < 100:
+                                                    # correct the year. This won't work
+                                                    # correctly after 2099.
+                                                    if isrcyear <= currentyear - 2000:
+                                                        isrcyear += 2000
+                                                    else:
+                                                        isrcyear += 1900
+                                                if isrcyear > currentyear:
+                                                    print_error(counter, f'ISRC (impossible year: {isrcyear})', release_id)
+                                                    counter += 1
+                                                elif year < isrcyear:
+                                                    print_error(counter, f'ISRC (date earlier: {isrcyear})', release_id)
+                                                    counter += 1
+
+                                            # check the descriptions
+                                            # TODO: match with the actual track list
+                                            if description_lower != '':
+                                                if description_lower in isrc_descriptions_seen:
+                                                    print_error(counter, f'ISRC code (description reuse: {description})', release_id)
+                                                    counter += 1
+                                                isrc_descriptions_seen.add(description_lower)
+                                    else:
+                                        # specifically check the description
+                                        if description_lower != '':
+                                            if description_lower.startswith('isrc'):
+                                                print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
+                                                counter += 1
+                                            elif description_lower.startswith('issrc'):
+                                                print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
+                                                counter += 1
+                                            else:
+                                                for isrc in discogssmells.isrc_ftf:
+                                                    if isrc in description_lower:
+                                                        print_error(counter, f'ISRC Code (in {identifier_type})', release_id)
+                                                        counter += 1
+                                                        break
+                                # Label Code
+                                if config_settings.label_code:
+                                    value = identifier.get('value').lower()
+                                    description = identifier.get('description', '').lower()
+                                    if identifier_type == 'Label Code':
+                                        # check how many people use 'O' instead of '0'
+                                        if value.startswith('lc'):
+                                            if 'O' in value:
+                                                print_error(counter, "Spelling error (in Label Code)", release_id)
+                                                counter += 1
+                                        if discogssmells.labelcodere.match(value) is None:
+                                            print_error(counter, "Label Code (value)", release_id)
+                                            counter += 1
+                                    else:
+                                        if value.startswith('lc'):
+                                            if discogssmells.labelcodere.match(value) is not None:
+                                                print_error(counter, f"Label Code (in {identifier_type})", release_id)
+                                                counter += 1
+
+                                        if description in discogssmells.label_code_ftf:
+                                            print_error(counter, f"Label Code (in {identifier_type})", release_id)
+                                            counter += 1
+
+                                # Matrix / Runout
+                                if config_settings.matrix:
+                                    value = identifier.get('value')
+                                    if identifier_type == 'Matrix / Runout':
+                                        for pdmc in discogssmells.pmdc_misspellings:
+                                            if pdmc in value:
+                                                print_error(counter, 'Matrix (PDMC instead of PMDC)', release_id)
+                                                counter += 1
+                                        if year is not None:
+                                            if 'MFG BY CINRAM' in value and '#' in value and 'USA' not in value:
+                                                cinramres = re.search(r'#(\d{2})', value)
+                                                if cinramres is not None:
+                                                    cinramyear = int(cinramres.groups()[0])
+                                                    # correct the year. This won't work correctly after 2099.
+                                                    if cinramyear <= currentyear - 2000:
+                                                        cinramyear += 2000
+                                                    else:
+                                                        cinramyear += 1900
+                                                    if cinramyear > currentyear:
+                                                        print_error(counter, f'Matrix (impossible year: {year})', release_id)
+                                                        counter += 1
+                                                    elif year < cinramyear:
+                                                        print_error(counter, f'Matrix (release date {year} earlier than matrix year {cinramyear})', release_id)
+                                                        counter += 1
+                                            elif 'P+O' in value:
+                                                # https://www.discogs.com/label/277449-PO-Pallas
+                                                pallasres = re.search(r'P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', value)
+                                                if pallasres is not None:
+                                                    pallasyear = int(pallasres.groups()[0])
+                                                    # correct the year. This won't work correctly after 2099.
+                                                    if pallasyear <= currentyear - 2000:
+                                                        pallasyear += 2000
+                                                    else:
+                                                        pallasyear += 1900
+                                                    if pallasyear > currentyear:
+                                                        print_error(counter, f'Matrix (impossible year: {year})', release_id)
+                                                        counter += 1
+                                                    elif year < pallasyear:
+                                                        print_error(counter, f'Matrix (release date {year} earlier than matrix year {pallasyear})', release_id)
+                                                        counter += 1
+
+                                # Mastering SID Code
+                                if config_settings.mastering_sid:
+                                    if identifier_type == 'Mastering SID Code':
+                                        value = identifier.get('value').strip()
+                                        value_lower = identifier.get('value').lower().strip()
+                                        if value_lower not in discogssmells.sid_ignore:
+                                            # cleanup first for not so heavy formatting booboos
+                                            master_sid_tmp = value_lower.translate(SID_TRANSLATE)
+                                            res = discogssmells.masteringsidre.match(master_sid_tmp)
+                                            if res is None:
+                                                print_error(counter, f'Mastering SID Code (illegal value: {value})', release_id)
+                                                counter += 1
+                                            else:
+                                                # rough check to find SID codes for formats
+                                                # other than CD/CD-like
+                                                if len(formats) == 1:
+                                                    for fmt in SID_INVALID_FORMATS:
+                                                        if fmt in formats:
+                                                            print_error(counter, f'Mastering SID Code (Wrong Format: {fmt})', release_id)
+                                                            counter += 1
+                                                if year is not None:
+                                                    if year < 1993:
+                                                        print_error(counter, f'Mastering SID Code (wrong year: {year})', release_id)
+                                                        counter += 1
+                                    else:
+                                        if description_lower in discogssmells.masteringsids:
+                                            print_error(counter, 'Mastering SID Code', release_id)
+                                            counter += 1
+                                        elif description_lower in discogssmells.possible_mastering_sid:
+                                            print_error(counter, 'Possible Mastering SID Code', release_id)
+                                            counter += 1
+
+                                # Mould SID Code
+                                if config_settings.mould_sid:
+                                    description = identifier.get('description', '').strip()
+                                    description_lower = description.lower()
+                                    if identifier_type == 'Mould SID Code':
+                                        value = identifier.get('value').strip()
+                                        value_lower = identifier.get('value').lower().strip()
+                                        if value_lower not in discogssmells.sid_ignore:
+                                            # cleanup first for not so heavy formatting booboos
+                                            mould_sid_tmp = value_lower.translate(SID_TRANSLATE)
+                                            res = discogssmells.mouldsidre.match(mould_sid_tmp)
+                                            if res is None:
+                                                print_error(counter, f'Mould SID Code (illegal value: {value})', release_id)
+                                                counter += 1
+                                            else:
+                                                if config_settings.mould_sid_strict:
+                                                    mould_split = mould_sid_tmp.split('ifpi', 1)[-1]
+                                                    for ch in ['i', 'o', 's', 'q']:
+                                                        if ch in mould_split[-2:]:
+                                                            print_error(counter, f'Mould SID Code (strict value check: {mould_split})', release_id)
+                                                            counter += 1
+                                                            break
+                                                # rough check to find SID codes for formats
+                                                # other than CD/CD-like
+                                                if len(formats) == 1:
+                                                    for fmt in SID_INVALID_FORMATS:
+                                                        if fmt in formats:
+                                                            print_error(counter, f'Mould SID Code (Wrong Format: {fmt})', release_id)
+                                                            counter += 1
+                                                if year is not None:
+                                                    if year < 1993:
+                                                        print_error(counter, f'Mould SID Code (wrong year: {year})', release_id)
+                                                        counter += 1
+                                    else:
+                                        if description_lower in discogssmells.mouldsids:
+                                            print_error(counter, f'Mould SID Code (in {identifier_type})', release_id)
+                                            counter += 1
+
+                                # Mastering SID and Mould SID descriptions
+                                if config_settings.mastering_sid or config_settings.mould_sid:
+                                    description = identifier.get('description', '').strip()
+                                    description_lower = description.lower()
+                                    if description_lower in SID_DESCRIPTIONS:
+                                        print_error(counter, 'Unspecified SID Code', release_id)
+                                        counter += 1
+
+                                # Rights Society
+                                if config_settings.rights_society:
+                                    value = identifier.get('value')
+                                    value_upper = value.upper().strip()
+                                    value_upper_translated = value_upper.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
+
+                                    if identifier_type == 'Rights Society':
+                                        if not (value_upper in discogssmells.rights_societies or value_upper_translated in discogssmells.rights_societies or value_upper == 'NONE'):
+
+                                            # There are a few known errors for the Rights Society
+                                            # field so check those first before moving on to the
+                                            # combined fields or the bogus values.
+                                            reported = False
+                                            errors = check_rights_society(value_upper)
+                                            for error in errors:
+                                                print_error(counter, f"Rights Society ({error})", release_id)
+                                                counter += 1
+                                                reported = True
+
+                                            # The field either contains multiple rights societies
+                                            # or contains bogus values.
+                                            if not reported:
+                                                # temporary list to store Rights Society values to check
+                                                rights_society_to_check = []
+
+                                                # known delimiters used, sorted in the most useful order
+                                                # This is not necessarily the best order or the best split.
+                                                # TODO: rework.
+                                                split_rs = []
+                                                for delimiter in RIGHTS_SOCIETY_DELIMITERS:
+                                                    if delimiter in value_upper:
+                                                        split_rs = list(map(lambda x: x.strip(), value_upper.split(delimiter)))
+                                                        rights_society_to_check = split_rs
+                                                        break
+
+                                                rs_determined = 0
+                                                for value_rs in rights_society_to_check:
+                                                    if value_rs not in discogssmells.rights_societies:
+                                                        errors = check_rights_society(value_rs)
+                                                        if errors:
+                                                            rs_determined += 1
+                                                            for error in errors:
+                                                                print_error(counter, f"Rights Society ({error})", release_id)
+                                                                counter += 1
+                                                    else:
+                                                        rs_determined += 1
+
+                                                if rs_determined != len(split_rs) and False:
+                                                    # TODO: rework, many false positives here
+                                                    print_error(counter, f"Rights Society (bogus value: {value})", release_id)
+                                                    counter += 1
+                                    else:
+                                        rs_found = False
+                                        if value_upper_translated in discogssmells.rights_societies:
+                                            print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
+                                            counter += 1
+                                            rs_found = True
+                                        elif '/' in value:
+                                            possible_rss = value_upper.split('/')
+                                            for possible_rs in possible_rss:
+                                                if possible_rs.translate(RIGHTS_SOCIETY_TRANSLATE_QND) in discogssmells.rights_societies:
+                                                    print_error(counter, f"Rights Society ('{value}', in {identifier_type})", release_id)
+                                                    counter += 1
+                                                    rs_found = True
+                                                    break
+
+                                        if not rs_found:
+                                            # check the description of a field
+                                            description = identifier.get('description', '').strip().lower()
+
+                                            if description != '':
+                                                # squash repeated spaces
+                                                description = re.sub(r'\s+', ' ', description)
+                                                if description in discogssmells.rights_societies_ftf:
+                                                    errors = check_rights_society(value_upper)
+
+                                                    if errors:
+                                                        for error in errors:
+                                                            print_error(counter, f"Rights Society (in {identifier_type}, {error})", release_id)
+                                                            counter += 1
+                                                    else:
+                                                        print_error(counter, f'Rights Society (in {identifier_type} (description))', release_id)
+                                                        counter += 1
+
+                                # SPARS Code
+                                if config_settings.spars:
+                                    value = identifier.get('value')
+                                    if identifier_type == 'SPARS Code':
+                                        if value != 'none':
+                                            # Sony format codes
+                                            # https://www.discogs.com/forum/thread/339244
+                                            # https://www.discogs.com/forum/thread/358285
+                                            if value in ['CDC', 'CDM']:
+                                                print_error(counter, f"Sony Format Code in SPARS ({value})", release_id)
+                                                counter += 1
+                                            else:
+                                                # temporary list to store SPARS values to check
+                                                spars_to_check = []
+
+                                                value_lower = value.lower().strip()
+                                                tmp_spars = value_lower
+
+                                                # replace any delimiter that people might have used
+                                                tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
+
+                                                spars_is_split = False
+
+                                                if len(tmp_spars) == 3:
+                                                    spars_to_check.append(tmp_spars)
+                                                else:
+                                                    # instead of one SPARS code there might be multiple
+                                                    for s in ['|', '/', ',', ' ', '&', '-', '+', '•']:
+                                                        if s in value_lower:
+                                                            split_spars = list(map(lambda x: x.strip(), value_lower.split(s)))
+                                                            # check if every code has three characters
+                                                            if len(list(filter(lambda x: len(x) == 3, split_spars))) != len(split_spars):
+                                                                continue
+                                                            spars_is_split = True
+                                                            spars_to_check = split_spars
+                                                            break
+
+                                                    if not spars_is_split:
+                                                        spars_to_check.append(tmp_spars)
+
+                                                for sparscheck in spars_to_check:
+                                                    errors = check_spars(sparscheck, year)
+                                                    for error in errors:
+                                                        print_error(counter, f"SPARS Code ({error})", release_id)
+                                                        counter += 1
+                                    else:
+                                        if value.lower() in discogssmells.validsparscodes:
+                                            print_error(counter, f"SPARS Code ({value}, in {identifier_type})", release_id)
+                                            counter += 1
+                                        else:
+                                            description = identifier.get('description', '').lower()
+                                            if description != '':
+                                                for spars in discogssmells.spars_ftf:
+                                                    if spars in description:
+                                                        print_error(counter, f'Possible SPARS Code (in {identifier_type})', release_id)
+                                                        counter += 1
+                                                        break
+
+                                # debug code to print all descriptions
+                                # Useful to find misspellings of various fields
+                                # Use with care.
+                                #if config_settings.debug:
+                                #    description = identifier.get('description', '')
+                                #    if description != '':
+                                #        print(description, release_id)
+
+                        elif child.tag == 'labels':
+                            for label in child:
+                                label_id = int(label.get('id', ''))
+                                catno = label.get('catno', '').lower()
+                                if config_settings.label_name:
+                                    # https://vinylanddata.blogspot.com/2018/01/detecting-wrong-label-information-in.html
+                                    if label_id == 26905:
+                                        print_error(counter, 'Wrong label (London)', release_id)
+                                        counter += 1
+                                if config_settings.label_code:
+                                    # check the catalog numbers for possible false positives,
+                                    # but exclude "Loft Classics" and others
+                                    if catno.startswith('lc') and label_id not in LABEL_CODE_FALSE_POSITIVES:
+                                        if discogssmells.labelcodere.match(catno) is not None:
+                                            print_error(counter, f'Possible Label Code (in Catalogue Number: {catno})', release_id)
+                                            counter += 1
+                                if config_settings.deposito_legal and country == 'Spain':
+                                    deposito_legal_found = False
+                                    if label_id not in [26617, 60778]:
+                                        for d in discogssmells.depositores:
+                                            result = d.search(catno)
+                                            if result is not None:
+                                                for depositovalre in discogssmells.depositovalres:
+                                                    if depositovalre.search(catno) is not None:
+                                                        deposito_legal_found = True
+                                                        break
+                                            if deposito_legal_found:
+                                                print_error(counter, f'Possible Depósito Legal (in Catalogue Number: {catno})', release_id)
+                                                counter += 1
+                                                break
+
+                        elif child.tag == 'notes':
+                            #if '카지노' in child.text:
+                            #    # Korean casino spam that used to pop up
+                            #    # every once in a while.
+                            #    print_error(counter, "Korean casino spam", release_id)
+                            #    counter += 1
+                            if country == 'Spain':
+                                if config_settings.deposito_legal:
+                                    # sometimes "deposito legal" can be found
+                                    # in the "notes" section.
+                                    content_lower = child.text.lower()
+                                    for d in discogssmells.depositores:
+                                        result = d.search(content_lower)
+                                        if result is not None:
+                                            deposito_found_in_notes = True
+                                            break
+
+                            # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
+                            if config_settings.url_in_html:
+                                if '&lt;a href="http://www.discogs.com/release/' in child.text:
+                                    print_error(counter, "old link (Notes)", release_id)
+                                    counter += 1
+                            if config_settings.creative_commons:
+                                cc_found = False
+                                for cc_ref in discogssmells.creativecommons:
+                                    if cc_ref in child.text:
+                                        print_error(counter, f"Creative Commons reference ({cc_ref})", release_id)
+                                        counter += 1
+                                        cc_found = True
+                                        break
+
+                                if not cc_found:
+                                    if 'creative commons' in child.text.lower():
+                                        print_error(counter, "Creative Commons reference", release_id)
+                                        counter += 1
+
+                        elif child.tag == 'released':
+                            if config_settings.month_valid:
+                                monthres = re.search(r'-(\d+)-', child.text)
+                                if monthres is not None:
+                                    month_nr = int(monthres.groups()[0])
+                                    if month_nr == 0:
+                                        print_error(counter, "Month 00", release_id)
+                                        counter += 1
+                                    elif month_nr > 12:
+                                        print_error(counter, f"Month impossible {month_nr}", release_id)
+                                        counter += 1
+
+                            if child.text != '':
+                                try:
+                                    year = int(child.text.split('-', 1)[0])
+                                except ValueError:
+                                    if config_settings.year_valid:
+                                        print_error(counter, f"Year {child.text} invalid", release_id)
+                                        counter += 1
+
+                        elif child.tag == 'tracklist':
+                            # check artists and extraartists here TODO
+                            if config_settings.tracklisting:
+                                # various tracklist sanity checks, but only if there is
+                                # only a single format to make things easier. This should be
+                                # fixed at some point TODO.
+                                #
+                                # Currently two checks are supported:
+                                #
+                                # * tracklist numbering reuse
+                                # * not using correct numbering on releases with sides
+                                tracklist_positions = set()
+                                tracklist_correct = True
+                                if len(formats) == 1:
+                                    recorded_format = list(formats)[0]
+                                    for track in child:
+                                        for track_elem in track:
+                                            if track_elem.tag == 'position':
+                                                if track_elem.text not in [None, '', '-']:
+                                                    if num_formats == 1:
+                                                        if track_elem.text in tracklist_positions:
+                                                            print_error(counter, f'Tracklisting reuse ({recorded_format}, {track_elem.text})', release_id)
+                                                            counter += 1
+                                                    tracklist_positions.add(track_elem.text)
+
+                                                    if tracklist_correct:
+                                                        if recorded_format in TRACKLIST_CHECK_FORMATS:
+                                                            try:
+                                                                int(track_elem.text)
+                                                                print_error(counter, f'Tracklisting uses numbers ({recorded_format})', release_id)
+                                                                counter += 1
+                                                                tracklist_correct = False
+                                                            except ValueError:
+                                                                pass
+
+                        if prev_counter != counter:
+                            last_release_checked = release_id
+                            prev_counter = counter
+
+                    # report DLs found in notes if no other DL was found
+                    if not deposito_found and deposito_found_in_notes:
+                        print_error(counter, "Depósito Legal (Notes)", release_id)
+                        counter += 1
+
+                    # cleanup to reduce memory usage
+                    element.clear()
+
+                    if requested_release is not None:
+                        if requested_release == release_id:
+                            break
+    except Exception as e:
+        print("Cannot open dump file", e, file=sys.stderr)
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
