@@ -7,12 +7,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0
 #
-# Copyright 2017-2019 - Armijn Hemel
+# Copyright 2017-2024 - Armijn Hemel
 
-import argparse
 import collections
 import math
 import os
+import pathlib
 import sys
 
 from reportlab.graphics.shapes import Drawing
@@ -26,45 +26,31 @@ import reportlab.rl_config as rl_config
 # really wants to find Times-Roman it seems. This is currently hardcoded
 # to my Fedora system.
 rl_config.T1SearchPath = ["/usr/share/fonts/truetype/liberation/",
-                          "/usr/share/fonts/liberation/"]
+                          "/usr/share/fonts/liberation/", "/usr/share/fonts/liberation-serif/"]
 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+import click
+
 # hardcode the fontpath, this is Fedora specific
-liberationpath = os.path.join('/usr/share/fonts/liberation', 'LiberationSerif-Regular.ttf')
+liberationpath = os.path.join('/usr/share/fonts/liberation-serif', 'LiberationSerif-Regular.ttf')
 
 # register the font as Times-Roman so ReportLab doesn't barf
 pdfmetrics.registerFont(TTFont('Times-Roman', liberationpath))
 
 
-def main(argv):
-    parser = argparse.ArgumentParser()
-
-    # the following options are provided on the commandline
-    parser.add_argument("-f", "--file", action="store", dest="cleanupfile",
-                        help="path to cleanup result file", metavar="FILE")
-    parser.add_argument("-o", "--output", action="store", dest="outputfile",
-                        help="path to output file", metavar="FILE")
-    args = parser.parse_args()
-
-    # path of the gzip compressed releases file
-    if args.cleanupfile is None:
-        parser.error("cleanup file missing")
-
-    if args.outputfile is None:
-        parser.error("output file missing")
-
-    if os.path.isdir(args.outputfile):
-        print("outputfile %s is a directory, cannot overwrite" % args.outputfile, file=sys.stderr)
-        sys.exit(1)
-
-    if not os.path.exists(args.cleanupfile):
-        print("result file missing", file=sys.stderr)
+@click.command(short_help='process Discogs datadump files and create bar charts with smells')
+@click.option('--input-file', '-i', 'input_file', required=True,
+              help='Discogs input file with smells', type=click.File('r'))
+@click.option('--output-file', '-o', 'output_file', required=True, help='output file',
+              type=click.Path(path_type=pathlib.Path))
+def main(input_file, output_file):
+    if output_file.is_dir():
+        print(f"outputfile {output_file} is a directory, cannot overwrite", file=sys.stderr)
         sys.exit(1)
 
     unique_releases = set()
-    cleanupfile = open(args.cleanupfile, 'r')
 
     # store the number of the last release found with a small in the
     # dataset. This is to ensure that the right amount of columns will
@@ -72,7 +58,7 @@ def main(argv):
     max_release_number = 0
 
     # store the release number for releases with a smell
-    for l in cleanupfile:
+    for l in input_file:
         if 'https://www.discogs.com/release/' in l and ' -- ' in l:
             #release_number = int(l.rsplit('/', 1)[1])
             release_number = int(l.rsplit('/', 1)[1].split()[0])
@@ -80,7 +66,6 @@ def main(argv):
             unique_releases.add(release_number)
         else:
             print(l)
-    cleanupfile.close()
 
     # count the number of releases, with a smell
     statistics = collections.Counter()
@@ -137,7 +122,7 @@ def main(argv):
     barchart.barWidth = barwidth
 
     drawing.add(barchart)
-    renderPM.drawToFile(drawing, args.outputfile, fmt='PNG')
+    renderPM.drawToFile(drawing, output_file, fmt='PNG')
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
