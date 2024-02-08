@@ -65,7 +65,7 @@ TRACKLIST_CHECK_FORMATS = ['Vinyl', 'Cassette', 'Shellac', '8-Track Cartridge']
 
 # grab the current year. Make sure to set the clock of your machine
 # to the correct date or use NTP!
-currentyear = datetime.datetime.utcnow().year
+CURRENT_YEAR = datetime.datetime.now(datetime.UTC).year
 
 pkd_re = re.compile(r"\d{1,2}/((?:19|20)?\d{2})")
 
@@ -684,7 +684,7 @@ def main(cfg, datadump, requested_release):
                                                         deposito_year = int(deposito_year_text)
                                                         if deposito_year < 100:
                                                             # correct the year. This won't work correctly after 2099.
-                                                            if deposito_year <= currentyear - 2000:
+                                                            if deposito_year <= CURRENT_YEAR - 2000:
                                                                 deposito_year += 2000
                                                             else:
                                                                 deposito_year += 1900
@@ -697,7 +697,7 @@ def main(cfg, datadump, requested_release):
                                                     if deposito_year < 1900:
                                                         print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
                                                         counter += 1
-                                                    elif deposito_year > currentyear:
+                                                    elif deposito_year > CURRENT_YEAR:
                                                         print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
                                                         counter += 1
                                                     elif year < deposito_year:
@@ -775,11 +775,11 @@ def main(cfg, datadump, requested_release):
                                                     pkdyear = int(pkdres.groups()[0])
                                                     if pkdyear < 100:
                                                         # correct the year. This won't work correctly after 2099.
-                                                        if pkdyear <= currentyear - 2000:
+                                                        if pkdyear <= CURRENT_YEAR - 2000:
                                                             pkdyear += 2000
                                                         else:
                                                             pkdyear += 1900
-                                                    if pkdyear < 1900 or pkdyear > currentyear:
+                                                    if pkdyear < 1900 or pkdyear > CURRENT_YEAR:
                                                         print_error(counter, 'Indian PKD (impossible year)', release_id)
                                                         counter += 1
                                                     elif year < pkdyear:
@@ -836,11 +836,11 @@ def main(cfg, datadump, requested_release):
                                                 if isrcyear < 100:
                                                     # correct the year. This won't work
                                                     # correctly after 2099.
-                                                    if isrcyear <= currentyear - 2000:
+                                                    if isrcyear <= CURRENT_YEAR - 2000:
                                                         isrcyear += 2000
                                                     else:
                                                         isrcyear += 1900
-                                                if isrcyear > currentyear:
+                                                if isrcyear > CURRENT_YEAR:
                                                     print_error(counter, f'ISRC (impossible year: {isrcyear})', release_id)
                                                     counter += 1
                                                 elif year < isrcyear:
@@ -906,11 +906,11 @@ def main(cfg, datadump, requested_release):
                                                 if cinramres is not None:
                                                     cinramyear = int(cinramres.groups()[0])
                                                     # correct the year. This won't work correctly after 2099.
-                                                    if cinramyear <= currentyear - 2000:
+                                                    if cinramyear <= CURRENT_YEAR - 2000:
                                                         cinramyear += 2000
                                                     else:
                                                         cinramyear += 1900
-                                                    if cinramyear > currentyear:
+                                                    if cinramyear > CURRENT_YEAR:
                                                         print_error(counter, f'Matrix (impossible year: {year})', release_id)
                                                         counter += 1
                                                     elif year < cinramyear:
@@ -922,11 +922,11 @@ def main(cfg, datadump, requested_release):
                                                 if pallasres is not None:
                                                     pallasyear = int(pallasres.groups()[0])
                                                     # correct the year. This won't work correctly after 2099.
-                                                    if pallasyear <= currentyear - 2000:
+                                                    if pallasyear <= CURRENT_YEAR - 2000:
                                                         pallasyear += 2000
                                                     else:
                                                         pallasyear += 1900
-                                                    if pallasyear > currentyear:
+                                                    if pallasyear > CURRENT_YEAR:
                                                         print_error(counter, f'Matrix (impossible year: {year})', release_id)
                                                         counter += 1
                                                     elif year < pallasyear:
