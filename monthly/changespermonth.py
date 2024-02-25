@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-## hackish script to process results of process-discogs-chunks.py
-##
-## Licensed under the terms of the General Public License version 3
-##
-## SPDX-License-Identifier: GPL-3.0
-##
-## Copyright 2017-2023 - Armijn Hemel
+# hackish script to process results of process-discogs-chunks.py
+#
+# Licensed under the terms of the General Public License version 3
+#
+# SPDX-License-Identifier: GPL-3.0
+#
+# Copyright 2017-2023 - Armijn Hemel
 
 import argparse
 import collections
@@ -105,13 +105,13 @@ def main():
         parser.error("Path to first file missing")
 
     if not os.path.exists(args.first):
-        parser.error("First file %s does not exist" % args.first)
+        parser.error(f"First file {args.first} does not exist")
 
     if args.second is None:
         parser.error("Path to second file missing")
 
     if not os.path.exists(args.second):
-        parser.error("Second file %s does not exist" % args.second)
+        parser.error(f"Second file {args.second} does not exist")
 
     if args.dir is None:
         parser.error("Path to first directory missing")
