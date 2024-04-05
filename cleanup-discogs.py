@@ -33,9 +33,9 @@ ISRC_TRANSLATE = str.maketrans({'-': None, ' ': None, '.': None,
 # used when checking the catalog numbers.
 LABEL_CODE_FALSE_POSITIVES = set([654, 1005, 1060, 2495, 5320, 11358, 20234, 20561, 22804, 23541,
                                   29480, 38653, 39161, 54361, 63510, 66210, 97031, 113617, 127100,
-                                  163947, 185266, 199380, 226480, 237745, 238695, 251227, 253128,
-                                  253548, 487381, 498544, 510628, 593249, 605295, 620121, 645109,
-                                  656580, 810881, 943057, 1210375, 1446781, 1624446, 1674048])
+                                  130286, 163947, 185266, 199380, 226480, 237745, 238695, 251227,
+                                  253128, 253548, 487381, 498544, 510628, 593249, 605295, 620121,
+                                  645109, 656580, 810881, 943057, 1210375, 1446781, 1624446, 1674048])
 
 RIGHTS_SOCIETY_DELIMITERS = ['/', '|', '\\', '-', '—', '•', '·', ',', ':', ' ', '&', '+']
 
@@ -1173,7 +1173,7 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
                                 if config_settings.label_code:
                                     # check the catalog numbers for possible false positives,
-                                    # but exclude "Loft Classics" and others
+                                    # but exclude labels that have label numbers that start with "LC"
                                     if year is None or year > 1970:
                                         if catno.startswith('lc') and label_id not in LABEL_CODE_FALSE_POSITIVES:
                                             if discogssmells.labelcodere.match(catno) is not None:
