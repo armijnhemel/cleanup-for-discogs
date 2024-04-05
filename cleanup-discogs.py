@@ -397,6 +397,15 @@ def main(cfg, datadump, requested_release):
                             country = child.text
                             break
 
+                    for child in element:
+                        if child.tag == 'released':
+                            if child.text != '':
+                                try:
+                                    year = int(child.text.split('-', 1)[0])
+                                except ValueError:
+                                    pass
+                                break
+
                     # and process the different elements
                     for child in element:
                         if config_settings.report_all:
