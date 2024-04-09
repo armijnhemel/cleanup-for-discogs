@@ -1,0 +1,4 @@
+click >= 8.1.7
+dataclasses-json >= 0.6.4
+defusedxml >= 0.7.1
+requests
