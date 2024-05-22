@@ -618,8 +618,8 @@ def main(cfg, datadump, requested_release):
                                     if identifier_type == 'ASIN':
                                         value = identifier.get('value').strip()
                                         # temporary hack, move to own configuration option
-                                        asin_strinct = False
-                                        if not asin_strinct:
+                                        asin_strict = False
+                                        if not asin_strict:
                                             tmpasin = value.replace('-', '')
                                         else:
                                             tmpasin = value
