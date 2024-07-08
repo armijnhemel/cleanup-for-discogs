@@ -164,131 +164,131 @@ def main(cfg, datadump, requested_release):
 
     # process the configuration file and store settings.
     # Most of the defaults (but not all!) are set to 'True'
-    config_settings = CleanupConfig()
+    settings = CleanupConfig()
 
     # store settings for depósito legal checks
     try:
-        config_settings.deposito_legal = config.getboolean('cleanup', 'deposito')
+        settings.deposito_legal = config.getboolean('cleanup', 'deposito')
     except:
         pass
 
     # store settings for rights society checks
     try:
-        config_settings.rights_society = config.getboolean('cleanup', 'rights_society')
+        settings.rights_society = config.getboolean('cleanup', 'rights_society')
     except:
         pass
 
     # store settings for label code checks
     try:
-        config_settings.label_code = config.getboolean('cleanup', 'label_code')
+        settings.label_code = config.getboolean('cleanup', 'label_code')
     except:
         pass
 
     # store settings for label name checks
     try:
-        config_settings.label_name = config.getboolean('cleanup', 'label_name')
+        settings.label_name = config.getboolean('cleanup', 'label_name')
     except:
         pass
 
     # store settings for ISRC checks
     try:
-        config_settings.isrc = config.getboolean('cleanup', 'isrc')
+        settings.isrc = config.getboolean('cleanup', 'isrc')
     except:
         pass
 
     # store settings for ASIN checks
     try:
-        config_settings.asin = config.getboolean('cleanup', 'asin')
+        settings.asin = config.getboolean('cleanup', 'asin')
     except:
         pass
 
     # store settings for mastering SID checks
     try:
-        config_settings.mastering_sid = config.getboolean('cleanup', 'mastering_sid')
+        settings.mastering_sid = config.getboolean('cleanup', 'mastering_sid')
     except:
         pass
 
     # store settings for mould SID checks
     try:
-        config_settings.mould_sid = config.getboolean('cleanup', 'mould_sid')
+        settings.mould_sid = config.getboolean('cleanup', 'mould_sid')
     except:
         pass
 
     # store settings for mould SID strict checks
     try:
-        config_settings.mould_sid_strict = config.getboolean('cleanup', 'mould_sid_strict')
+        settings.mould_sid_strict = config.getboolean('cleanup', 'mould_sid_strict')
     except:
         pass
 
     # store settings for SPARS Code checks
     try:
-        config_settings.spars = config.getboolean('cleanup', 'spars')
+        settings.spars = config.getboolean('cleanup', 'spars')
     except:
         pass
 
     # store settings for Indian PKD checks
     try:
-        config_settings.indian_pkd = config.getboolean('cleanup', 'pkd')
+        settings.indian_pkd = config.getboolean('cleanup', 'pkd')
     except:
         pass
 
     # store settings for Greek license number checks
     try:
-        config_settings.greek_license = config.getboolean('cleanup', 'greek_license_number')
+        settings.greek_license = config.getboolean('cleanup', 'greek_license_number')
     except:
         pass
 
     # store settings for CD+G checks
     try:
-        config_settings.cd_plus_g = config.getboolean('cleanup', 'cdg')
+        settings.cd_plus_g = config.getboolean('cleanup', 'cdg')
     except:
         pass
 
     # store settings for Matrix checks
     try:
-        config_settings.matrix = config.getboolean('cleanup', 'matrix')
+        settings.matrix = config.getboolean('cleanup', 'matrix')
     except:
         pass
 
     # store settings for label checks
     try:
-        config_settings.labels = config.getboolean('cleanup', 'labels')
+        settings.labels = config.getboolean('cleanup', 'labels')
     except:
         pass
 
     # store settings for manufacturing plant checks
     try:
-        config_settings.pressing_plants = config.getboolean('cleanup', 'plants')
+        settings.pressing_plants = config.getboolean('cleanup', 'plants')
     except:
         pass
 
     # check for Czechoslovak manufacturing dates
     try:
-        config_settings.czechoslovak_dates = config.getboolean('cleanup', 'manufacturing_date_cs')
+        settings.czechoslovak_dates = config.getboolean('cleanup', 'manufacturing_date_cs')
     except:
         pass
 
     # check for strict Czechoslovak manufacturing dates
     try:
-        config_settings.czechoslovak_dates_strict = config.getboolean('cleanup', 'manufacturing_date_cs_strict')
+        settings.czechoslovak_dates_strict = config.getboolean('cleanup', 'manufacturing_date_cs_strict')
     except:
         pass
 
     # check for Czechoslovak and Czech spelling (0x115 used instead of 0x11B)
     try:
-        config_settings.czechoslovak_spelling = config.getboolean('cleanup', 'spelling_cs')
+        settings.czechoslovak_spelling = config.getboolean('cleanup', 'spelling_cs')
     except:
         pass
 
     # store settings for tracklisting checks, default True
     try:
-        config_settings.tracklisting = config.getboolean('cleanup', 'tracklisting')
+        settings.tracklisting = config.getboolean('cleanup', 'tracklisting')
     except:
         pass
 
     # store settings for artists, default False
     try:
-        config_settings.artist = config.getboolean('cleanup', 'artist')
+        settings.artist = config.getboolean('cleanup', 'artist')
     except:
         pass
 
@@ -301,49 +301,49 @@ def main(cfg, datadump, requested_release):
         if config.get('cleanup', 'credits') == 'yes':
             creditsfile = pathlib.Path(config.get('cleanup', 'creditsfile'))
             if creditsfile.exists():
-                config_settings.credits = True
+                settings.credits = True
                 with open(creditsfile, 'r') as open_file:
                     credit_roles = set(map(lambda x: x.strip(), open_file.readlines()))
                 if credit_roles != set():
-                    config_settings.artist = True
+                    settings.artist = True
                 else:
-                    config_settings.credits = False
+                    settings.credits = False
     except:
         pass
 
     # store settings for URLs in Notes checks
     try:
-        config_settings.url_in_html = config.getboolean('cleanup', 'html')
+        settings.url_in_html = config.getboolean('cleanup', 'html')
     except:
         pass
 
     # month is 00 check: default is False
     try:
-        config_settings.month_valid = config.getboolean('cleanup', 'month')
+        settings.month_valid = config.getboolean('cleanup', 'month')
     except:
         pass
 
     # year is wrong check: default is False
     try:
-        config_settings.year_valid = config.getboolean('cleanup', 'year')
+        settings.year_valid = config.getboolean('cleanup', 'year')
     except:
         pass
 
     # reporting all: default is False
     try:
-        config_settings.report_all = config.getboolean('cleanup', 'reportall')
+        settings.report_all = config.getboolean('cleanup', 'reportall')
     except:
         pass
 
     # debug: default is False
     try:
-        config_settings.debug = config.getboolean('cleanup', 'debug')
+        settings.debug = config.getboolean('cleanup', 'debug')
     except:
         pass
 
     # report creative commons references: default is False
     try:
-        config_settings.creative_commons = config.getboolean('cleanup', 'creative_commons')
+        settings.creative_commons = config.getboolean('cleanup', 'creative_commons')
     except:
         pass
 
@@ -409,12 +409,12 @@ def main(cfg, datadump, requested_release):
 
                     # and process the different elements
                     for child in element:
-                        if config_settings.report_all:
+                        if settings.report_all:
                             if release_id == last_release_checked:
                                 break
 
                         if country in ['Czechoslovakia', 'Czech Republic']:
-                            if config_settings.czechoslovak_spelling:
+                            if settings.czechoslovak_spelling:
                                 # People use 0x115 instead of 0x11B, which look very similar
                                 # but 0x115 is not valid in the Czech alphabet. Check for all
                                 # data except the YouTube playlist.
@@ -432,8 +432,8 @@ def main(cfg, datadump, requested_release):
                                         if czech_error_found:
                                             break
 
-                        if child.tag == 'artists' or child.tag == 'extraartists':
-                            if config_settings.artist:
+                        if child.tag in ['artists', 'extraartists']:
+                            if settings.artist:
                                 for artist_elem in child:
                                     # set to "no artist" as a place holder
                                     artist_id = 0
@@ -461,7 +461,7 @@ def main(cfg, datadump, requested_release):
                                                     pass
                                                     #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
                                             '''
-                                            if config_settings.credits:
+                                            if settings.credits:
                                                 role_data = artist.text
                                                 if role_data is None:
                                                     continue
@@ -505,7 +505,7 @@ def main(cfg, datadump, requested_release):
                                     for company in companies:
                                         if company.tag == 'id':
                                             company_nr = int(company.text)
-                                            if config_settings.labels:
+                                            if settings.labels:
                                                 # check for:
                                                 # https://www.discogs.com/label/205-Fontana
                                                 # https://www.discogs.com/label/7704-Philips
@@ -517,7 +517,7 @@ def main(cfg, datadump, requested_release):
                                                     if year < 1950:
                                                         print_error(counter, f'Label (wrong year {year})', release_id)
                                                         counter += 1
-                                            if config_settings.pressing_plants:
+                                            if settings.pressing_plants:
                                                 '''
                                                 ## https://www.discogs.com/label/34825-Sony-DADC
                                                 if company_nr == 34825:
@@ -567,18 +567,18 @@ def main(cfg, datadump, requested_release):
                                     elif key == 'text':
                                         if value != '':
                                             value_lower = value.lower().strip()
-                                            if config_settings.spars:
+                                            if settings.spars:
                                                 tmp_spars = value_lower
                                                 tmp_spars = tmp_spars.translate(SPARS_TRANSLATE)
                                                 if tmp_spars in discogssmells.validsparscodes:
                                                     print_error(counter, f"Possible SPARS Code ({value}, in Format)", release_id)
                                                     counter += 1
-                                            if config_settings.label_code:
+                                            if settings.label_code:
                                                 if value_lower.startswith('lc'):
                                                     if discogssmells.labelcodere.match(value_lower) is not None:
                                                         print_error(counter, f"Possible Label Code ({value}, in Format)", release_id)
                                                         counter += 1
-                                            if config_settings.cd_plus_g:
+                                            if settings.cd_plus_g:
                                                 if value_lower == 'cd+g':
                                                     print_error(counter, 'CD+G (in Format)', release_id)
                                                     counter += 1
@@ -615,7 +615,7 @@ def main(cfg, datadump, requested_release):
                                 identifier_type = identifier.get('type')
 
                                 # ASIN
-                                if config_settings.asin:
+                                if settings.asin:
                                     if identifier_type == 'ASIN':
                                         value = identifier.get('value').strip()
                                         # temporary hack, move to own configuration option
@@ -634,7 +634,7 @@ def main(cfg, datadump, requested_release):
                                             counter += 1
 
                                 # creative commons, check value and description
-                                if config_settings.creative_commons:
+                                if settings.creative_commons:
                                     description = identifier.get('description', '').strip().lower()
                                     value = identifier.get('value', '').strip().lower()
                                     if 'creative commons' in description:
@@ -645,7 +645,7 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
 
                                 if country == 'Czechoslovakia' and year is not None:
-                                    if config_settings.czechoslovak_dates:
+                                    if settings.czechoslovak_dates:
                                         description = identifier.get('description', '').strip().lower()
                                         value = identifier.get('value', '').strip().lower()
                                         if 'date' in description:
@@ -658,13 +658,13 @@ def main(cfg, datadump, requested_release):
                                                         print_error(counter, 'Czechoslovak manufacturing date (release year wrong)', release_id)
                                                         counter += 1
                                                     # possibly this check makes sense, but not always
-                                                    elif manufacturing_year < year and config_settings.czechoslovak_dates_strict:
+                                                    elif manufacturing_year < year and settings.czechoslovak_dates_strict:
                                                         print_error(counter, 'Czechoslovak manufacturing date (release year possibly wrong)', release_id)
                                                         counter += 1
 
                                 # Depósito Legal, only check for releases from Spain
                                 if country == 'Spain':
-                                    if config_settings.deposito_legal:
+                                    if settings.deposito_legal:
                                         if identifier_type == 'Depósito Legal':
                                             deposito_found = True
                                             value = identifier.get('value')
@@ -741,7 +741,7 @@ def main(cfg, datadump, requested_release):
                                                             counter += 1
                                                             deposito_found = True
                                                             break
-                                                    if not deposito_found and config_settings.debug:
+                                                    if not deposito_found and settings.debug:
                                                         # print descriptions for debugging. Careful.
                                                         print(f'Depósito Legal debug: {release_id}, {description}')
 
@@ -758,7 +758,7 @@ def main(cfg, datadump, requested_release):
 
                                 # Greek license numbers
                                 if country == 'Greece':
-                                    if config_settings.greek_license:
+                                    if settings.greek_license:
                                         description = identifier.get('description', '').strip().lower()
                                         value = identifier.get('value', '').strip()
                                         if "license" in description.strip() and year is not None:
@@ -776,7 +776,7 @@ def main(cfg, datadump, requested_release):
 
                                 # India PKD
                                 if country == 'India':
-                                    if config_settings.indian_pkd:
+                                    if settings.indian_pkd:
                                         value = identifier.get('value', '').lower()
                                         if 'pkd' in value or "production date" in value:
                                             if year is not None:
@@ -801,7 +801,7 @@ def main(cfg, datadump, requested_release):
                                                 counter += 1
 
                                 # ISRC
-                                if config_settings.isrc:
+                                if settings.isrc:
                                     description = identifier.get('description', '').strip()
                                     description_lower = description.lower()
                                     if identifier_type == 'ISRC':
@@ -881,7 +881,7 @@ def main(cfg, datadump, requested_release):
                                                         counter += 1
                                                         break
                                 # Label Code
-                                if config_settings.label_code:
+                                if settings.label_code:
                                     value = identifier.get('value').lower()
                                     description = identifier.get('description', '').lower()
                                     if identifier_type == 'Label Code':
@@ -904,7 +904,7 @@ def main(cfg, datadump, requested_release):
                                             counter += 1
 
                                 # Matrix / Runout
-                                if config_settings.matrix:
+                                if settings.matrix:
                                     value = identifier.get('value')
                                     if identifier_type == 'Matrix / Runout':
                                         for pdmc in discogssmells.pmdc_misspellings:
@@ -945,7 +945,7 @@ def main(cfg, datadump, requested_release):
                                                         counter += 1
 
                                 # Mastering SID Code
-                                if config_settings.mastering_sid:
+                                if settings.mastering_sid:
                                     if identifier_type == 'Mastering SID Code':
                                         value = identifier.get('value').strip()
                                         value_lower = identifier.get('value').lower().strip()
@@ -977,7 +977,7 @@ def main(cfg, datadump, requested_release):
                                             counter += 1
 
                                 # Mould SID Code
-                                if config_settings.mould_sid:
+                                if settings.mould_sid:
                                     description = identifier.get('description', '').strip()
                                     description_lower = description.lower()
                                     if identifier_type == 'Mould SID Code':
@@ -991,7 +991,7 @@ def main(cfg, datadump, requested_release):
                                                 print_error(counter, f'Mould SID Code (illegal value: {value})', release_id)
                                                 counter += 1
                                             else:
-                                                if config_settings.mould_sid_strict:
+                                                if settings.mould_sid_strict:
                                                     mould_split = mould_sid_tmp.split('ifpi', 1)[-1]
                                                     for ch in ['i', 'o', 's', 'q']:
                                                         if ch in mould_split[-2:]:
@@ -1015,7 +1015,7 @@ def main(cfg, datadump, requested_release):
                                             counter += 1
 
                                 # Mastering SID and Mould SID descriptions
-                                if config_settings.mastering_sid or config_settings.mould_sid:
+                                if settings.mastering_sid or settings.mould_sid:
                                     description = identifier.get('description', '').strip()
                                     description_lower = description.lower()
                                     if description_lower in SID_DESCRIPTIONS:
@@ -1023,7 +1023,7 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
 
                                 # Rights Society
-                                if config_settings.rights_society:
+                                if settings.rights_society:
                                     value = identifier.get('value')
                                     value_upper = value.upper().strip()
                                     value_upper_translated = value_upper.translate(RIGHTS_SOCIETY_TRANSLATE_QND)
@@ -1107,7 +1107,7 @@ def main(cfg, datadump, requested_release):
                                                         counter += 1
 
                                 # SPARS Code
-                                if config_settings.spars:
+                                if settings.spars:
                                     value = identifier.get('value')
                                     if identifier_type == 'SPARS Code':
                                         if value != 'none':
@@ -1167,7 +1167,7 @@ def main(cfg, datadump, requested_release):
                                 # debug code to print all descriptions
                                 # Useful to find misspellings of various fields
                                 # Use with care.
-                                #if config_settings.debug:
+                                #if settings.debug:
                                 #    description = identifier.get('description', '')
                                 #    if description != '':
                                 #        print(description, release_id)
@@ -1176,12 +1176,12 @@ def main(cfg, datadump, requested_release):
                             for label in child:
                                 label_id = int(label.get('id', ''))
                                 catno = label.get('catno', '').lower()
-                                if config_settings.label_name:
+                                if settings.label_name:
                                     # https://vinylanddata.blogspot.com/2018/01/detecting-wrong-label-information-in.html
                                     if label_id == 26905:
                                         print_error(counter, 'Wrong label (London)', release_id)
                                         counter += 1
-                                if config_settings.label_code:
+                                if settings.label_code:
                                     # check the catalog numbers for possible false positives,
                                     # but exclude labels that have label numbers that start with "LC"
                                     if year is None or year > 1970:
@@ -1189,7 +1189,7 @@ def main(cfg, datadump, requested_release):
                                             if discogssmells.labelcodere.match(catno) is not None:
                                                 print_error(counter, f'Possible Label Code (in Catalogue Number: {catno})', release_id)
                                                 counter += 1
-                                if config_settings.deposito_legal and country == 'Spain':
+                                if settings.deposito_legal and country == 'Spain':
                                     deposito_legal_found = False
                                     if label_id not in [26617, 60778]:
                                         for d in discogssmells.depositores:
@@ -1211,7 +1211,7 @@ def main(cfg, datadump, requested_release):
                             #    print_error(counter, "Korean casino spam", release_id)
                             #    counter += 1
                             if country == 'Spain':
-                                if config_settings.deposito_legal:
+                                if settings.deposito_legal:
                                     # sometimes "deposito legal" can be found
                                     # in the "notes" section.
                                     content_lower = child.text.lower()
@@ -1222,11 +1222,11 @@ def main(cfg, datadump, requested_release):
                                             break
 
                             # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
-                            if config_settings.url_in_html:
+                            if settings.url_in_html:
                                 if '&lt;a href="http://www.discogs.com/release/' in child.text:
                                     print_error(counter, "old link (Notes)", release_id)
                                     counter += 1
-                            if config_settings.creative_commons:
+                            if settings.creative_commons:
                                 cc_found = False
                                 for cc_ref in discogssmells.creativecommons:
                                     if cc_ref in child.text:
@@ -1241,7 +1241,7 @@ def main(cfg, datadump, requested_release):
                                         counter += 1
 
                         elif child.tag == 'released':
-                            if config_settings.month_valid:
+                            if settings.month_valid:
                                 monthres = re.search(r'-(\d+)-', child.text)
                                 if monthres is not None:
                                     month_nr = int(monthres.groups()[0])
@@ -1256,13 +1256,13 @@ def main(cfg, datadump, requested_release):
                                 try:
                                     year = int(child.text.split('-', 1)[0])
                                 except ValueError:
-                                    if config_settings.year_valid:
+                                    if settings.year_valid:
                                         print_error(counter, f"Year {child.text} invalid", release_id)
                                         counter += 1
 
                         elif child.tag == 'tracklist':
                             # check artists and extraartists here TODO
-                            if config_settings.tracklisting:
+                            if settings.tracklisting:
                                 # various tracklist sanity checks, but only if there is
                                 # only a single format to make things easier. This should be
                                 # fixed at some point TODO.
