@@ -1210,35 +1210,36 @@ def main(cfg, datadump, requested_release):
                             #    # every once in a while.
                             #    print_error(counter, "Korean casino spam", release_id)
                             #    counter += 1
-                            if country == 'Spain':
-                                if settings.deposito_legal:
-                                    # sometimes "deposito legal" can be found
-                                    # in the "notes" section.
-                                    content_lower = child.text.lower()
-                                    for d in discogssmells.depositores:
-                                        result = d.search(content_lower)
-                                        if result is not None:
-                                            deposito_found_in_notes = True
+                            if child.text:
+                                if country == 'Spain':
+                                    if settings.deposito_legal:
+                                        # sometimes "deposito legal" can be found
+                                        # in the "notes" section.
+                                        content_lower = child.text.lower()
+                                        for d in discogssmells.depositores:
+                                            result = d.search(content_lower)
+                                            if result is not None:
+                                                deposito_found_in_notes = True
+                                                break
+
+                                # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
+                                if settings.url_in_html:
+                                    if '&lt;a href="http://www.discogs.com/release/' in child.text:
+                                        print_error(counter, "old link (Notes)", release_id)
+                                        counter += 1
+                                if settings.creative_commons:
+                                    cc_found = False
+                                    for cc_ref in discogssmells.creativecommons:
+                                        if cc_ref in child.text:
+                                            print_error(counter, f"Creative Commons reference ({cc_ref})", release_id)
+                                            counter += 1
+                                            cc_found = True
                                             break
 
-                            # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
-                            if settings.url_in_html:
-                                if '&lt;a href="http://www.discogs.com/release/' in child.text:
-                                    print_error(counter, "old link (Notes)", release_id)
-                                    counter += 1
-                            if settings.creative_commons:
-                                cc_found = False
-                                for cc_ref in discogssmells.creativecommons:
-                                    if cc_ref in child.text:
-                                        print_error(counter, f"Creative Commons reference ({cc_ref})", release_id)
-                                        counter += 1
-                                        cc_found = True
-                                        break
-
-                                if not cc_found:
-                                    if 'creative commons' in child.text.lower():
-                                        print_error(counter, "Creative Commons reference", release_id)
-                                        counter += 1
+                                    if not cc_found:
+                                        if 'creative commons' in child.text.lower():
+                                            print_error(counter, "Creative Commons reference", release_id)
+                                            counter += 1
 
                         elif child.tag == 'released':
                             if settings.month_valid:
