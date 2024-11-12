@@ -400,12 +400,13 @@ def main(cfg, datadump, requested_release):
 
                     for child in element:
                         if child.tag == 'released':
-                            if child.text != '':
-                                try:
-                                    year = int(child.text.split('-', 1)[0])
-                                except ValueError:
-                                    pass
-                                break
+                            if child.text:
+                                if child.text != '':
+                                    try:
+                                        year = int(child.text.split('-', 1)[0])
+                                    except ValueError:
+                                        pass
+                                    break
 
                     # and process the different elements
                     for child in element:
@@ -439,63 +440,64 @@ def main(cfg, datadump, requested_release):
                                     artist_id = 0
                                     artist_name = ''
                                     for artist in artist_elem:
-                                        if artist.tag == 'id':
-                                            artist_id = int(artist.text)
-                                            # TODO: check for genres, as No Artist is
-                                            # often confused with Unknown Artist
-                                            #if artist_id == 118760:
-                                            #    if genres:
-                                            #        print_error(counter, f'https://www.discogs.com/artist/{artist_id}' release_id)
-                                            #        counter += 1
-                                        elif artist.tag == 'name':
-                                            artist_name = artist.text
-                                        elif artist.tag == 'role':
-                                            '''
-                                            if artist_id == 0:
-                                                wrong_role_for_noartist = True
-                                                for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
-                                                    if r in artist.text.strip():
-                                                        wrong_role_for_noartist = False
-                                                        break
-                                                if wrong_role_for_noartist:
-                                                    pass
-                                                    #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
-                                            '''
-                                            if settings.credits:
-                                                role_data = artist.text
-                                                if role_data is None:
-                                                    continue
-                                                role_data = role_data.strip()
-                                                if role_data != '':
-                                                    if '[' not in role_data:
-                                                        roles = map(lambda x: x.strip(), role_data.split(','))
-                                                        for role in roles:
-                                                            if role == '':
-                                                                continue
-                                                            if role not in credit_roles:
-                                                                print_error(counter, f'Role \'{role}\' invalid', release_id)
-                                                                counter += 1
-                                                    else:
-                                                        # sometimes there is an additional description
-                                                        # in the role in between [ and ]. TODO: rework this
-                                                        rolesplit = role_data.split('[')
-                                                        for rs in rolesplit:
-                                                            if ']' in rs:
-                                                                rs_tmp = rs
-                                                                while ']' in rs_tmp:
-                                                                    rs_tmp = rs_tmp.split(']', 1)[1]
-                                                                roles = map(lambda x: x.strip(), rs_tmp.split(','))
-                                                                for role in roles:
-                                                                    if role == '':
-                                                                        continue
-                                                                    # ugly hack because sometimes the extra
-                                                                    # data between [ and ] appears halfway the
-                                                                    # words in a role, sigh.
-                                                                    if role == 'By':
-                                                                        continue
-                                                                    if role not in credit_roles:
-                                                                        print_error(counter, f'Role \'{role}\' invalid', release_id)
-                                                                        counter += 1
+                                        if artist.text:
+                                            if artist.tag == 'id':
+                                                artist_id = int(artist.text)
+                                                # TODO: check for genres, as No Artist is
+                                                # often confused with Unknown Artist
+                                                #if artist_id == 118760:
+                                                #    if genres:
+                                                #        print_error(counter, f'https://www.discogs.com/artist/{artist_id}' release_id)
+                                                #        counter += 1
+                                            elif artist.tag == 'name':
+                                                artist_name = artist.text
+                                            elif artist.tag == 'role':
+                                                '''
+                                                if artist_id == 0:
+                                                    wrong_role_for_noartist = True
+                                                    for r in ['Other', 'Artwork By', 'Executive Producer', 'Photography', 'Written By']:
+                                                        if r in artist.text.strip():
+                                                            wrong_role_for_noartist = False
+                                                            break
+                                                    if wrong_role_for_noartist:
+                                                        pass
+                                                        #print(self.contentbuffer.strip(), " -- https://www.discogs.com/release/%s" % str(self.release))
+                                                '''
+                                                if settings.credits:
+                                                    role_data = artist.text
+                                                    if role_data is None:
+                                                        continue
+                                                    role_data = role_data.strip()
+                                                    if role_data != '':
+                                                        if '[' not in role_data:
+                                                            roles = map(lambda x: x.strip(), role_data.split(','))
+                                                            for role in roles:
+                                                                if role == '':
+                                                                    continue
+                                                                if role not in credit_roles:
+                                                                    print_error(counter, f'Role \'{role}\' invalid', release_id)
+                                                                    counter += 1
+                                                        else:
+                                                            # sometimes there is an additional description
+                                                            # in the role in between [ and ]. TODO: rework this
+                                                            rolesplit = role_data.split('[')
+                                                            for rs in rolesplit:
+                                                                if ']' in rs:
+                                                                    rs_tmp = rs
+                                                                    while ']' in rs_tmp:
+                                                                        rs_tmp = rs_tmp.split(']', 1)[1]
+                                                                    roles = map(lambda x: x.strip(), rs_tmp.split(','))
+                                                                    for role in roles:
+                                                                        if role == '':
+                                                                            continue
+                                                                        # ugly hack because sometimes the extra
+                                                                        # data between [ and ] appears halfway the
+                                                                        # words in a role, sigh.
+                                                                        if role == 'By':
+                                                                            continue
+                                                                        if role not in credit_roles:
+                                                                            print_error(counter, f'Role \'{role}\' invalid', release_id)
+                                                                            counter += 1
                                     if artist_id == 0:
                                         print_error(counter, f'Artist \'{artist_name}\' not in database', release_id)
                                         counter += 1
@@ -504,42 +506,43 @@ def main(cfg, datadump, requested_release):
                                 for companies in child:
                                     for company in companies:
                                         if company.tag == 'id':
-                                            company_nr = int(company.text)
-                                            if settings.labels:
-                                                # check for:
-                                                # https://www.discogs.com/label/205-Fontana
-                                                # https://www.discogs.com/label/7704-Philips
-                                                if company_nr == 205:
-                                                    if year < 1957:
-                                                        print_error(counter, f'Label (wrong year {year})', release_id)
-                                                        counter += 1
-                                                elif company_nr == 7704:
-                                                    if year < 1950:
-                                                        print_error(counter, f'Label (wrong year {year})', release_id)
-                                                        counter += 1
-                                            if settings.pressing_plants:
-                                                '''
-                                                ## https://www.discogs.com/label/34825-Sony-DADC
-                                                if company_nr == 34825:
-                                                    if year < 2000:
-                                                        print_error(counter, f'Pressing Plant Sony DADC (wrong year {year})', release_id)
-                                                        counter += 1
-                                                '''
-
-                                                for pl in discogssmells.plants:
-                                                    if company_nr == pl[0]:
-                                                        if year < pl[1]:
-                                                            print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
+                                            if company.text:
+                                                company_nr = int(company.text)
+                                                if settings.labels:
+                                                    # check for:
+                                                    # https://www.discogs.com/label/205-Fontana
+                                                    # https://www.discogs.com/label/7704-Philips
+                                                    if company_nr == 205:
+                                                        if year < 1957:
+                                                            print_error(counter, f'Label (wrong year {year})', release_id)
                                                             counter += 1
-                                                            break
+                                                    elif company_nr == 7704:
+                                                        if year < 1950:
+                                                            print_error(counter, f'Label (wrong year {year})', release_id)
+                                                            counter += 1
+                                                if settings.pressing_plants:
+                                                    '''
+                                                    ## https://www.discogs.com/label/34825-Sony-DADC
+                                                    if company_nr == 34825:
+                                                        if year < 2000:
+                                                            print_error(counter, f'Pressing Plant Sony DADC (wrong year {year})', release_id)
+                                                            counter += 1
+                                                    '''
 
-                                                for pl in discogssmells.plants_compact_disc:
-                                                    if company_nr == pl[0]:
-                                                        if 'CD' in formats:
+                                                    for pl in discogssmells.plants:
+                                                        if company_nr == pl[0]:
                                                             if year < pl[1]:
                                                                 print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
                                                                 counter += 1
                                                                 break
+
+                                                    for pl in discogssmells.plants_compact_disc:
+                                                        if company_nr == pl[0]:
+                                                            if 'CD' in formats:
+                                                                if year < pl[1]:
+                                                                    print_error(counter, f'Pressing Plant {pl[2]} (possibly wrong year {year})', release_id)
+                                                                    counter += 1
+                                                                    break
 
                         elif child.tag == 'formats':
                             for release_format in child:
@@ -1174,7 +1177,10 @@ def main(cfg, datadump, requested_release):
 
                         elif child.tag == 'labels':
                             for label in child:
-                                label_id = int(label.get('id', ''))
+                                try:
+                                    label_id = int(label.get('id', ''))
+                                except:
+                                    continue
                                 catno = label.get('catno', '').lower()
                                 if settings.label_name:
                                     # https://vinylanddata.blogspot.com/2018/01/detecting-wrong-label-information-in.html
@@ -1242,24 +1248,25 @@ def main(cfg, datadump, requested_release):
                                             counter += 1
 
                         elif child.tag == 'released':
-                            if settings.month_valid:
-                                monthres = re.search(r'-(\d+)-', child.text)
-                                if monthres is not None:
-                                    month_nr = int(monthres.groups()[0])
-                                    if month_nr == 0:
-                                        print_error(counter, "Month 00", release_id)
-                                        counter += 1
-                                    elif month_nr > 12:
-                                        print_error(counter, f"Month impossible {month_nr}", release_id)
-                                        counter += 1
+                            if child.text:
+                                if settings.month_valid:
+                                    monthres = re.search(r'-(\d+)-', child.text)
+                                    if monthres is not None:
+                                        month_nr = int(monthres.groups()[0])
+                                        if month_nr == 0:
+                                            print_error(counter, "Month 00", release_id)
+                                            counter += 1
+                                        elif month_nr > 12:
+                                            print_error(counter, f"Month impossible {month_nr}", release_id)
+                                            counter += 1
 
-                            if child.text != '':
-                                try:
-                                    year = int(child.text.split('-', 1)[0])
-                                except ValueError:
-                                    if settings.year_valid:
-                                        print_error(counter, f"Year {child.text} invalid", release_id)
-                                        counter += 1
+                                if child.text != '':
+                                    try:
+                                        year = int(child.text.split('-', 1)[0])
+                                    except ValueError:
+                                        if settings.year_valid:
+                                            print_error(counter, f"Year {child.text} invalid", release_id)
+                                            counter += 1
 
                         elif child.tag == 'tracklist':
                             # check artists and extraartists here TODO
