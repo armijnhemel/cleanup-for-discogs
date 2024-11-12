@@ -620,7 +620,11 @@ def main(cfg, datadump, requested_release):
                                 # ASIN
                                 if settings.asin:
                                     if identifier_type == 'ASIN':
-                                        value = identifier.get('value').strip()
+                                        try:
+                                            value = identifier.get('value').strip()
+                                        except:
+                                            continue
+
                                         # temporary hack, move to own configuration option
                                         asin_strict = False
                                         if not asin_strict:
@@ -638,8 +642,11 @@ def main(cfg, datadump, requested_release):
 
                                 # creative commons, check value and description
                                 if settings.creative_commons:
-                                    description = identifier.get('description', '').strip().lower()
-                                    value = identifier.get('value', '').strip().lower()
+                                    try:
+                                        description = identifier.get('description', '').strip().lower()
+                                        value = identifier.get('value', '').strip().lower()
+                                    except:
+                                        continue
                                     if 'creative commons' in description:
                                         print_error(counter, 'Creative Commons reference', release_id)
                                         counter += 1
@@ -649,8 +656,11 @@ def main(cfg, datadump, requested_release):
 
                                 if country == 'Czechoslovakia' and year is not None:
                                     if settings.czechoslovak_dates:
-                                        description = identifier.get('description', '').strip().lower()
-                                        value = identifier.get('value', '').strip().lower()
+                                        try:
+                                            description = identifier.get('description', '').strip().lower()
+                                            value = identifier.get('value', '').strip().lower()
+                                        except:
+                                            continue
                                         if 'date' in description:
                                             manufacturing_date_res = re.search(r"(\d{2})\s+\d$", value)
                                             if manufacturing_date_res is not None:
@@ -668,9 +678,12 @@ def main(cfg, datadump, requested_release):
                                 # Depósito Legal, only check for releases from Spain
                                 if country == 'Spain':
                                     if settings.deposito_legal:
+                                        try:
+                                            value = identifier.get('value').strip()
+                                        except:
+                                            continue
                                         if identifier_type == 'Depósito Legal':
                                             deposito_found = True
-                                            value = identifier.get('value')
                                             if value.endswith('.'):
                                                 print_error(counter, "Depósito Legal (formatting)", release_id)
                                                 counter += 1
@@ -678,8 +691,7 @@ def main(cfg, datadump, requested_release):
                                             if year is not None:
                                                 # now try to find the year
                                                 deposito_year = None
-                                                year_value = value.strip()
-                                                if year_value.endswith('℗'):
+                                                if value.endswith('℗'):
                                                     print_error(counter, "Depósito Legal (formatting, has ℗)", release_id)
                                                     counter += 1
                                                     # ugly hack, remove ℗ to make at least be able to do some sort of check
@@ -721,9 +733,11 @@ def main(cfg, datadump, requested_release):
                                                     print_error(counter, "Depósito Legal (year not found)", release_id)
                                                     counter += 1
                                         else:
-                                            value = identifier.get('value').strip()
                                             value_lower = value.lower()
-                                            description = identifier.get('description', '').strip()
+                                            try:
+                                                description = identifier.get('description', '').strip()
+                                            except:
+                                                continue
                                             description_lower = description.lower()
 
                                             if not deposito_found:
@@ -762,8 +776,11 @@ def main(cfg, datadump, requested_release):
                                 # Greek license numbers
                                 if country == 'Greece':
                                     if settings.greek_license:
-                                        description = identifier.get('description', '').strip().lower()
-                                        value = identifier.get('value', '').strip()
+                                        try:
+                                            description = identifier.get('description', '').strip().lower()
+                                            value = identifier.get('value', '').strip()
+                                        except:
+                                            continue
                                         if "license" in description.strip() and year is not None:
                                             for sep in ['/', ' ', '-', ')', '\'', '.']:
                                                 try:
@@ -780,7 +797,10 @@ def main(cfg, datadump, requested_release):
                                 # India PKD
                                 if country == 'India':
                                     if settings.indian_pkd:
-                                        value = identifier.get('value', '').lower()
+                                        try:
+                                            value = identifier.get('value', '').lower()
+                                        except:
+                                            continue
                                         if 'pkd' in value or "production date" in value:
                                             if year is not None:
                                                 # try a few variants
@@ -805,7 +825,10 @@ def main(cfg, datadump, requested_release):
 
                                 # ISRC
                                 if settings.isrc:
-                                    description = identifier.get('description', '').strip()
+                                    try:
+                                        description = identifier.get('description', '').strip()
+                                    except:
+                                        continue
                                     description_lower = description.lower()
                                     if identifier_type == 'ISRC':
                                         # Check the length of ISRC fields. According to the
@@ -885,8 +908,11 @@ def main(cfg, datadump, requested_release):
                                                         break
                                 # Label Code
                                 if settings.label_code:
-                                    value = identifier.get('value').lower()
-                                    description = identifier.get('description', '').lower()
+                                    try:
+                                        value = identifier.get('value').lower()
+                                        description = identifier.get('description', '').lower()
+                                    except:
+                                        continue
                                     if identifier_type == 'Label Code':
                                         # check how many people use 'O' instead of '0'
                                         if value.startswith('lc'):
@@ -908,7 +934,10 @@ def main(cfg, datadump, requested_release):
 
                                 # Matrix / Runout
                                 if settings.matrix:
-                                    value = identifier.get('value')
+                                    try:
+                                        value = identifier.get('value')
+                                    except:
+                                        continue
                                     if identifier_type == 'Matrix / Runout':
                                         for pdmc in discogssmells.pmdc_misspellings:
                                             if pdmc in value:
@@ -1019,8 +1048,11 @@ def main(cfg, datadump, requested_release):
 
                                 # Mastering SID and Mould SID descriptions
                                 if settings.mastering_sid or settings.mould_sid:
-                                    description = identifier.get('description', '').strip()
-                                    description_lower = description.lower()
+                                    try:
+                                        description = identifier.get('description', '').strip()
+                                        description_lower = description.lower()
+                                    except:
+                                        continue
                                     if description_lower in SID_DESCRIPTIONS:
                                         print_error(counter, 'Unspecified SID Code', release_id)
                                         counter += 1
