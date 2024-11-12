@@ -18,6 +18,7 @@ import gzip
 import pathlib
 import re
 import sys
+import xml.etree.ElementTree as orig_et
 
 from dataclasses import dataclass
 
@@ -147,13 +148,50 @@ def check_rights_society(value):
 
     return errors
 
-@click.command(short_help='process Discogs datadump files and print errors found')
+@click.group()
+def app():
+    pass
+
+@app.command(short_help='open Discogs datadump file and pretty print a single release')
+@click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file',
+              type=click.Path(exists=True))
+@click.option('--release', '-r', 'requested_release', required=True,
+              help='release number to scan', type=int)
+def pretty_print(datadump, requested_release):
+    try:
+        with gzip.open(datadump, "rb") as dumpfile:
+            counter = 1
+            prev_counter = 1
+            for event, element in et.iterparse(dumpfile):
+                if element.tag == 'release':
+                    # store the release id
+                    release_id = int(element.get('id'))
+
+                    if requested_release == release_id:
+                        orig_et.indent(element)
+                        print(et.tostring(element).decode())
+                        break
+                    elif requested_release > release_id:
+                        # reduce memory usage
+                        element.clear()
+                        continue
+                    elif requested_release < release_id:
+                        print(f'Release {requested_release} cannot be found in data set!',
+                              file=sys.stderr)
+                        sys.exit(1)
+
+    except Exception as e:
+        print(e)
+        pass
+
+
+@app.command(short_help='process Discogs datadump files and print errors found')
 @click.option('--config-file', '-c', 'cfg', required=True, help='configuration file',
               type=click.File('r'))
 @click.option('--datadump', '-d', 'datadump', required=True, help='discogs data dump file',
               type=click.Path(exists=True))
 @click.option('--release', '-r', 'requested_release', help='release number to scan', type=int)
-def main(cfg, datadump, requested_release):
+def check(cfg, datadump, requested_release):
     config = configparser.ConfigParser()
 
     try:
@@ -1356,4 +1394,4 @@ def main(cfg, datadump, requested_release):
 
 
 if __name__ == "__main__":
-    main()
+    app()

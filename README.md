@@ -65,19 +65,19 @@ $ python3 cleanup-discogs.py -c /path/to/config -d /path/to/discogs/dump
 for example:
 
 ```console
-$ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz
+$ python3 cleanup-discogs.py check -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz
 ```
 
 To check a single release use `-r`:
 
 ```console
-$ python3 cleanup-discogs.py -c /path/to/config -d /path/to/discogs/dump -r release_number
+$ python3 cleanup-discogs.py check -c /path/to/config -d /path/to/discogs/dump -r release_number
 ```
 
 for example:
 
 ```console
-$ python3 cleanup-discogs.py -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz -r 1234
+$ python3 cleanup-discogs.py check -c cleanup.config -d ~/discogs-data/discogs_20170801_releases.xml.gz -r 1234
 ```
 
 In case the number cannot be found the program will exit with an error code
