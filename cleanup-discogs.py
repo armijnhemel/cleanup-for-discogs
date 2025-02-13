@@ -732,8 +732,9 @@ def check(cfg, datadump, requested_release):
                                                 if value.endswith('℗'):
                                                     print_error(counter, "Depósito Legal (formatting, has ℗)", release_id)
                                                     counter += 1
-                                                    # ugly hack, remove ℗ to make at least be able to do some sort of check
-                                                    year_value = year_value.rsplit('℗', 1)[0].strip()
+
+                                                # ugly hack, remove ℗ to make at least be able to do some sort of check
+                                                year_value = value.rsplit('℗', 1)[0].strip()
 
                                                 # several separators seen in the DL codes,
                                                 # including some Unicode ones.
