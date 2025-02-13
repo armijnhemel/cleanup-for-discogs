@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2017-2024 - Armijn Hemel
+# Copyright 2017-2025 - Armijn Hemel
 
 import configparser
 import datetime
@@ -158,30 +158,32 @@ def app():
 @click.option('--release', '-r', 'requested_release', required=True,
               help='release number to scan', type=int)
 def pretty_print(datadump, requested_release):
+    '''Search the data set for a specific release number.
+       This assumes that the XML dump is ordered by release
+       number (ascending).
+    '''
     try:
         with gzip.open(datadump, "rb") as dumpfile:
             counter = 1
             prev_counter = 1
             for event, element in et.iterparse(dumpfile):
                 if element.tag == 'release':
-                    # store the release id
+                    # store the current release id
                     release_id = int(element.get('id'))
 
                     if requested_release == release_id:
                         orig_et.indent(element)
                         print(et.tostring(element).decode())
                         break
-                    elif requested_release > release_id:
+                    if requested_release > release_id:
                         # reduce memory usage
                         element.clear()
                         continue
-                    elif requested_release < release_id:
+                    if requested_release < release_id:
                         print(f'Release {requested_release} cannot be found in data set!',
                               file=sys.stderr)
                         sys.exit(1)
-
-    except Exception as e:
-        print(e)
+    except:
         pass
 
 
@@ -192,6 +194,7 @@ def pretty_print(datadump, requested_release):
               type=click.Path(exists=True))
 @click.option('--release', '-r', 'requested_release', help='release number to scan', type=int)
 def check(cfg, datadump, requested_release):
+    '''Read the Discogs XML dump and sanity check all releases or a single release.'''
     config = configparser.ConfigParser()
 
     try:
@@ -385,6 +388,7 @@ def check(cfg, datadump, requested_release):
     except:
         pass
 
+    # read the actual XML dump file
     try:
         with gzip.open(datadump, "rb") as dumpfile:
             counter = 1
