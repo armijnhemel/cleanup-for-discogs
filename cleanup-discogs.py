@@ -414,6 +414,9 @@ def check(cfg, datadump, requested_release):
                     # first see if a release is worth looking at
                     status = element.get('status')
                     if status in ignore_status:
+                        if requested_release is not None:
+                            if requested_release == release_id:
+                                break
                         continue
 
                     # then store various things about the release
