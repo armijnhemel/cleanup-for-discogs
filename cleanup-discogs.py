@@ -804,7 +804,7 @@ def check(cfg, datadump, requested_release):
                                                         break
                                                 if not deposito_found and settings.debug:
                                                     # print descriptions for debugging. Careful.
-                                                    print(f'Depósito Legal debug: {release_id}, {description}')
+                                                    print(f'DEBUG Depósito Legal debug: {release_id}, {description}')
 
                                             # sometimes the depósito value itself can be
                                             # found in the free text field
