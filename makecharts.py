@@ -15,10 +15,14 @@ import os
 import pathlib
 import sys
 
+import click
+
 from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPM
 from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 import reportlab.rl_config as rl_config
 
@@ -27,11 +31,6 @@ import reportlab.rl_config as rl_config
 # to my Fedora system.
 rl_config.T1SearchPath = ["/usr/share/fonts/truetype/liberation/",
                           "/usr/share/fonts/liberation/", "/usr/share/fonts/liberation-serif/"]
-
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
-import click
 
 # hardcode the fontpath, this is Fedora specific
 liberationpath = os.path.join('/usr/share/fonts/liberation-serif', 'LiberationSerif-Regular.ttf')
@@ -88,9 +87,9 @@ def main(input_file, output_file):
     print("Unique releases:", len(unique_releases))
     print(bardata)
 
-    maximumvalue = max(map(lambda x: x[1], bardata))
-    step = int(math.log(maximumvalue, 10))
-    valueStep = pow(10, step)
+    maximum_value = max(map(lambda x: x[1], bardata))
+    step = int(math.log(maximum_value, 10))
+    value_step = pow(10, step)
 
     # calculate a possible good value for startx so labels are not cut off
     startx = max(10 + step * 10, 30)
@@ -111,8 +110,8 @@ def main(input_file, output_file):
     barchart.strokeColor = colors.white
     barchart.valueAxis.valueMin = 0
     barchart.valueAxis.labels.fontSize = 16
-    barchart.valueAxis.valueMax = maximumvalue
-    barchart.valueAxis.valueStep = valueStep
+    barchart.valueAxis.valueMax = maximum_value
+    barchart.valueAxis.valueStep = value_step
     barchart.categoryAxis.labels.boxAnchor = 'w'
     barchart.categoryAxis.labels.dx = 0
     barchart.categoryAxis.labels.dy = -10
