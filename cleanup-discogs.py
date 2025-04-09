@@ -804,7 +804,7 @@ def check(cfg, datadump, requested_release):
                                                         break
                                                 if not deposito_found and settings.debug:
                                                     # print descriptions for debugging. Careful.
-                                                    print(f'DEBUG Depósito Legal debug: {release_id}, {description}')
+                                                    print(f'DEBUG Depósito Legal: {release_id}, {description}')
 
                                             # sometimes the depósito value itself can be
                                             # found in the free text field
@@ -1246,11 +1246,11 @@ def check(cfg, datadump, requested_release):
 
                                 # debug code to print all descriptions
                                 # Useful to find misspellings of various fields
-                                # Use with care.
+                                # Use with extreme care.
                                 #if settings.debug:
                                 #    description = identifier.get('description', '')
                                 #    if description != '':
-                                #        print(description, release_id)
+                                #        print(f'DEBUG: {release_id}, {description}')
 
                         elif child.tag == 'labels':
                             for label in child:
