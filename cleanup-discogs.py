@@ -164,8 +164,6 @@ def pretty_print(datadump, requested_release):
     '''
     try:
         with gzip.open(datadump, "rb") as dumpfile:
-            counter = 1
-            prev_counter = 1
             for event, element in et.iterparse(dumpfile):
                 if element.tag == 'release':
                     # store the current release id
@@ -465,18 +463,19 @@ def check(cfg, datadump, requested_release):
                                 # but 0x115 is not valid in the Czech alphabet. Check for all
                                 # data except the YouTube playlist.
                                 # https://www.discogs.com/group/thread/757556
-                                if child.tag != 'videos':
-                                    czech_error_found = False
-                                    for iter_child in child.iter():
-                                        for i in ['description', 'value']:
-                                            free_text = iter_child.get(i, '').lower()
-                                            if chr(0x115) in free_text:
-                                                print_error(counter, 'Czech character (0x115)', release_id)
-                                                counter += 1
-                                                czech_error_found = True
-                                                break
-                                        if czech_error_found:
+                                if child.tag == 'videos':
+                                    continue
+                                czech_error_found = False
+                                for iter_child in child.iter():
+                                    for i in ['description', 'value']:
+                                        free_text = iter_child.get(i, '').lower()
+                                        if chr(0x115) in free_text:
+                                            print_error(counter, 'Czech character (0x115)', release_id)
+                                            counter += 1
+                                            czech_error_found = True
                                             break
+                                    if czech_error_found:
+                                        break
 
                         if child.tag in ['artists', 'extraartists']:
                             if settings.artist:
@@ -721,153 +720,151 @@ def check(cfg, datadump, requested_release):
                                                         counter += 1
 
                                 # Depósito Legal, only check for releases from Spain
-                                if country == 'Spain':
-                                    if settings.deposito_legal:
-                                        try:
-                                            value = identifier.get('value').strip()
-                                        except:
-                                            continue
-                                        if identifier_type == 'Depósito Legal':
-                                            deposito_found = True
-                                            if value.endswith('.'):
-                                                print_error(counter, "Depósito Legal (formatting)", release_id)
+                                if country == 'Spain' and settings.deposito_legal:
+                                    try:
+                                        value = identifier.get('value').strip()
+                                    except:
+                                        continue
+                                    if identifier_type == 'Depósito Legal':
+                                        deposito_found = True
+                                        if value.endswith('.'):
+                                            print_error(counter, "Depósito Legal (formatting)", release_id)
+                                            counter += 1
+
+                                        if year is not None:
+                                            # now try to find the year
+                                            deposito_year = None
+                                            if value.endswith('℗'):
+                                                print_error(counter, "Depósito Legal (formatting, has ℗)", release_id)
                                                 counter += 1
 
-                                            if year is not None:
-                                                # now try to find the year
-                                                deposito_year = None
-                                                if value.endswith('℗'):
-                                                    print_error(counter, "Depósito Legal (formatting, has ℗)", release_id)
+                                            # ugly hack, remove ℗ to make at least be able to do some sort of check
+                                            year_value = value.rsplit('℗', 1)[0].strip()
+
+                                            # several separators seen in the DL codes,
+                                            # including some Unicode ones.
+                                            # TODO: rewrite/improve
+                                            for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
+                                                try:
+                                                    deposito_year_text = year_value.rsplit(sep, 1)[-1]
+                                                    if sep == '.' and len(deposito_year_text) == 3:
+                                                        continue
+                                                    if '.' in deposito_year_text:
+                                                        deposito_year_text = deposito_year_text.replace('.', '')
+                                                    deposito_year = int(deposito_year_text)
+                                                    if deposito_year < 100:
+                                                        # correct the year. This won't work correctly after 2099.
+                                                        if deposito_year <= CURRENT_YEAR - 2000:
+                                                            deposito_year += 2000
+                                                        else:
+                                                            deposito_year += 1900
+                                                    break
+                                                except ValueError:
+                                                    pass
+
+                                            # TODO, also allow (year), example: https://www.discogs.com/release/265497
+                                            if deposito_year is not None:
+                                                if deposito_year < 1900:
+                                                    print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
                                                     counter += 1
+                                                elif deposito_year > CURRENT_YEAR:
+                                                    print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
+                                                    counter += 1
+                                                elif year < deposito_year:
+                                                    print_error(counter, "Depósito Legal (release date earlier)", release_id)
+                                                    counter += 1
+                                            else:
+                                                print_error(counter, "Depósito Legal (year not found)", release_id)
+                                                counter += 1
+                                    else:
+                                        value_lower = value.lower()
+                                        try:
+                                            description = identifier.get('description', '').strip()
+                                        except:
+                                            continue
+                                        description_lower = description.lower()
 
-                                                # ugly hack, remove ℗ to make at least be able to do some sort of check
-                                                year_value = value.rsplit('℗', 1)[0].strip()
+                                        if not deposito_found:
+                                            for depositovalre in discogssmells.depositovalres:
+                                                if depositovalre.match(value_lower) is not None:
+                                                    print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
+                                                    counter += 1
+                                                    deposito_found = True
+                                                    break
 
-                                                # several separators seen in the DL codes,
-                                                # including some Unicode ones.
-                                                # TODO: rewrite/improve
-                                                for sep in ['-', '–', '/', '.', ' ', '\'', '_']:
-                                                    try:
-                                                        deposito_year_text = year_value.rsplit(sep, 1)[-1]
-                                                        if sep == '.' and len(deposito_year_text) == 3:
-                                                            continue
-                                                        if '.' in deposito_year_text:
-                                                            deposito_year_text = deposito_year_text.replace('.', '')
-                                                        deposito_year = int(deposito_year_text)
-                                                        if deposito_year < 100:
-                                                            # correct the year. This won't work correctly after 2099.
-                                                            if deposito_year <= CURRENT_YEAR - 2000:
-                                                                deposito_year += 2000
-                                                            else:
-                                                                deposito_year += 1900
+                                        # check for a DL hint in the description field
+                                        if description != '':
+                                            if not deposito_found:
+                                                for d in discogssmells.depositores:
+                                                    result = d.search(description_lower)
+                                                    if result is not None:
+                                                        print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
+                                                        counter += 1
+                                                        deposito_found = True
                                                         break
-                                                    except ValueError:
-                                                        pass
+                                                if not deposito_found and settings.debug:
+                                                    # print descriptions for debugging. Careful.
+                                                    print(f'Depósito Legal debug: {release_id}, {description}')
 
-                                                # TODO, also allow (year), example: https://www.discogs.com/release/265497
-                                                if deposito_year is not None:
-                                                    if deposito_year < 1900:
-                                                        print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
-                                                        counter += 1
-                                                    elif deposito_year > CURRENT_YEAR:
-                                                        print_error(counter, f"Depósito Legal (impossible year: {deposito_year})", release_id)
-                                                        counter += 1
-                                                    elif year < deposito_year:
-                                                        print_error(counter, "Depósito Legal (release date earlier)", release_id)
-                                                        counter += 1
-                                                else:
-                                                    print_error(counter, "Depósito Legal (year not found)", release_id)
-                                                    counter += 1
-                                        else:
-                                            value_lower = value.lower()
-                                            try:
-                                                description = identifier.get('description', '').strip()
-                                            except:
-                                                continue
-                                            description_lower = description.lower()
-
+                                            # sometimes the depósito value itself can be
+                                            # found in the free text field
                                             if not deposito_found:
                                                 for depositovalre in discogssmells.depositovalres:
-                                                    if depositovalre.match(value_lower) is not None:
-                                                        print_error(counter, f"Depósito Legal (in {identifier_type})", release_id)
+                                                    deposres = depositovalre.match(description_lower)
+                                                    if deposres is not None:
+                                                        print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
                                                         counter += 1
                                                         deposito_found = True
                                                         break
 
-                                            # check for a DL hint in the description field
-                                            if description != '':
-                                                if not deposito_found:
-                                                    for d in discogssmells.depositores:
-                                                        result = d.search(description_lower)
-                                                        if result is not None:
-                                                            print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
-                                                            counter += 1
-                                                            deposito_found = True
-                                                            break
-                                                    if not deposito_found and settings.debug:
-                                                        # print descriptions for debugging. Careful.
-                                                        print(f'Depósito Legal debug: {release_id}, {description}')
-
-                                                # sometimes the depósito value itself can be
-                                                # found in the free text field
-                                                if not deposito_found:
-                                                    for depositovalre in discogssmells.depositovalres:
-                                                        deposres = depositovalre.match(description_lower)
-                                                        if deposres is not None:
-                                                            print_error(counter, f"Depósito Legal (in {identifier_type} (description))", release_id)
-                                                            counter += 1
-                                                            deposito_found = True
-                                                            break
-
                                 # Greek license numbers
-                                if country == 'Greece':
-                                    if settings.greek_license:
-                                        try:
-                                            description = identifier.get('description', '').strip().lower()
-                                            value = identifier.get('value', '').strip()
-                                        except:
-                                            continue
-                                        if "license" in description.strip() and year is not None:
-                                            for sep in ['/', ' ', '-', ')', '\'', '.']:
-                                                try:
-                                                    license_year = int(value.rsplit(sep, 1)[1])
-                                                    if license_year < 100:
-                                                        license_year += 1900
-                                                    if license_year > year:
-                                                        print_error(counter, 'Greek license year wrong', release_id)
-                                                        counter += 1
-                                                    break
-                                                except:
-                                                    pass
+                                if country == 'Greece' and settings.greek_license:
+                                    try:
+                                        description = identifier.get('description', '').strip().lower()
+                                        value = identifier.get('value', '').strip()
+                                    except:
+                                        continue
+                                    if "license" in description.strip() and year is not None:
+                                        for sep in ['/', ' ', '-', ')', '\'', '.']:
+                                            try:
+                                                license_year = int(value.rsplit(sep, 1)[1])
+                                                if license_year < 100:
+                                                    license_year += 1900
+                                                if license_year > year:
+                                                    print_error(counter, 'Greek license year wrong', release_id)
+                                                    counter += 1
+                                                break
+                                            except:
+                                                pass
 
                                 # India PKD
-                                if country == 'India':
-                                    if settings.indian_pkd:
-                                        try:
-                                            value = identifier.get('value', '').lower()
-                                        except:
-                                            continue
-                                        if 'pkd' in value or "production date" in value:
-                                            if year is not None:
-                                                # try a few variants
-                                                pkdres = pkd_re.search(value)
-                                                if pkdres is not None:
-                                                    pkdyear = int(pkdres.groups()[0])
-                                                    if pkdyear < 100:
-                                                        # correct the year. This won't work correctly after 2099.
-                                                        if pkdyear <= CURRENT_YEAR - 2000:
-                                                            pkdyear += 2000
-                                                        else:
-                                                            pkdyear += 1900
-                                                    if pkdyear < 1900 or pkdyear > CURRENT_YEAR:
-                                                        print_error(counter, 'Indian PKD (impossible year)', release_id)
-                                                        counter += 1
-                                                    elif year < pkdyear:
-                                                        print_error(counter, 'Indian PKD (release date earlier)', release_id)
-                                                        counter += 1
-                                            else:
-                                                print_error(counter, 'India PKD code (no year)', release_id)
-                                                counter += 1
+                                if country == 'India' and settings.indian_pkd:
+                                    try:
+                                        value = identifier.get('value', '').lower()
+                                    except:
+                                        continue
+                                    if 'pkd' in value or "production date" in value:
+                                        if year is not None:
+                                            # try a few variants
+                                            pkdres = pkd_re.search(value)
+                                            if pkdres is not None:
+                                                pkdyear = int(pkdres.groups()[0])
+                                                if pkdyear < 100:
+                                                    # correct the year. This won't work
+                                                    # correctly after 2099.
+                                                    if pkdyear <= CURRENT_YEAR - 2000:
+                                                        pkdyear += 2000
+                                                    else:
+                                                        pkdyear += 1900
+                                                if pkdyear < 1900 or pkdyear > CURRENT_YEAR:
+                                                    print_error(counter, 'Indian PKD (impossible year)', release_id)
+                                                    counter += 1
+                                                elif year < pkdyear:
+                                                    print_error(counter, 'Indian PKD (release date earlier)', release_id)
+                                                    counter += 1
+                                        else:
+                                            print_error(counter, 'India PKD code (no year)', release_id)
+                                            counter += 1
 
                                 # ISRC
                                 if settings.isrc:
@@ -992,9 +989,10 @@ def check(cfg, datadump, requested_release):
                                         if year is not None:
                                             if 'MFG BY CINRAM' in value and '#' in value and 'USA' not in value:
                                                 cinramres = re.search(r'#(\d{2})', value)
-                                                if cinramres is not None:
+                                                if cinramres:
                                                     cinramyear = int(cinramres.groups()[0])
-                                                    # correct the year. This won't work correctly after 2099.
+                                                    # correct the year. This won't work
+                                                    # correctly after 2099.
                                                     if cinramyear <= CURRENT_YEAR - 2000:
                                                         cinramyear += 2000
                                                     else:
@@ -1008,9 +1006,10 @@ def check(cfg, datadump, requested_release):
                                             elif 'P+O' in value:
                                                 # https://www.discogs.com/label/277449-PO-Pallas
                                                 pallasres = re.search(r'P\+O[–-]\d{4,5}[–-][ABCD]\d?\s+\d{2}[–-](\d{2})', value)
-                                                if pallasres is not None:
+                                                if pallasres:
                                                     pallasyear = int(pallasres.groups()[0])
-                                                    # correct the year. This won't work correctly after 2099.
+                                                    # correct the year. This won't work
+                                                    # correctly after 2099.
                                                     if pallasyear <= CURRENT_YEAR - 2000:
                                                         pallasyear += 2000
                                                     else:
@@ -1295,16 +1294,15 @@ def check(cfg, datadump, requested_release):
                             #    print_error(counter, "Korean casino spam", release_id)
                             #    counter += 1
                             if child.text:
-                                if country == 'Spain':
-                                    if settings.deposito_legal:
-                                        # sometimes "deposito legal" can be found
-                                        # in the "notes" section.
-                                        content_lower = child.text.lower()
-                                        for d in discogssmells.depositores:
-                                            result = d.search(content_lower)
-                                            if result is not None:
-                                                deposito_found_in_notes = True
-                                                break
+                                if country == 'Spain' and settings.deposito_legal:
+                                    # sometimes "deposito legal" can be found
+                                    # in the "notes" section.
+                                    content_lower = child.text.lower()
+                                    for d in discogssmells.depositores:
+                                        result = d.search(content_lower)
+                                        if result is not None:
+                                            deposito_found_in_notes = True
+                                            break
 
                                 # see https://support.discogs.com/en/support/solutions/articles/13000014661-how-can-i-format-text-
                                 if settings.url_in_html:
