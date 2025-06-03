@@ -393,7 +393,7 @@ def check(cfg, datadump, requested_release):
             prev_counter = 1
             last_release_checked = 0
             ignore_status = ['Deleted', 'Draft', 'Rejected']
-            for event, element in et.iterparse(dumpfile):
+            for _, element in et.iterparse(dumpfile):
                 if element.tag == 'release':
                     # store the release id
                     release_id = int(element.get('id'))
